@@ -96,6 +96,18 @@
         radial-gradient(circle at 72% 26%, rgba(90,135,255,.28), transparent 14%),
         linear-gradient(180deg,#fff8f0,#f4f8ff);
     }
+    .preview.worm{
+      background:
+        radial-gradient(circle at 24% 24%, rgba(255,197,106,.28), transparent 22%),
+        radial-gradient(circle at 78% 74%, rgba(90,135,255,.18), transparent 24%),
+        linear-gradient(180deg,#fff9ef,#eef7ff);
+    }
+    .preview.fortress{
+      background:
+        radial-gradient(circle at 22% 22%, rgba(255,186,94,.28), transparent 20%),
+        radial-gradient(circle at 80% 30%, rgba(111,188,255,.18), transparent 24%),
+        linear-gradient(180deg,rgba(193,228,255,.95) 0 48%, rgba(253,244,215,.96) 48% 100%);
+    }
     .wall{
       position:absolute;
       left:14px;
@@ -155,6 +167,82 @@
       inset:10px;
       border-radius:999px;
       background:linear-gradient(180deg,#ffd7dc,#fff4f6);
+    }
+    .pipeGhost{
+      position:absolute;
+      border-radius:999px;
+      background:rgba(36,77,130,.12);
+      border:1px dashed rgba(36,77,130,.16);
+    }
+    .socket{
+      position:absolute;
+      width:28px;
+      height:28px;
+      border-radius:50%;
+      background:rgba(255,255,255,.92);
+      border:5px solid rgba(214,224,236,.92);
+      box-shadow:0 10px 22px rgba(24,49,79,.08);
+    }
+    .wormLink{
+      position:absolute;
+      height:16px;
+      border-radius:999px;
+      background:#f5c94d;
+      box-shadow:0 10px 20px rgba(245,201,77,.22);
+      transform-origin:left center;
+    }
+    .wormSeg{
+      position:absolute;
+      width:24px;
+      height:24px;
+      border-radius:50%;
+      box-shadow:0 10px 20px rgba(24,49,79,.1);
+    }
+    .wormSeg.yellow{background:#f5c94d}
+    .wormSeg.blue{background:#5a87ff}
+    .wormSeg.red{background:#ff6c79}
+    .wormSeg.green{background:#4ecb90}
+    .fortressTile,.fortressUnit,.fortressBolt,.fortressSegment,.fortressBadge{
+      position:absolute;
+    }
+    .fortressTile{
+      width:26px;
+      height:26px;
+      border-radius:10px;
+      border:1px solid rgba(20,48,84,.08);
+      background:rgba(255,255,255,.38);
+    }
+    .fortressSegment{
+      height:24px;
+      border-radius:999px;
+      background:linear-gradient(180deg,#ffe8bd,#f3aa61);
+      box-shadow:0 10px 18px rgba(24,49,79,.1);
+    }
+    .fortressBadge{
+      width:22px;
+      height:22px;
+      border-radius:10px;
+      display:grid;
+      place-items:center;
+      font-size:13px;
+      background:rgba(255,255,255,.72);
+      box-shadow:0 8px 14px rgba(24,49,79,.08);
+    }
+    .fortressUnit{
+      width:18px;
+      height:18px;
+      border-radius:50%;
+      box-shadow:0 8px 14px rgba(24,49,79,.12);
+    }
+    .fortressUnit.player{background:#f3aa61}
+    .fortressUnit.enemy{background:#7f4a5b}
+    .fortressBolt{
+      width:34px;
+      height:6px;
+      border-radius:999px;
+      background:linear-gradient(90deg,#ffe4a4,#f3aa61);
+      transform:rotate(-18deg);
+      box-shadow:0 8px 12px rgba(243,170,97,.22);
     }
     .titleRow{
       display:flex;
@@ -275,6 +363,22 @@
         tag: "Snake + Defense",
         description: "Hybrid snake, color resource management and lane defense with multiple game modes.",
         preview: "snake"
+      },
+      {
+        id: "worm",
+        title: "Worm Link Merge",
+        file: "worm_link_merge.html",
+        tag: "Worm + Pipes",
+        description: "Grid puzzle prototype about slithering worms, mandatory merges, paired sockets, resolve bursts, and quest-driven progression.",
+        preview: "worm"
+      },
+      {
+        id: "worm_fortress",
+        title: "Wormhold Merge",
+        file: "worm_fortress_merge.html",
+        tag: "Merge + Auto-Battle",
+        description: "Move living fortress-worms on a base grid, merge equal specialists, claim bonus tiles, refresh the pool, and launch short auto-battle waves.",
+        preview: "fortress"
       }
     ];
 
@@ -297,6 +401,45 @@
           <div class="snakeSeg snakeEnd" style="left:130px;top:104px;transform:scaleX(-1)"></div>
           <div class="orb yellow" style="left:184px;top:114px"></div>
           <div class="orb red" style="left:204px;top:58px"></div>
+        `;
+        return;
+      }
+      if (type === "worm") {
+        previewEl.innerHTML = `
+          <div class="pipeGhost" style="left:30px;top:42px;width:122px;height:18px"></div>
+          <div class="pipeGhost" style="left:148px;top:72px;width:18px;height:56px"></div>
+          <div class="socket" style="left:24px;top:36px"></div>
+          <div class="socket" style="left:146px;top:68px"></div>
+          <div class="wormLink" style="left:38px;top:92px;width:86px"></div>
+          <div class="wormSeg yellow" style="left:30px;top:88px"></div>
+          <div class="wormSeg blue" style="left:70px;top:88px"></div>
+          <div class="wormSeg yellow" style="left:110px;top:88px"></div>
+          <div class="wormSeg red" style="left:168px;top:44px"></div>
+          <div class="wormSeg red" style="left:194px;top:44px"></div>
+          <div class="wormSeg green" style="left:176px;top:112px"></div>
+          <div class="wormSeg green" style="left:202px;top:112px"></div>
+        `;
+        return;
+      }
+      if (type === "fortress") {
+        previewEl.innerHTML = `
+          <div class="fortressTile" style="left:26px;top:88px"></div>
+          <div class="fortressTile" style="left:56px;top:88px"></div>
+          <div class="fortressTile" style="left:86px;top:88px"></div>
+          <div class="fortressTile" style="left:116px;top:88px"></div>
+          <div class="fortressTile" style="left:146px;top:88px"></div>
+          <div class="fortressTile" style="left:176px;top:88px"></div>
+          <div class="fortressTile" style="left:206px;top:88px"></div>
+          <div class="fortressSegment" style="left:42px;top:98px;width:86px"></div>
+          <div class="fortressSegment" style="left:138px;top:122px;width:54px;background:linear-gradient(180deg,#fff0bf,#f0c15c)"></div>
+          <div class="fortressBadge" style="left:74px;top:98px">⚔️</div>
+          <div class="fortressBadge" style="left:154px;top:122px">🎯</div>
+          <div class="fortressUnit enemy" style="left:34px;top:28px"></div>
+          <div class="fortressUnit enemy" style="left:102px;top:40px"></div>
+          <div class="fortressUnit enemy" style="left:198px;top:34px"></div>
+          <div class="fortressUnit player" style="left:78px;top:76px"></div>
+          <div class="fortressUnit player" style="left:166px;top:104px"></div>
+          <div class="fortressBolt" style="left:158px;top:88px"></div>
         `;
         return;
       }

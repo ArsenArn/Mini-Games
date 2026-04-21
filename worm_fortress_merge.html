@@ -1,0 +1,3590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Wormhold Merge</title>
+  <style>
+    :root{
+      color-scheme: light;
+      --sky-top:#f7f5e7;
+      --sky-mid:#dcecff;
+      --sky-bottom:#c8e0ff;
+      --panel:rgba(255,255,255,.9);
+      --panel-strong:rgba(255,255,255,.96);
+      --panel-soft:rgba(242,248,255,.82);
+      --text:#16314f;
+      --muted:#617993;
+      --ink-soft:rgba(22,49,79,.08);
+      --accent:#17406e;
+      --accent-soft:#dfeeff;
+      --good:#2cb37a;
+      --warn:#f4b24f;
+      --danger:#eb6e6e;
+      --shadow:0 20px 44px rgba(22,49,79,.14);
+      --shadow-strong:0 26px 58px rgba(22,49,79,.18);
+      --ring:0 0 0 2px rgba(23,64,110,.12);
+      --board-top:#fbfbf2;
+      --board-bottom:#f3fbff;
+      --battle-top:#d7ebff;
+      --battle-bottom:#f7fbff;
+      --base-top:#fff5dd;
+      --base-bottom:#f8e1b1;
+      --grid-line:rgba(22,49,79,.08);
+      --enemy:#6d4050;
+      --enemy-soft:#b46c7d;
+      --ally:#f6b864;
+      --ally-soft:#ffe6b3;
+    }
+
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{margin:0;min-height:100%;font-family:"Trebuchet MS","Avenir Next","Segoe UI",sans-serif;color:var(--text);background:
+      radial-gradient(circle at top left, rgba(245,196,98,.22), transparent 26%),
+      radial-gradient(circle at top right, rgba(90,135,255,.18), transparent 30%),
+      linear-gradient(180deg,var(--sky-top),var(--sky-mid) 44%,var(--sky-bottom));
+      overflow:hidden}
+    body{display:flex;justify-content:center;align-items:stretch}
+
+    button,input,textarea,select{font:inherit}
+    button{cursor:pointer}
+
+    .app{
+      position:relative;
+      width:min(100vw,1920px);
+      min-height:100vh;
+      height:100dvh;
+      display:grid;
+      grid-template-rows:auto minmax(0,1fr) auto;
+      gap:10px;
+      padding:calc(env(safe-area-inset-top,0px) + 10px) 12px calc(env(safe-area-inset-bottom,0px) + 10px);
+    }
+
+    .hud{
+      display:grid;
+      gap:8px;
+      background:rgba(255,255,255,.86);
+      border:1px solid rgba(22,49,79,.06);
+      border-radius:28px;
+      padding:10px 12px;
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(14px);
+    }
+
+    .hudRow{
+      display:flex;
+      gap:8px;
+      align-items:stretch;
+      justify-content:space-between;
+      flex-wrap:wrap;
+    }
+
+    .pillRow,.controlRow{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap}
+    .pill,.hudButton,.poolButton,.actionButton,.menuButton,.debugToggle,.smallButton{
+      border:0;
+      border-radius:18px;
+      background:var(--panel);
+      color:var(--text);
+      box-shadow:var(--shadow);
+      transition:transform .16s ease, box-shadow .16s ease, background .16s ease, opacity .16s ease;
+    }
+    .pill{
+      min-width:78px;
+      padding:8px 10px;
+      display:grid;
+      gap:2px;
+      backdrop-filter:blur(14px);
+      border-radius:20px;
+      box-shadow:none;
+      background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(240,245,252,.94));
+    }
+    .pill span:first-child{
+      font-size:10px;
+      letter-spacing:.11em;
+      text-transform:uppercase;
+      color:var(--muted);
+    }
+    .pill strong{font-size:16px;line-height:1.1}
+    .hudButton,.poolButton,.actionButton,.menuButton,.debugToggle,.smallButton{
+      padding:11px 14px;
+      font-weight:700;
+      user-select:none;
+    }
+    .hudButton:hover,.poolButton:hover,.actionButton:hover,.menuButton:hover,.debugToggle:hover,.smallButton:hover{
+      transform:translateY(-1px);
+      box-shadow:var(--shadow-strong);
+    }
+    .hudButton:active,.poolButton:active,.actionButton:active,.menuButton:active,.debugToggle:active,.smallButton:active{
+      transform:translateY(1px) scale(.985);
+    }
+    .hudButton.primary,.poolButton.primary,.actionButton.primary,.menuButton.primary{
+      background:linear-gradient(180deg,#fff7db,#ffd773);
+    }
+    .hudButton.good,.poolButton.good,.actionButton.good{background:linear-gradient(180deg,#e9fff5,#9ce6c3)}
+    .hudButton.warn,.poolButton.warn,.actionButton.warn{background:linear-gradient(180deg,#fff5e2,#ffd28a)}
+    .hudButton.danger,.poolButton.danger,.actionButton.danger{background:linear-gradient(180deg,#ffe4e4,#ffb0b0)}
+    .hudButton:disabled,.poolButton:disabled,.actionButton:disabled,.menuButton:disabled,.smallButton:disabled{
+      opacity:.52;
+      cursor:default;
+      transform:none;
+      box-shadow:var(--shadow);
+    }
+
+    .stage{
+      position:relative;
+      min-height:0;
+      border-radius:28px;
+      overflow:hidden;
+      box-shadow:0 24px 68px rgba(22,49,79,.18);
+      background:rgba(255,255,255,.34);
+      border:1px solid rgba(255,255,255,.34);
+    }
+    canvas{
+      width:100%;
+      height:100%;
+      display:block;
+      touch-action:none;
+    }
+
+    .screen{
+      position:absolute;
+      inset:0;
+      display:none;
+      padding:18px;
+      background:
+        radial-gradient(circle at top right, rgba(90,135,255,.18), transparent 34%),
+        linear-gradient(180deg, rgba(255,255,255,.28), rgba(255,255,255,.82));
+      backdrop-filter:blur(14px);
+      overflow:auto;
+    }
+    .screen.visible{display:flex;align-items:center;justify-content:center}
+    .panel{
+      width:min(100%,1140px);
+      padding:24px;
+      border-radius:30px;
+      background:var(--panel-strong);
+      box-shadow:0 24px 64px rgba(22,49,79,.18);
+      display:grid;
+      gap:16px;
+      border:1px solid rgba(255,255,255,.72);
+    }
+    .panel.narrow{width:min(100%,520px)}
+    .eyebrow{
+      font-size:11px;
+      letter-spacing:.22em;
+      text-transform:uppercase;
+      color:var(--muted);
+    }
+    h1,h2,h3,p{margin:0}
+    h1{font-size:clamp(34px,7vw,62px);line-height:.95}
+    h2{font-size:clamp(26px,5vw,38px);line-height:1}
+    h3{font-size:16px;line-height:1.1}
+    .panel p{line-height:1.5;color:var(--muted)}
+    .menuGrid,.levelGrid,.tagRow,.dashboard,.screenButtons{display:grid;gap:12px}
+    .tagRow{display:flex;flex-wrap:wrap;gap:10px}
+    .tag{
+      padding:8px 12px;
+      border-radius:999px;
+      background:var(--accent-soft);
+      color:var(--accent);
+      font-size:12px;
+      font-weight:700;
+    }
+    .dashboard{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .dashboardCard,.levelCard,.featureCard,.debugCard,.poolShell,.drawerSection,.infoCard{
+      border-radius:22px;
+      background:var(--panel-soft);
+      box-shadow:var(--shadow);
+      border:1px solid rgba(255,255,255,.62);
+    }
+    .dashboardCard,.featureCard,.infoCard{padding:14px;display:grid;gap:8px}
+    .dashboardCard strong{font-size:24px}
+    .dashboardCard span,.featureCard span,.infoCard span{font-size:12px;color:var(--muted)}
+    .featureRow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    .screenButtons{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+    .levelGrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .levelCard{
+      padding:16px;
+      display:grid;
+      gap:10px;
+      text-align:left;
+    }
+    .levelCard strong{font-size:24px}
+    .levelMeta{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:12px}
+    .levelCard.locked{opacity:.6}
+
+    .floatingHint{
+      position:absolute;
+      left:14px;
+      right:14px;
+      bottom:14px;
+      z-index:4;
+      padding:12px 16px;
+      border-radius:18px;
+      background:rgba(255,255,255,.82);
+      color:var(--text);
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(12px);
+      font-size:13px;
+      line-height:1.4;
+      pointer-events:none;
+    }
+
+    .bottomBar{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      gap:10px;
+      align-items:stretch;
+    }
+    .poolShell{
+      min-height:126px;
+      padding:12px;
+      display:grid;
+      gap:10px;
+      background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(239,244,251,.95));
+    }
+    .poolHeader,.poolFooter{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .poolTitle{
+      display:grid;
+      gap:4px;
+    }
+    .poolTitle span{font-size:12px;color:var(--muted)}
+    .poolCards{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:10px;
+    }
+    .poolCard{
+      position:relative;
+      min-height:78px;
+      padding:10px 12px;
+      border-radius:20px;
+      background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(243,247,252,.96));
+      box-shadow:none;
+      border:1px solid rgba(22,49,79,.08);
+      display:grid;
+      gap:8px;
+      align-content:start;
+      user-select:none;
+      touch-action:none;
+    }
+    .poolCard.dragging{opacity:.4}
+    .poolCardHeader,.poolCardMeta{display:flex;justify-content:space-between;gap:8px;align-items:center}
+    .poolType{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      font-weight:700;
+    }
+    .poolIcon{
+      width:28px;
+      height:28px;
+      display:grid;
+      place-items:center;
+      border-radius:12px;
+      background:rgba(255,255,255,.64);
+      box-shadow:inset 0 2px 6px rgba(255,255,255,.6);
+      font-size:18px;
+    }
+    .poolSize{
+      padding:5px 8px;
+      border-radius:999px;
+      background:rgba(22,49,79,.07);
+      font-size:12px;
+      font-weight:700;
+    }
+    .poolCardMeta{font-size:12px;color:var(--muted)}
+
+    .sideActions{
+      display:grid;
+      gap:10px;
+      width:min(100%,340px);
+    }
+
+    .debugDrawer{
+      position:absolute;
+      top:10px;
+      right:10px;
+      bottom:10px;
+      width:min(430px,calc(100% - 20px));
+      z-index:7;
+      display:none;
+      grid-template-rows:auto minmax(0,1fr);
+      gap:10px;
+    }
+    .debugDrawer.open{display:grid}
+    .drawerHeader{
+      padding:14px 16px;
+      border-radius:22px;
+      background:rgba(255,255,255,.94);
+      box-shadow:var(--shadow-strong);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .drawerBody{
+      overflow:auto;
+      padding:4px;
+      display:grid;
+      gap:10px;
+    }
+    .drawerSection{
+      padding:14px;
+      display:grid;
+      gap:10px;
+      background:rgba(255,255,255,.92);
+    }
+    .drawerSectionTitle{
+      font-size:12px;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      color:var(--muted);
+      font-weight:700;
+    }
+    .debugGrid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+    }
+    .debugCard{padding:12px;display:grid;gap:8px}
+    .field{
+      display:grid;
+      gap:6px;
+    }
+    .field label{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+    }
+    .field input,.field textarea,.field select{
+      width:100%;
+      border:1px solid rgba(22,49,79,.12);
+      background:rgba(255,255,255,.96);
+      color:var(--text);
+      border-radius:14px;
+      padding:10px 12px;
+      box-shadow:var(--ring);
+    }
+    .field textarea{
+      min-height:96px;
+      resize:vertical;
+      font-family:Consolas,"Courier New",monospace;
+      font-size:12px;
+      line-height:1.35;
+    }
+    .field input[type="checkbox"]{
+      width:18px;
+      height:18px;
+      padding:0;
+      box-shadow:none;
+    }
+    .field.inline{
+      grid-template-columns:auto 1fr;
+      align-items:center;
+      gap:10px;
+    }
+    .actionGrid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+    }
+
+    .resultMeta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+
+    .statusRow{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .statusTag{
+      padding:8px 12px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+      background:rgba(22,49,79,.06);
+      color:var(--text);
+    }
+    .statusTag.good{background:rgba(44,179,122,.16);color:#1e7c56}
+    .statusTag.warn{background:rgba(244,178,79,.16);color:#97661b}
+    .statusTag.danger{background:rgba(235,110,110,.16);color:#a13c3c}
+
+    .divider{
+      height:1px;
+      background:rgba(22,49,79,.08);
+    }
+
+    @media (max-width:1120px){
+      .dashboard,.featureRow,.levelGrid{grid-template-columns:1fr}
+      .screenButtons,.resultMeta{grid-template-columns:1fr}
+      .bottomBar{grid-template-columns:1fr}
+      .sideActions{width:100%}
+    }
+
+    @media (max-width:820px){
+      .app{padding-left:8px;padding-right:8px}
+      .poolCards,.debugGrid,.actionGrid{grid-template-columns:1fr}
+      .pill{min-width:74px}
+      .panel{padding:18px}
+      .debugDrawer{left:10px;width:auto}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="hud">
+      <div class="hudRow">
+        <div class="pillRow">
+          <div class="pill"><span>Level</span><strong id="hudLevel">1</strong></div>
+          <div class="pill"><span>Wave</span><strong id="hudWave">1 / 3</strong></div>
+          <div class="pill"><span>Phase</span><strong id="hudPhase">Build</strong></div>
+          <div class="pill"><span>Crystals</span><strong id="hudCrystals">0</strong></div>
+          <div class="pill"><span>Refresh</span><strong id="hudRefreshCost">4</strong></div>
+          <div class="pill"><span>Power</span><strong id="hudPower">0 / 0</strong></div>
+          <div class="pill"><span>Core</span><strong id="hudCore">100</strong></div>
+        </div>
+        <div class="controlRow">
+          <button id="battleButton" class="hudButton primary" type="button">Battle</button>
+          <button id="speedButton" class="hudButton" type="button">Speed x1</button>
+          <button id="pauseButton" class="hudButton" type="button">Pause</button>
+          <button id="soundButton" class="hudButton" type="button">Sound On</button>
+          <button id="debugButton" class="hudButton" type="button">Debug</button>
+        </div>
+      </div>
+      <div class="hudRow">
+        <div id="statusRow" class="statusRow"></div>
+      </div>
+    </header>
+
+    <main class="stage">
+      <canvas id="gameCanvas" aria-label="Wormhold Merge battlefield"></canvas>
+
+      <div id="floatingHint" class="floatingHint">Drag worms from the pool onto the base, merge matching types and sizes, then press Battle.</div>
+
+      <section id="bootScreen" class="screen visible">
+        <div class="panel narrow">
+          <div class="eyebrow">Boot</div>
+          <h1>Wormhold Merge</h1>
+          <p>Loading build grid, worm systems, bonus tiles, wave estimator, battle simulation, save data, audio, and debug tools.</p>
+          <div class="dashboard">
+            <div class="dashboardCard"><span>Core Loop</span><strong>Build -> Merge -> Battle</strong></div>
+            <div class="dashboardCard"><span>Field</span><strong>Grid Base + Free Battle</strong></div>
+            <div class="dashboardCard"><span>Modes</span><strong>Campaign Ready</strong></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="menuScreen" class="screen">
+        <div class="panel">
+          <div class="eyebrow">Puzzle Defense Prototype</div>
+          <h1>Wormhold Merge</h1>
+          <p>Move living fortress-worms across the base, merge equal specializations into longer bodies, park them on bonus tiles, and let the auto-battle wave play out.</p>
+          <div class="tagRow">
+            <div class="tag">Puzzle / Merge / Auto-Battler</div>
+            <div class="tag">Mobile + Desktop</div>
+            <div class="tag">Campaign + Mode Framework</div>
+          </div>
+          <div class="featureRow">
+            <div class="featureCard">
+              <h3>Living Buildings</h3>
+              <span>Each worm occupies several base cells, carries a combat specialization, and scales with body length.</span>
+            </div>
+            <div class="featureCard">
+              <h3>Fast Wave Pacing</h3>
+              <span>Enemy waves are generated from estimated player power and target duration, then played as short auto-battles.</span>
+            </div>
+            <div class="featureCard">
+              <h3>Designer Ready</h3>
+              <span>Use the built-in drawer to change field sizes, balance curves, worm pools, bonus tiles, and export/import JSON.</span>
+            </div>
+          </div>
+          <div class="dashboard">
+            <div class="dashboardCard"><span>Campaign</span><strong>6 levels</strong></div>
+            <div class="dashboardCard"><span>Wave Curve</span><strong>20-60 sec target</strong></div>
+            <div class="dashboardCard"><span>Modes</span><strong>Campaign now, endless later</strong></div>
+          </div>
+          <div class="screenButtons">
+            <button id="menuPlayButton" class="menuButton primary" type="button">Campaign</button>
+            <button id="menuContinueButton" class="menuButton" type="button">Continue Last</button>
+            <button id="menuSandboxButton" class="menuButton" type="button">Sandbox Setup</button>
+            <button id="menuLauncherButton" class="menuButton" type="button">Launcher</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="levelScreen" class="screen">
+        <div class="panel">
+          <div class="eyebrow">Level Select</div>
+          <h2>Campaign</h2>
+          <p>Six short levels. Each new level adds one more wave, up to eight. Bonus tiles, enemy composition, and wave duration scale per global wave.</p>
+          <div id="levelGrid" class="levelGrid"></div>
+          <div class="screenButtons">
+            <button id="levelBackButton" class="menuButton" type="button">Back</button>
+            <button id="levelDebugButton" class="menuButton" type="button">Open Debug</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="pauseScreen" class="screen">
+        <div class="panel narrow">
+          <div class="eyebrow">Pause</div>
+          <h2>Battle Paused</h2>
+          <p>The wave simulation is frozen. Resume to continue the current run, or return to menu.</p>
+          <div class="screenButtons">
+            <button id="pauseResumeButton" class="menuButton primary" type="button">Resume</button>
+            <button id="pauseRestartButton" class="menuButton" type="button">Restart Level</button>
+            <button id="pauseMenuButton" class="menuButton" type="button">Main Menu</button>
+            <button id="pauseDebugButton" class="menuButton" type="button">Debug</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="resultScreen" class="screen">
+        <div class="panel narrow">
+          <div class="eyebrow">Result</div>
+          <h2 id="resultTitle">Victory</h2>
+          <p id="resultBody">Wave cleared.</p>
+          <div class="resultMeta">
+            <div class="infoCard"><span>Level</span><strong id="resultLevel">1</strong></div>
+            <div class="infoCard"><span>Wave</span><strong id="resultWave">1 / 3</strong></div>
+            <div class="infoCard"><span>Crystals</span><strong id="resultCrystals">0</strong></div>
+            <div class="infoCard"><span>Unlocked</span><strong id="resultUnlocked">1</strong></div>
+          </div>
+          <div class="screenButtons">
+            <button id="resultNextButton" class="menuButton primary" type="button">Next</button>
+            <button id="resultRetryButton" class="menuButton" type="button">Retry</button>
+            <button id="resultMenuButton" class="menuButton" type="button">Menu</button>
+            <button id="resultDebugButton" class="menuButton" type="button">Debug</button>
+          </div>
+        </div>
+      </section>
+
+      <aside id="debugDrawer" class="debugDrawer">
+        <div class="drawerHeader">
+          <div>
+            <div class="eyebrow">Designer Panel</div>
+            <h3>Balance + State Tools</h3>
+          </div>
+          <div class="controlRow">
+            <button id="applyDebugButton" class="smallButton good" type="button">Apply + Regenerate</button>
+            <button id="closeDebugButton" class="smallButton" type="button">Close</button>
+          </div>
+        </div>
+        <div class="drawerBody">
+          <div class="drawerSection">
+            <div class="drawerSectionTitle">Layout</div>
+            <div class="debugGrid">
+              <div class="field"><label for="dbgBaseFieldWidth">baseFieldWidth</label><input id="dbgBaseFieldWidth" type="number" min="6" max="16"></div>
+              <div class="field"><label for="dbgBaseFieldHeight">baseFieldHeight</label><input id="dbgBaseFieldHeight" type="number" min="6" max="16"></div>
+              <div class="field"><label for="dbgTotalFieldWidth">totalFieldWidth</label><input id="dbgTotalFieldWidth" type="number" min="6" max="16"></div>
+              <div class="field"><label for="dbgTotalFieldHeight">totalFieldHeight</label><input id="dbgTotalFieldHeight" type="number" min="12" max="32"></div>
+              <div class="field"><label for="dbgBaseRows">baseRows</label><input id="dbgBaseRows" type="number" min="5" max="16"></div>
+              <div class="field"><label for="dbgBattleRows">battleRows</label><input id="dbgBattleRows" type="number" min="6" max="20"></div>
+            </div>
+          </div>
+
+          <div class="drawerSection">
+            <div class="drawerSectionTitle">Economy + Merge</div>
+            <div class="debugGrid">
+              <div class="field"><label for="dbgInitialPoolSize">initialPoolSize</label><input id="dbgInitialPoolSize" type="number" min="1" max="6"></div>
+              <div class="field"><label for="dbgRefreshCostStart">refreshCostStart</label><input id="dbgRefreshCostStart" type="number" min="1" max="20"></div>
+              <div class="field"><label for="dbgInitialWormCount">initialWormCount</label><input id="dbgInitialWormCount" type="number" min="0" max="8"></div>
+              <div class="field"><label for="dbgWormMoveMode">wormMoveMode</label><input id="dbgWormMoveMode" type="text"></div>
+              <div class="field"><label for="dbgMergeRules">mergeRules</label><input id="dbgMergeRules" type="text"></div>
+              <div class="field"><label for="dbgAllowedWormTypes">allowedWormTypes</label><input id="dbgAllowedWormTypes" type="text"></div>
+              <div class="field"><label for="dbgAllowedWormSizes">allowedWormSizes</label><input id="dbgAllowedWormSizes" type="text"></div>
+            </div>
+            <div class="field"><label for="dbgRefreshCostCurve">refreshCostCurve</label><textarea id="dbgRefreshCostCurve"></textarea></div>
+          </div>
+
+          <div class="drawerSection">
+            <div class="drawerSectionTitle">Bonus Tiles</div>
+            <div class="debugGrid">
+              <div class="field"><label for="dbgBonusStart">bonusTileStartCount</label><input id="dbgBonusStart" type="number" min="0" max="12"></div>
+              <div class="field"><label for="dbgBonusGrowth">bonusTileGrowthPerWave</label><input id="dbgBonusGrowth" type="number" min="0" max="4"></div>
+              <div class="field"><label for="dbgAllowedBonusTypes">allowedBonusTypes</label><input id="dbgAllowedBonusTypes" type="text"></div>
+              <div class="field"><label for="dbgBattleSpeed">battleSpeed</label><input id="dbgBattleSpeed" type="number" min=".5" max="4" step=".5"></div>
+            </div>
+            <div class="field"><label for="dbgBonusValues">bonusValues</label><textarea id="dbgBonusValues"></textarea></div>
+          </div>
+
+          <div class="drawerSection">
+            <div class="drawerSectionTitle">Combat Tuning</div>
+            <div class="debugGrid">
+              <div class="field"><label for="dbgBarracksSpawnCooldown">barracksSpawnCooldown</label><input id="dbgBarracksSpawnCooldown" type="number" min="1" max="12" step=".1"></div>
+              <div class="field"><label for="dbgTowerBaseRange">towerBaseRange</label><input id="dbgTowerBaseRange" type="number" min="1" max="14" step=".1"></div>
+              <div class="field"><label for="dbgArcherUnitRange">archerUnitRange</label><input id="dbgArcherUnitRange" type="number" min="1" max="14" step=".1"></div>
+              <div class="field"><label for="dbgCavalrySpeed">cavalrySpeed</label><input id="dbgCavalrySpeed" type="number" min="1" max="8" step=".1"></div>
+              <div class="field"><label for="dbgMageSplashRadius">mageSplashRadius</label><input id="dbgMageSplashRadius" type="number" min=".4" max="4" step=".1"></div>
+              <div class="field"><label for="dbgWallBaseHp">wallBaseHP</label><input id="dbgWallBaseHp" type="number" min="100" max="1200" step="10"></div>
+              <div class="field"><label for="dbgWaveDurationStart">waveDurationStart</label><input id="dbgWaveDurationStart" type="number" min="10" max="45"></div>
+              <div class="field"><label for="dbgWaveDurationPerWave">waveDurationPerWave</label><input id="dbgWaveDurationPerWave" type="number" min="1" max="15"></div>
+              <div class="field"><label for="dbgWaveDurationCap">waveDurationCap</label><input id="dbgWaveDurationCap" type="number" min="20" max="90"></div>
+              <div class="field"><label for="dbgSeed">seed</label><input id="dbgSeed" type="text"></div>
+            </div>
+            <div class="debugGrid">
+              <div class="field"><label for="dbgEnemyUnlocks">enemyCompositionUnlockWave</label><textarea id="dbgEnemyUnlocks"></textarea></div>
+              <div class="field"><label for="dbgUnitBaseStats">unitBaseStats per class</label><textarea id="dbgUnitBaseStats"></textarea></div>
+              <div class="field"><label for="dbgEnemyBaseStats">enemyBaseStats per class</label><textarea id="dbgEnemyBaseStats"></textarea></div>
+              <div class="field"><label for="dbgCanBuildingsBeDestroyed">canBuildingsBeDestroyedThisWave</label><div class="field inline"><input id="dbgCanBuildingsBeDestroyed" type="checkbox"><span>Enemies may target worms</span></div></div>
+              <div class="field"><label for="dbgRestoreBuildingsAfterWave">restoreBuildingsAfterWave</label><div class="field inline"><input id="dbgRestoreBuildingsAfterWave" type="checkbox"><span>Destroyed worms restore after wave</span></div></div>
+              <div class="field"><label for="dbgRebuildAfterWave">rebuildAfterWave</label><div class="field inline"><input id="dbgRebuildAfterWave" type="checkbox"><span>Return to build phase after victory</span></div></div>
+            </div>
+          </div>
+
+          <div class="drawerSection">
+            <div class="drawerSectionTitle">Actions</div>
+            <div class="actionGrid">
+              <button id="dbgRegenerateButton" class="actionButton" type="button">Regenerate Level</button>
+              <button id="dbgAddCrystalsButton" class="actionButton" type="button">Add 20 Crystals</button>
+              <button id="dbgSpawnPoolButton" class="actionButton" type="button">Spawn Worm In Pool</button>
+              <button id="dbgSpawnFieldButton" class="actionButton" type="button">Spawn Random On Field</button>
+              <button id="dbgForceMergeButton" class="actionButton" type="button">Force Merge</button>
+              <button id="dbgStartBattleButton" class="actionButton good" type="button">Start Battle</button>
+              <button id="dbgSkipWaveButton" class="actionButton warn" type="button">Skip Wave</button>
+              <button id="dbgKillEnemiesButton" class="actionButton danger" type="button">Kill All Enemies</button>
+            </div>
+          </div>
+
+          <div class="drawerSection">
+            <div class="drawerSectionTitle">Level JSON</div>
+            <div class="actionGrid">
+              <button id="dbgExportLevelButton" class="actionButton" type="button">Export Level JSON</button>
+              <button id="dbgImportLevelButton" class="actionButton" type="button">Import Level JSON</button>
+            </div>
+            <div class="field"><label for="dbgLevelJson">export/import level json</label><textarea id="dbgLevelJson"></textarea></div>
+          </div>
+
+          <div class="drawerSection">
+            <div class="drawerSectionTitle">Balance JSON</div>
+            <div class="actionGrid">
+              <button id="dbgExportBalanceButton" class="actionButton" type="button">Export Balance JSON</button>
+              <button id="dbgImportBalanceButton" class="actionButton" type="button">Import Balance JSON</button>
+            </div>
+            <div class="field"><label for="dbgBalanceJson">export/import balance json</label><textarea id="dbgBalanceJson"></textarea></div>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="bottomBar">
+      <section class="poolShell">
+        <div class="poolHeader">
+          <div class="poolTitle">
+            <strong>Worm Pool</strong>
+            <span id="poolSubtitle">Build phase: drag new worms to the base or onto an equal partner to merge.</span>
+          </div>
+          <div class="controlRow">
+            <button id="refreshButton" class="poolButton warn" type="button">Refresh Shop</button>
+            <button id="menuButton" class="poolButton" type="button">Menu</button>
+          </div>
+        </div>
+        <div id="poolCards" class="poolCards"></div>
+        <div class="poolFooter">
+          <div id="poolFooterText" class="statusRow"></div>
+        </div>
+      </section>
+      <div class="sideActions">
+        <button id="secondaryBattleButton" class="poolButton primary" type="button">Start Battle</button>
+        <button id="secondaryRefreshButton" class="poolButton" type="button">Refresh</button>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const CONFIG = {
+        GAME_TITLE: "Wormhold Merge",
+        VERSION: "0.1.0",
+        SAVE_KEY: "wormhold_merge_save_v1",
+        SCREENS: {
+          BOOT: "boot",
+          MENU: "menu",
+          LEVELS: "levels",
+          GAMEPLAY: "gameplay",
+          PAUSE: "pause",
+          RESULT: "result"
+        },
+        PHASES: {
+          BUILD: "build",
+          BATTLE: "battle"
+        },
+        MODES: {
+          campaign: { id: "campaign", label: "Campaign", implemented: true },
+          endless: { id: "endless", label: "Endless", implemented: false },
+          sandbox: { id: "sandbox", label: "Sandbox", implemented: false },
+          challenge: { id: "challenge", label: "Challenge", implemented: false }
+        },
+        CAMPAIGN_LEVELS: Array.from({ length: 6 }, (_, index) => ({
+          id: index + 1,
+          name: `Level ${index + 1}`,
+          waves: Math.min(8, 3 + index)
+        })),
+        THEME: {
+          playerRing: "#ffd98a",
+          enemyRing: "#8b5364",
+          playerCore: "#f7dba1",
+          enemyCore: "#6f4452",
+          bonusTypes: {
+            hp: { icon: "HP", color: "#7acda1" },
+            damage: { icon: "DMG", color: "#ffb06b" },
+            spawnSpeed: { icon: "SPD", color: "#73b9ff" },
+            range: { icon: "RNG", color: "#c29dff" },
+            attackSpeed: { icon: "AS", color: "#ffd768" },
+            unitMoveSpeed: { icon: "MV", color: "#78d8dc" },
+            armor: { icon: "ARM", color: "#9eb3c5" },
+            splashRadius: { icon: "AOE", color: "#ef91ff" }
+          }
+        },
+        DEFAULT_DESIGNER: {
+          baseFieldWidth: 8,
+          baseFieldHeight: 6,
+          totalFieldWidth: 8,
+          totalFieldHeight: 14,
+          baseRows: 6,
+          battleRows: 8,
+          initialPoolSize: 3,
+          refreshCostStart: 4,
+          refreshCostCurve: [4, 5, 6, 8, 10, 12, 15, 18, 22, 26, 30],
+          initialWormCount: 3,
+          startingCrystals: 11,
+          allowedWormTypes: ["barracks", "archer", "wall", "tower", "cavalry", "mage"],
+          allowedWormSizes: [2, 3],
+          mergeRules: "sameTypeSameSize",
+          bonusTileStartCount: 2,
+          bonusTileGrowthPerWave: 1,
+          allowedBonusTypes: ["hp", "damage", "spawnSpeed", "range", "attackSpeed", "unitMoveSpeed", "armor", "splashRadius"],
+          bonusValues: {
+            hp: 0.22,
+            damage: 0.16,
+            spawnSpeed: 0.18,
+            range: 0.18,
+            attackSpeed: 0.14,
+            unitMoveSpeed: 0.18,
+            armor: 0.12,
+            splashRadius: 0.2
+          },
+          barracksSpawnCooldown: 5,
+          towerBaseRange: 6.4,
+          archerUnitRange: 5.8,
+          cavalrySpeed: 4.3,
+          mageSplashRadius: 1.35,
+          wallBaseHP: 320,
+          waveDurationStart: 20,
+          waveDurationPerWave: 5,
+          waveDurationCap: 60,
+          enemyCompositionUnlockWave: {
+            melee: 1,
+            archer: 2,
+            cavalry: 4,
+            mage: 5
+          },
+          rebuildAfterWave: true,
+          canBuildingsBeDestroyedThisWave: true,
+          restoreBuildingsAfterWave: true,
+          battleSpeed: 1,
+          wormMoveMode: "slither",
+          seed: "wormhold",
+          baseCoreHp: 280
+        },
+        BALANCE: {
+          buildHintTime: 4.4,
+          dragSnap: 16,
+          slitherStepCooldown: 0.08,
+          pointerBias: 0.02,
+          mergePulseTime: 0.44,
+          wormBreathSpeed: 2.1,
+          maxParticles: 260,
+          baseShopSizeWeights: [
+            { size: 2, weight: 12 },
+            { size: 3, weight: 5 },
+            { size: 4, weight: 2 }
+          ],
+          sizePowerStep: 0.26,
+          sizeHpStep: 0.34,
+          sizeCooldownStep: 0.08,
+          playerPowerBias: 1,
+          enemyBudgetBase: 0.94,
+          enemyBudgetStep: 0.045,
+          enemyBudgetCap: 1.38,
+          enemyPackSpread: 0.8,
+          projectileHitRadius: 0.3,
+          targetRetargetTime: 0.22,
+          wormPlacementBonusFront: 0.1,
+          wormPlacementBonusCenter: 0.05,
+          rewardPadding: 3,
+          spawnPointJitter: 0.18
+        },
+        WORM_TYPES: {
+          barracks: {
+            id: "barracks",
+            label: "Barracks Worm",
+            short: "Barracks",
+            icon: "⚔️",
+            color: "#f79d64",
+            soft: "#ffe2c7",
+            dark: "#9a4f29",
+            behavior: "spawner",
+            unitId: "swordsman",
+            baseHp: 124,
+            spawnCooldown: 5,
+            powerWeight: 1
+          },
+          archer: {
+            id: "archer",
+            label: "Archer Worm",
+            short: "Archer",
+            icon: "🏹",
+            color: "#6aa7ff",
+            soft: "#dceaff",
+            dark: "#244f98",
+            behavior: "spawner",
+            unitId: "archer",
+            baseHp: 102,
+            spawnCooldown: 5.5,
+            powerWeight: 1.04
+          },
+          wall: {
+            id: "wall",
+            label: "Wall Worm",
+            short: "Wall",
+            icon: "🧱",
+            color: "#a2b4c5",
+            soft: "#ebf1f7",
+            dark: "#516375",
+            behavior: "wall",
+            baseHp: 320,
+            armor: 0.18,
+            powerWeight: 0.9
+          },
+          tower: {
+            id: "tower",
+            label: "Tower Worm",
+            short: "Tower",
+            icon: "🎯",
+            color: "#f0c15c",
+            soft: "#fff0bf",
+            dark: "#92712a",
+            behavior: "tower",
+            baseHp: 112,
+            damage: 15,
+            attackCooldown: 1.45,
+            range: 6.4,
+            projectileSpeed: 13,
+            splashRadius: 0,
+            powerWeight: 1.08
+          },
+          cavalry: {
+            id: "cavalry",
+            label: "Cavalry Worm",
+            short: "Cavalry",
+            icon: "🐎",
+            color: "#73d1b5",
+            soft: "#d8f9ee",
+            dark: "#277861",
+            behavior: "spawner",
+            unitId: "cavalry",
+            baseHp: 118,
+            spawnCooldown: 6,
+            powerWeight: 1.1
+          },
+          mage: {
+            id: "mage",
+            label: "Mage Worm",
+            short: "Mage",
+            icon: "✨",
+            color: "#c190ff",
+            soft: "#f0e2ff",
+            dark: "#6943a9",
+            behavior: "spawner",
+            unitId: "mage",
+            baseHp: 96,
+            spawnCooldown: 6.4,
+            powerWeight: 1.08
+          }
+        },
+        UNIT_TYPES: {
+          swordsman: {
+            id: "swordsman",
+            label: "Swordsman",
+            icon: "⚔️",
+            range: 0.8,
+            hp: 34,
+            damage: 10,
+            attackCooldown: 0.92,
+            speed: 3.1,
+            radius: 0.34,
+            attackStyle: "melee"
+          },
+          archer: {
+            id: "archer",
+            label: "Archer",
+            icon: "🏹",
+            range: 5.8,
+            hp: 24,
+            damage: 8,
+            attackCooldown: 1.16,
+            speed: 2.7,
+            radius: 0.31,
+            projectileSpeed: 12,
+            attackStyle: "projectile"
+          },
+          cavalry: {
+            id: "cavalry",
+            label: "Cavalry",
+            icon: "🐎",
+            range: 0.88,
+            hp: 48,
+            damage: 15,
+            attackCooldown: 1.04,
+            speed: 4.3,
+            radius: 0.38,
+            attackStyle: "melee"
+          },
+          mage: {
+            id: "mage",
+            label: "Mage",
+            icon: "✨",
+            range: 5.2,
+            hp: 22,
+            damage: 7,
+            attackCooldown: 1.34,
+            speed: 2.6,
+            radius: 0.32,
+            projectileSpeed: 10.5,
+            splashRadius: 1.35,
+            attackStyle: "projectile"
+          }
+        },
+        ENEMY_TYPES: {
+          melee: {
+            id: "melee",
+            label: "Raider",
+            icon: "⚔️",
+            range: 0.8,
+            hp: 34,
+            damage: 10,
+            attackCooldown: 0.98,
+            speed: 2.85,
+            radius: 0.34,
+            attackStyle: "melee"
+          },
+          archer: {
+            id: "archer",
+            label: "Skirmisher",
+            icon: "🏹",
+            range: 5.3,
+            hp: 24,
+            damage: 8,
+            attackCooldown: 1.2,
+            speed: 2.6,
+            radius: 0.31,
+            projectileSpeed: 11,
+            attackStyle: "projectile"
+          },
+          cavalry: {
+            id: "cavalry",
+            label: "Lancer",
+            icon: "🐎",
+            range: 0.86,
+            hp: 44,
+            damage: 14,
+            attackCooldown: 1.08,
+            speed: 3.9,
+            radius: 0.37,
+            attackStyle: "melee"
+          },
+          mage: {
+            id: "mage",
+            label: "Hexer",
+            icon: "✦",
+            range: 5,
+            hp: 21,
+            damage: 7,
+            attackCooldown: 1.4,
+            speed: 2.45,
+            radius: 0.31,
+            projectileSpeed: 9.8,
+            splashRadius: 1.2,
+            attackStyle: "projectile"
+          }
+        }
+      };
+
+      const TWO_PI = Math.PI * 2;
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+      function lerp(a, b, t) {
+        return a + (b - a) * t;
+      }
+      function easeOutCubic(t) {
+        return 1 - Math.pow(1 - t, 3);
+      }
+      function easeInOutQuad(t) {
+        return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) * 0.5;
+      }
+      function roundRectPath(ctx, x, y, w, h, r) {
+        const radius = Math.min(r, w * 0.5, h * 0.5);
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.arcTo(x + w, y, x + w, y + h, radius);
+        ctx.arcTo(x + w, y + h, x, y + h, radius);
+        ctx.arcTo(x, y + h, x, y, radius);
+        ctx.arcTo(x, y, x + w, y, radius);
+        ctx.closePath();
+      }
+      function deepClone(value) {
+        return JSON.parse(JSON.stringify(value));
+      }
+      function parseNumberList(text) {
+        return String(text || "")
+          .split(",")
+          .map((entry) => Number(entry.trim()))
+          .filter((entry) => Number.isFinite(entry));
+      }
+      function parseStringList(text) {
+        return String(text || "")
+          .split(",")
+          .map((entry) => entry.trim())
+          .filter(Boolean);
+      }
+      function formatWave(level, wave, total) {
+        return `L${level} W${wave}/${total}`;
+      }
+      function formatShortNumber(value) {
+        if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
+        return String(Math.round(value));
+      }
+      function pickWeighted(rng, items, getWeight) {
+        let total = 0;
+        for (const item of items) total += getWeight(item);
+        let roll = rng.range(0, total);
+        for (const item of items) {
+          roll -= getWeight(item);
+          if (roll <= 0) return item;
+        }
+        return items[items.length - 1];
+      }
+
+      class RNG {
+        constructor(seed) {
+          this.state = RNG.hash(seed);
+        }
+        static hash(seed) {
+          const text = String(seed ?? "seed");
+          let h = 2166136261 >>> 0;
+          for (let i = 0; i < text.length; i++) {
+            h ^= text.charCodeAt(i);
+            h = Math.imul(h, 16777619);
+          }
+          return h >>> 0 || 0x9e3779b9;
+        }
+        next() {
+          let x = this.state >>> 0;
+          x ^= x << 13;
+          x ^= x >>> 17;
+          x ^= x << 5;
+          this.state = x >>> 0;
+          return (this.state >>> 0) / 4294967296;
+        }
+        range(min, max) {
+          return min + (max - min) * this.next();
+        }
+        int(min, max) {
+          return Math.floor(this.range(min, max + 1));
+        }
+        chance(probability) {
+          return this.next() < probability;
+        }
+        pick(list) {
+          return list[this.int(0, list.length - 1)];
+        }
+        shuffle(list) {
+          for (let i = list.length - 1; i > 0; i--) {
+            const j = this.int(0, i);
+            [list[i], list[j]] = [list[j], list[i]];
+          }
+          return list;
+        }
+      }
+
+      class SaveManager {
+        constructor(key) {
+          this.key = key;
+          this.data = this.load();
+        }
+        load() {
+          try {
+            const parsed = JSON.parse(localStorage.getItem(this.key));
+            if (parsed && typeof parsed === "object") {
+              return {
+                highestUnlocked: Math.max(1, parsed.highestUnlocked || 1),
+                soundOn: parsed.soundOn !== false,
+                lastLevel: Math.max(1, parsed.lastLevel || 1),
+                designer: parsed.designer || null
+              };
+            }
+          } catch (error) {}
+          return {
+            highestUnlocked: 1,
+            soundOn: true,
+            lastLevel: 1,
+            designer: null
+          };
+        }
+        write() {
+          localStorage.setItem(this.key, JSON.stringify(this.data));
+        }
+        setHighestUnlocked(level) {
+          this.data.highestUnlocked = Math.max(this.data.highestUnlocked, level);
+          this.write();
+        }
+        setSoundOn(value) {
+          this.data.soundOn = !!value;
+          this.write();
+        }
+        setLastLevel(level) {
+          this.data.lastLevel = Math.max(1, level);
+          this.write();
+        }
+        setDesigner(data) {
+          this.data.designer = deepClone(data);
+          this.write();
+        }
+      }
+
+      class AudioManager {
+        constructor(enabled) {
+          this.enabled = enabled;
+          this.ctx = null;
+        }
+        setEnabled(value) {
+          this.enabled = !!value;
+        }
+        unlock() {
+          if (!this.enabled || this.ctx) return;
+          try {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+          } catch (error) {
+            this.ctx = null;
+          }
+        }
+        beep(frequency, duration, type = "sine", gain = 0.025) {
+          if (!this.enabled) return;
+          this.unlock();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const amp = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(frequency, now);
+          amp.gain.setValueAtTime(gain, now);
+          amp.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+          osc.connect(amp);
+          amp.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + duration);
+        }
+        ui() { this.beep(620, 0.06, "triangle", 0.02); }
+        merge() { this.beep(520, 0.12, "triangle", 0.03); this.beep(720, 0.18, "sine", 0.018); }
+        hit() { this.beep(180, 0.05, "square", 0.015); }
+        spawn() { this.beep(420, 0.08, "sine", 0.015); }
+        win() { this.beep(640, 0.18, "triangle", 0.03); this.beep(860, 0.22, "triangle", 0.026); }
+        lose() { this.beep(230, 0.2, "sawtooth", 0.02); }
+      }
+
+      class Renderer {
+        constructor(game) {
+          this.game = game;
+          this.canvas = game.canvas;
+          this.ctx = this.canvas.getContext("2d");
+          this.metrics = {
+            width: 1,
+            height: 1,
+            boardX: 0,
+            boardY: 0,
+            boardW: 1,
+            boardH: 1,
+            cell: 10,
+            cellX: 10,
+            cellY: 10
+          };
+          if ("ResizeObserver" in window) {
+            this.resizeObserver = new ResizeObserver(() => this.resize());
+            this.resizeObserver.observe(this.canvas);
+          }
+          window.addEventListener("resize", () => this.resize());
+          window.addEventListener("orientationchange", () => this.resize());
+          this.resize();
+          setTimeout(() => this.resize(), 0);
+        }
+        resize() {
+          const ratio = window.devicePixelRatio || 1;
+          const rect = this.canvas.getBoundingClientRect();
+          const width = Math.max(1, rect.width || this.canvas.parentElement.clientWidth || 320);
+          const height = Math.max(1, rect.height || this.canvas.parentElement.clientHeight || 520);
+          this.canvas.width = Math.floor(width * ratio);
+          this.canvas.height = Math.floor(height * ratio);
+          this.ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+          const board = this.game.getBoardConfig();
+          const paddingX = clamp(width * 0.03, 12, 34);
+          const paddingY = clamp(height * 0.05, 18, 42);
+          const cellY = Math.min((height - paddingY * 2) / board.totalFieldHeight, 54);
+          const widthCapacity = (width - paddingX * 2) / board.totalFieldWidth;
+          const desktopBoost = width >= 1400 ? 1.28 : width >= 1100 ? 1.16 : 1;
+          const cellX = Math.min(widthCapacity, cellY * desktopBoost);
+          const boardW = cellX * board.totalFieldWidth;
+          const boardH = cellY * board.totalFieldHeight;
+          this.metrics = {
+            width,
+            height,
+            boardX: (width - boardW) * 0.5,
+            boardY: (height - boardH) * 0.5,
+            boardW,
+            boardH,
+            cell: Math.min(cellX, cellY),
+            cellX,
+            cellY
+          };
+        }
+        screenToWorld(clientX, clientY) {
+          const rect = this.canvas.getBoundingClientRect();
+          return {
+            x: (clientX - rect.left),
+            y: (clientY - rect.top)
+          };
+        }
+        screenToBaseCell(clientX, clientY) {
+          const point = this.screenToWorld(clientX, clientY);
+          const board = this.game.getBoardConfig();
+          const col = Math.floor((point.x - this.metrics.boardX) / this.metrics.cellX);
+          const totalRow = Math.floor((point.y - this.metrics.boardY) / this.metrics.cellY);
+          if (col < 0 || col >= board.totalFieldWidth) return null;
+          if (totalRow < board.battleRows || totalRow >= board.totalFieldHeight) return null;
+          return {
+            x: col,
+            y: totalRow - board.battleRows
+          };
+        }
+        cellRect(col, totalRow) {
+          return {
+            x: this.metrics.boardX + col * this.metrics.cellX,
+            y: this.metrics.boardY + totalRow * this.metrics.cellY,
+            size: this.metrics.cell
+          };
+        }
+        cellCenter(col, totalRow) {
+          return {
+            x: this.metrics.boardX + (col + 0.5) * this.metrics.cellX,
+            y: this.metrics.boardY + (totalRow + 0.5) * this.metrics.cellY
+          };
+        }
+        worldToScreen(worldX, worldY) {
+          return {
+            x: this.metrics.boardX + worldX * this.metrics.cellX,
+            y: this.metrics.boardY + worldY * this.metrics.cellY
+          };
+        }
+        render(ts) {
+          const ctx = this.ctx;
+          const state = this.game.state;
+          const board = this.game.getBoardConfig();
+          const m = this.metrics;
+          ctx.clearRect(0, 0, m.width, m.height);
+
+          const bg = ctx.createLinearGradient(0, 0, 0, m.height);
+          bg.addColorStop(0, "#eff7ff");
+          bg.addColorStop(0.55, "#f5fbff");
+          bg.addColorStop(1, "#fff4db");
+          ctx.fillStyle = bg;
+          ctx.fillRect(0, 0, m.width, m.height);
+
+          ctx.save();
+          roundRectPath(ctx, m.boardX - 6, m.boardY - 6, m.boardW + 12, m.boardH + 12, Math.min(32, m.cell));
+          ctx.fillStyle = "rgba(255,255,255,.78)";
+          ctx.shadowColor = "rgba(22,49,79,.14)";
+          ctx.shadowBlur = 26;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+          const battleY = m.boardY;
+          const battleH = board.battleRows * m.cellY;
+          const baseY = m.boardY + board.battleRows * m.cellY;
+          const baseH = board.baseRows * m.cellY;
+
+          const battleGrad = ctx.createLinearGradient(0, battleY, 0, battleY + battleH);
+          battleGrad.addColorStop(0, "#d9edff");
+          battleGrad.addColorStop(1, "#f7fbff");
+          ctx.fillStyle = battleGrad;
+          roundRectPath(ctx, m.boardX, battleY, m.boardW, m.boardH, Math.min(28, m.cell * 0.7));
+          ctx.fill();
+
+          const baseGrad = ctx.createLinearGradient(0, baseY, 0, baseY + baseH);
+          baseGrad.addColorStop(0, "#fff4d1");
+          baseGrad.addColorStop(1, "#f6dea8");
+          ctx.fillStyle = baseGrad;
+          roundRectPath(ctx, m.boardX + 2, baseY, m.boardW - 4, baseH, Math.min(28, m.cell * 0.7));
+          ctx.fill();
+
+          this.renderGrid(ctx, board);
+          this.renderZoneLabels(ctx, board);
+          this.renderBonusTiles(ctx, ts);
+          this.renderWaveProgress(ctx, board);
+          this.renderWorms(ctx, ts, board);
+          this.renderUnits(ctx, ts);
+          this.renderProjectiles(ctx);
+          this.renderParticles(ctx, ts);
+          this.renderDragGhost(ctx, ts, board);
+          ctx.restore();
+        }
+        renderGrid(ctx, board) {
+          const m = this.metrics;
+          ctx.lineWidth = 1;
+          ctx.strokeStyle = "rgba(22,49,79,.08)";
+          for (let x = 0; x <= board.totalFieldWidth; x++) {
+            const px = m.boardX + x * m.cellX;
+            ctx.beginPath();
+            ctx.moveTo(px, m.boardY);
+            ctx.lineTo(px, m.boardY + m.boardH);
+            ctx.stroke();
+          }
+          for (let y = 0; y <= board.totalFieldHeight; y++) {
+            const py = m.boardY + y * m.cellY;
+            ctx.beginPath();
+            ctx.moveTo(m.boardX, py);
+            ctx.lineTo(m.boardX + m.boardW, py);
+            ctx.stroke();
+          }
+          ctx.strokeStyle = "rgba(22,49,79,.14)";
+          ctx.lineWidth = 2;
+          const splitY = m.boardY + board.battleRows * m.cellY;
+          ctx.beginPath();
+          ctx.moveTo(m.boardX, splitY);
+          ctx.lineTo(m.boardX + m.boardW, splitY);
+          ctx.stroke();
+        }
+        renderZoneLabels(ctx, board) {
+          const m = this.metrics;
+          ctx.save();
+          ctx.fillStyle = "rgba(22,49,79,.44)";
+          ctx.font = `${Math.max(11, m.cell * 0.22)}px Trebuchet MS`;
+          ctx.textAlign = "left";
+          ctx.fillText("BATTLE ZONE", m.boardX + m.cellX * 0.18, m.boardY + m.cellY * 0.6);
+          ctx.fillText("BASE GRID", m.boardX + m.cellX * 0.18, m.boardY + board.battleRows * m.cellY + m.cellY * 0.68);
+          ctx.restore();
+        }
+        renderWaveProgress(ctx, board) {
+          const m = this.metrics;
+          const state = this.game.state;
+          if (state.phase !== CONFIG.PHASES.BATTLE || !state.wavePlan) return;
+          const width = m.boardW - m.cellX * 0.35;
+          const x = m.boardX + m.cellX * 0.18;
+          const y = m.boardY + m.cellY * 0.36;
+          const p = clamp(state.battleTime / Math.max(1, state.wavePlan.targetDuration), 0, 1);
+          roundRectPath(ctx, x, y, width, m.cellY * 0.22, m.cellY * 0.1);
+          ctx.fillStyle = "rgba(255,255,255,.64)";
+          ctx.fill();
+          roundRectPath(ctx, x, y, width * p, m.cellY * 0.22, m.cellY * 0.1);
+          ctx.fillStyle = "rgba(244,178,79,.9)";
+          ctx.fill();
+        }
+        renderBonusTiles(ctx, ts) {
+          const board = this.game.getBoardConfig();
+          const m = this.metrics;
+          for (const tile of this.game.state.bonusTiles) {
+            const totalRow = board.battleRows + tile.y;
+            const rect = this.cellRect(tile.x, totalRow);
+            const meta = CONFIG.THEME.bonusTypes[tile.type];
+            const pulse = 0.55 + Math.sin(ts * 0.004 + tile.x * 1.2 + tile.y) * 0.14;
+            ctx.save();
+            roundRectPath(ctx, rect.x + 3, rect.y + 3, rect.size - 6, rect.size - 6, rect.size * 0.22);
+            ctx.fillStyle = meta.color + "33";
+            ctx.fill();
+            ctx.strokeStyle = meta.color;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.globalAlpha = pulse;
+            roundRectPath(ctx, rect.x + 8, rect.y + 8, rect.size - 16, rect.size - 16, rect.size * 0.18);
+            ctx.fillStyle = meta.color + "44";
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = "rgba(18,34,56,.86)";
+            ctx.font = `700 ${Math.max(9, rect.size * 0.18)}px Trebuchet MS`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(meta.icon, rect.x + rect.size * 0.5, rect.y + rect.size * 0.54);
+            ctx.restore();
+          }
+        }
+        renderWorms(ctx, ts, board) {
+          {
+            const state = this.game.state;
+            const drag = this.game.input.drag;
+            const mergeReady = this.game.getMergeReadyMap();
+            const worms = state.worms.slice().sort((a, b) => (drag && drag.kind === "board" && drag.sourceId === a.id ? 1 : 0) - (drag && drag.kind === "board" && drag.sourceId === b.id ? 1 : 0));
+            for (const worm of worms) {
+              if (!worm || !worm.cells || !worm.cells.length || !Number.isFinite(worm.centerX) || !Number.isFinite(worm.centerY)) continue;
+              const type = CONFIG.WORM_TYPES[worm.type];
+              const display = this.game.getWormDisplayState(worm, ts);
+              if (!display.cells || !display.cells.length || display.cells.some((cell) => !Number.isFinite(cell.x) || !Number.isFinite(cell.y))) continue;
+              const cellX = this.metrics.cellX;
+              const cellY = this.metrics.cellY;
+              const segmentW = cellX * 0.88;
+              const segmentH = cellY * 0.72;
+              const halfW = segmentW * 0.5;
+              const halfH = segmentH * 0.5;
+              const breath = 1 + Math.sin(ts * 0.001 * CONFIG.BALANCE.wormBreathSpeed + worm.seed) * 0.03;
+              const mergePulse = worm.mergePulse > 0 ? 1 + easeOutCubic(1 - worm.mergePulse / CONFIG.BALANCE.mergePulseTime) * 0.12 : 1;
+              const finalScale = breath * mergePulse;
+              const cx = this.metrics.boardX + worm.centerX * cellX;
+              const cy = this.metrics.boardY + (board.battleRows + worm.centerY) * cellY;
+              const haloAlpha = worm.destroyed ? 0.14 : mergeReady.has(worm.id) ? 0.56 : worm.flash > 0 ? 0.44 : 0.18;
+              const haloColor = mergeReady.has(worm.id) ? "rgba(244,178,79,.8)" : worm.flash > 0 ? "rgba(255,120,120,.8)" : "rgba(255,255,255,.66)";
+              ctx.save();
+              ctx.translate(cx, cy);
+              ctx.scale(finalScale, finalScale);
+              ctx.translate(-cx, -cy);
+              ctx.shadowColor = type.color;
+              ctx.shadowBlur = worm.destroyed ? 0 : 18;
+              for (let i = 1; i < display.cells.length; i++) {
+                const prev = display.cells[i - 1];
+                const next = display.cells[i];
+                const from = this.cellCenter(prev.x, board.battleRows + prev.y);
+                const to = this.cellCenter(next.x, board.battleRows + next.y);
+                const dx = to.x - from.x;
+                const dy = to.y - from.y;
+                const length = Math.hypot(dx, dy);
+                const angle = Math.atan2(dy, dx);
+                ctx.save();
+                ctx.translate(from.x, from.y);
+                ctx.rotate(angle);
+                const connectorHeight = segmentH * 0.64;
+                roundRectPath(ctx, cellX * 0.08, -connectorHeight * 0.5, length - cellX * 0.16, connectorHeight, connectorHeight * 0.5);
+                ctx.globalAlpha = 0.92;
+                ctx.fillStyle = worm.destroyed ? "rgba(160,172,186,.88)" : type.color;
+                ctx.fill();
+                ctx.restore();
+              }
+              ctx.shadowBlur = 0;
+              for (let i = 0; i < display.cells.length; i++) {
+                const segment = display.cells[i];
+                const center = this.cellCenter(segment.x, board.battleRows + segment.y);
+                if (!Number.isFinite(center.x) || !Number.isFinite(center.y)) continue;
+                const rectX = center.x - halfW;
+                const rectY = center.y - halfH;
+                ctx.globalAlpha = haloAlpha;
+                ctx.strokeStyle = haloColor;
+                ctx.lineWidth = 2.5;
+                roundRectPath(ctx, rectX - 2, rectY - 2, segmentW + 4, segmentH + 4, segmentH * 0.48);
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+                const fill = ctx.createLinearGradient(rectX, rectY, rectX, rectY + segmentH);
+                fill.addColorStop(0, type.soft);
+                fill.addColorStop(1, type.color);
+                ctx.fillStyle = worm.destroyed ? "rgba(160,172,186,.88)" : fill;
+                roundRectPath(ctx, rectX, rectY, segmentW, segmentH, segmentH * 0.46);
+                ctx.fill();
+                ctx.fillStyle = "rgba(255,255,255,.28)";
+                roundRectPath(ctx, rectX + segmentW * 0.14, rectY + segmentH * 0.08, segmentW * 0.72, segmentH * 0.18, segmentH * 0.12);
+                ctx.fill();
+                ctx.fillStyle = "rgba(18,34,56,.9)";
+                ctx.font = `${Math.max(13, this.metrics.cell * 0.34)}px Trebuchet MS`;
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                const icon = i === 0 || i === display.cells.length - 1 || i === Math.floor((display.cells.length - 1) * 0.5) ? type.icon : ".";
+                ctx.fillText(icon, center.x, center.y + 1);
+              }
+              ctx.fillStyle = "rgba(18,34,56,.9)";
+              ctx.font = `700 ${Math.max(9, this.metrics.cell * 0.2)}px Trebuchet MS`;
+              ctx.textAlign = "left";
+              ctx.fillText(`${type.short} ${worm.size}`, this.metrics.boardX + worm.x * cellX + 8, this.metrics.boardY + (board.battleRows + worm.maxY + 1) * cellY + Math.max(8, this.metrics.cell * 0.1));
+              if (this.game.state.phase === CONFIG.PHASES.BATTLE) {
+                const spanW = Math.max(cellX * 1.4, (worm.maxX - worm.x + 1) * cellX * 0.78);
+                const hpWidth = Math.max(this.metrics.cell * 1.2, spanW);
+                const hp = clamp(worm.currentHp / Math.max(1, worm.maxHp), 0, 1);
+                roundRectPath(ctx, cx - hpWidth * 0.5, cy - cellY * 0.62, hpWidth, 5, 3);
+                ctx.fillStyle = "rgba(18,34,56,.18)";
+                ctx.fill();
+                roundRectPath(ctx, cx - hpWidth * 0.5, cy - cellY * 0.62, hpWidth * hp, 5, 3);
+                ctx.fillStyle = worm.destroyed ? "rgba(160,172,186,.8)" : "#6be2a4";
+                ctx.fill();
+              }
+              ctx.restore();
+            }
+            return;
+          }
+          const state = this.game.state;
+          const drag = this.game.input.drag;
+          const mergeReady = this.game.getMergeReadyMap();
+          const worms = state.worms.slice().sort((a, b) => (drag && drag.kind === "board" && drag.sourceId === a.id ? 1 : 0) - (drag && drag.kind === "board" && drag.sourceId === b.id ? 1 : 0));
+          for (const worm of worms) {
+            const type = CONFIG.WORM_TYPES[worm.type];
+            const display = this.game.getWormDisplayState(worm, ts);
+            const rectX = this.metrics.boardX + display.x * this.metrics.cell;
+            const rectY = this.metrics.boardY + (board.battleRows + display.y) * this.metrics.cell;
+            const w = worm.size * this.metrics.cell;
+            const h = this.metrics.cell;
+            const breath = 1 + Math.sin(ts * 0.001 * CONFIG.BALANCE.wormBreathSpeed + worm.seed) * 0.03;
+            const mergePulse = worm.mergePulse > 0 ? 1 + easeOutCubic(1 - worm.mergePulse / CONFIG.BALANCE.mergePulseTime) * 0.12 : 1;
+            const finalScale = breath * mergePulse;
+            const cx = rectX + w * 0.5;
+            const cy = rectY + h * 0.5;
+            const haloAlpha = worm.destroyed ? 0.14 : mergeReady.has(worm.id) ? 0.56 : worm.flash > 0 ? 0.44 : 0.18;
+            const haloColor = mergeReady.has(worm.id) ? "rgba(244,178,79,.8)" : worm.flash > 0 ? "rgba(255,120,120,.8)" : "rgba(255,255,255,.66)";
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.scale(finalScale, finalScale);
+            ctx.translate(-cx, -cy);
+            ctx.shadowColor = type.color;
+            ctx.shadowBlur = worm.destroyed ? 0 : 16;
+            ctx.strokeStyle = haloColor;
+            ctx.lineWidth = 2.5;
+            roundRectPath(ctx, rectX + 2, rectY + 3, w - 4, h - 6, h * 0.46);
+            ctx.globalAlpha = haloAlpha;
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+            const fill = ctx.createLinearGradient(rectX, rectY, rectX, rectY + h);
+            fill.addColorStop(0, type.soft);
+            fill.addColorStop(1, type.color);
+            ctx.fillStyle = worm.destroyed ? "rgba(160,172,186,.88)" : fill;
+            roundRectPath(ctx, rectX + 4, rectY + 5, w - 8, h - 10, h * 0.42);
+            ctx.fill();
+            ctx.fillStyle = "rgba(255,255,255,.28)";
+            roundRectPath(ctx, rectX + 9, rectY + 9, w - 18, h * 0.2, h * 0.12);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            for (let i = 0; i < worm.size; i++) {
+              const segX = rectX + i * this.metrics.cell + 4;
+              const segW = this.metrics.cell - 8;
+              ctx.strokeStyle = "rgba(255,255,255,.24)";
+              ctx.lineWidth = 1.5;
+              roundRectPath(ctx, segX, rectY + 6, segW, h - 12, h * 0.34);
+              ctx.stroke();
+              ctx.fillStyle = "rgba(18,34,56,.9)";
+              ctx.font = `${Math.max(13, this.metrics.cell * 0.34)}px Trebuchet MS`;
+              ctx.textAlign = "center";
+              ctx.textBaseline = "middle";
+              const icon = i === Math.floor((worm.size - 1) * 0.5) ? type.icon : "•";
+              ctx.fillText(icon, segX + segW * 0.5, rectY + h * 0.53);
+            }
+            ctx.fillStyle = "rgba(18,34,56,.9)";
+            ctx.font = `700 ${Math.max(9, this.metrics.cell * 0.2)}px Trebuchet MS`;
+            ctx.textAlign = "left";
+            ctx.fillText(`${type.short} ${worm.size}`, rectX + 8, rectY + h + Math.max(10, this.metrics.cell * 0.2));
+            if (this.game.state.phase === CONFIG.PHASES.BATTLE) {
+              const hpWidth = Math.max(this.metrics.cell * 1.2, w * 0.72);
+              const hp = clamp(worm.currentHp / Math.max(1, worm.maxHp), 0, 1);
+              roundRectPath(ctx, rectX + (w - hpWidth) * 0.5, rectY - 9, hpWidth, 5, 3);
+              ctx.fillStyle = "rgba(18,34,56,.18)";
+              ctx.fill();
+              roundRectPath(ctx, rectX + (w - hpWidth) * 0.5, rectY - 9, hpWidth * hp, 5, 3);
+              ctx.fillStyle = worm.destroyed ? "rgba(160,172,186,.8)" : "#6be2a4";
+              ctx.fill();
+            }
+            ctx.restore();
+          }
+        }
+        renderUnits(ctx, ts) {
+          const m = this.metrics;
+          for (const unit of this.game.state.units) {
+            if (!unit.alive) continue;
+            const px = m.boardX + unit.x * m.cellX;
+            const py = m.boardY + unit.y * m.cellY;
+            const radius = unit.radius * m.cell;
+            const pulse = 1 + Math.sin(ts * 0.01 + unit.seed) * 0.04;
+            const colorA = unit.faction === "player" ? "#ffd697" : "#8d5968";
+            const colorB = unit.faction === "player" ? "#f2a755" : "#5a3543";
+            ctx.save();
+            ctx.shadowColor = unit.faction === "player" ? "rgba(242,167,85,.32)" : "rgba(90,53,67,.32)";
+            ctx.shadowBlur = 12;
+            ctx.fillStyle = colorB;
+            ctx.beginPath();
+            ctx.ellipse(px, py + radius * 0.2, radius * 1.02, radius * 0.9, 0, 0, TWO_PI);
+            ctx.fill();
+            const grad = ctx.createLinearGradient(px, py - radius, px, py + radius);
+            grad.addColorStop(0, colorA);
+            grad.addColorStop(1, colorB);
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(px, py - Math.sin(ts * 0.012 + unit.seed) * radius * 0.2, radius * pulse, 0, TWO_PI);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = unit.faction === "player" ? "rgba(255,246,214,.95)" : "rgba(212,187,195,.9)";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(px, py - radius * 0.12, radius * 0.64, 0, TWO_PI);
+            ctx.stroke();
+            ctx.fillStyle = "rgba(15,27,44,.92)";
+            ctx.font = `${Math.max(10, radius * 1.08)}px Trebuchet MS`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(unit.icon, px, py - radius * 0.08);
+            const hp = clamp(unit.hp / Math.max(1, unit.maxHp), 0, 1);
+            if (hp < 1) {
+              roundRectPath(ctx, px - radius, py - radius - 10, radius * 2, 4, 3);
+              ctx.fillStyle = "rgba(18,34,56,.16)";
+              ctx.fill();
+              roundRectPath(ctx, px - radius, py - radius - 10, radius * 2 * hp, 4, 3);
+              ctx.fillStyle = unit.faction === "player" ? "#6be2a4" : "#ff9aa3";
+              ctx.fill();
+            }
+            ctx.restore();
+          }
+          const core = this.game.state.core;
+          if (core) {
+            const px = m.boardX + core.x * m.cellX;
+            const py = m.boardY + core.y * m.cellY;
+            const r = m.cell * 0.44;
+            ctx.save();
+            ctx.shadowColor = "rgba(22,49,79,.14)";
+            ctx.shadowBlur = 16;
+            const grad = ctx.createLinearGradient(px, py - r, px, py + r);
+            grad.addColorStop(0, "#fff8da");
+            grad.addColorStop(1, "#eab756");
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(px, py, r, 0, TWO_PI);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = "rgba(18,34,56,.94)";
+            ctx.font = `${Math.max(13, r * 0.95)}px Trebuchet MS`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("🏰", px, py + 1);
+            const hp = clamp(core.hp / Math.max(1, core.maxHp), 0, 1);
+            roundRectPath(ctx, px - r, py + r + 6, r * 2, 5, 3);
+            ctx.fillStyle = "rgba(18,34,56,.16)";
+            ctx.fill();
+            roundRectPath(ctx, px - r, py + r + 6, r * 2 * hp, 5, 3);
+            ctx.fillStyle = "#6be2a4";
+            ctx.fill();
+            ctx.restore();
+          }
+        }
+        renderProjectiles(ctx) {
+          const m = this.metrics;
+          for (const projectile of this.game.state.projectiles) {
+            const px = m.boardX + projectile.x * m.cellX;
+            const py = m.boardY + projectile.y * m.cellY;
+            ctx.save();
+            ctx.fillStyle = projectile.color;
+            ctx.shadowColor = projectile.color;
+            ctx.shadowBlur = 12;
+            ctx.beginPath();
+            ctx.arc(px, py, m.cell * 0.11 * projectile.scale, 0, TWO_PI);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.restore();
+          }
+        }
+        renderParticles(ctx, ts) {
+          const m = this.metrics;
+          const particles = this.game.state.particles;
+          for (let i = particles.length - 1; i >= 0; i--) {
+            const particle = particles[i];
+            const progress = clamp((ts - particle.start) / particle.life, 0, 1);
+            if (progress >= 1) {
+              particles.splice(i, 1);
+              continue;
+            }
+            ctx.save();
+            ctx.globalAlpha = 1 - progress;
+            ctx.fillStyle = particle.color;
+            ctx.beginPath();
+            ctx.arc(
+              m.boardX + (particle.x + particle.vx * progress) * m.cellX,
+              m.boardY + (particle.y + particle.vy * progress + particle.gravity * progress * progress) * m.cellY,
+              particle.size * (1 - progress * 0.35),
+              0,
+              TWO_PI
+            );
+            ctx.fill();
+            ctx.restore();
+          }
+        }
+        renderDragGhost(ctx, ts, board) {
+          const drag = this.game.input.drag;
+          if (!drag) return;
+          const candidate = drag.candidate;
+          if (!candidate) return;
+          if (candidate.mode === "slither") return;
+          if (candidate.mode === "merge" && candidate.target) {
+            const target = candidate.target;
+            const totalRow = board.battleRows + target.y;
+            const rect = this.cellRect(target.x, totalRow);
+            const width = target.size * this.metrics.cell;
+            ctx.save();
+            ctx.strokeStyle = `rgba(244,178,79,${0.55 + Math.sin(ts * 0.014) * 0.18})`;
+            ctx.lineWidth = 4;
+            roundRectPath(ctx, rect.x + 2, rect.y + 2, width - 4, this.metrics.cell - 4, this.metrics.cell * 0.45);
+            ctx.stroke();
+            ctx.restore();
+          }
+          if (candidate.x == null || candidate.y == null) return;
+          const typeId = drag.worm.type;
+          const type = CONFIG.WORM_TYPES[typeId];
+          const rectX = this.metrics.boardX + candidate.x * this.metrics.cell;
+          const rectY = this.metrics.boardY + (board.battleRows + candidate.y) * this.metrics.cell;
+          const width = drag.previewSize * this.metrics.cell;
+          const valid = candidate.mode !== "invalid";
+          ctx.save();
+          ctx.globalAlpha = 0.72;
+          ctx.strokeStyle = valid ? "rgba(44,179,122,.88)" : "rgba(235,110,110,.9)";
+          ctx.lineWidth = 3;
+          ctx.setLineDash([9, 6]);
+          roundRectPath(ctx, rectX + 2, rectY + 2, width - 4, this.metrics.cell - 4, this.metrics.cell * 0.42);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = type.color + (valid ? "33" : "22");
+          roundRectPath(ctx, rectX + 5, rectY + 5, width - 10, this.metrics.cell - 10, this.metrics.cell * 0.36);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      class InputManager {
+        constructor(game) {
+          this.game = game;
+          this.drag = null;
+          this.pointerBoard = null;
+          this.stepCooldown = 0;
+          this.bind();
+        }
+        bind() {
+          this.game.canvas.addEventListener("pointerdown", (event) => this.onCanvasPointerDown(event));
+          document.addEventListener("pointermove", (event) => this.onPointerMove(event));
+          document.addEventListener("pointerup", (event) => this.onPointerUp(event));
+          document.addEventListener("pointercancel", (event) => this.onPointerUp(event));
+          this.game.refs.poolCards.addEventListener("pointerdown", (event) => this.onPoolPointerDown(event));
+          window.addEventListener("keydown", (event) => this.onKeyDown(event));
+        }
+        onKeyDown(event) {
+          if (event.key === "Escape") {
+            if (this.game.state.debugOpen) {
+              this.game.toggleDebug(false);
+              return;
+            }
+            if (this.game.state.screen === CONFIG.SCREENS.GAMEPLAY) {
+              this.game.togglePause();
+            }
+          }
+          if (event.key === " " && this.game.state.screen === CONFIG.SCREENS.GAMEPLAY) {
+            event.preventDefault();
+            if (this.game.state.phase === CONFIG.PHASES.BUILD) this.game.startBattle();
+          }
+          if (event.key.toLowerCase() === "d") {
+            this.game.toggleDebug(!this.game.state.debugOpen);
+          }
+        }
+        onPoolPointerDown(event) {
+          if (this.game.state.screen !== CONFIG.SCREENS.GAMEPLAY || this.game.state.phase !== CONFIG.PHASES.BUILD) return;
+          const card = event.target.closest(".poolCard");
+          if (!card) return;
+          const worm = this.game.state.pool.find((entry) => entry.id === card.dataset.id);
+          if (!worm) return;
+          event.preventDefault();
+          this.game.audio.unlock();
+          this.drag = {
+            pointerId: event.pointerId,
+            kind: "pool",
+            sourceId: worm.id,
+            worm: deepClone(worm),
+            anchor: Math.floor(worm.size * 0.5),
+            candidate: null,
+            previewSize: worm.size
+          };
+          card.classList.add("dragging");
+          this.updateCandidate(event.clientX, event.clientY);
+        }
+        onCanvasPointerDown(event) {
+          if (this.game.state.screen !== CONFIG.SCREENS.GAMEPLAY || this.game.state.phase !== CONFIG.PHASES.BUILD) return;
+          const cell = this.game.renderer.screenToBaseCell(event.clientX, event.clientY);
+          if (!cell) return;
+          const worm = this.game.getWormAtBaseCell(cell.x, cell.y);
+          if (!worm) return;
+          this.game.audio.unlock();
+          const activeEnd = this.game.pickClosestWormEnd(worm, cell);
+          this.drag = {
+            pointerId: event.pointerId,
+            kind: "board",
+            sourceId: worm.id,
+            worm: deepClone(worm),
+            activeEnd,
+            candidate: null,
+            previewSize: worm.size
+          };
+          this.pointerBoard = { x: cell.x + 0.5, y: cell.y + 0.5 };
+          this.stepCooldown = 0;
+          this.updateCandidate(event.clientX, event.clientY);
+        }
+        onPointerMove(event) {
+          if (!this.drag || event.pointerId !== this.drag.pointerId) return;
+          this.updateCandidate(event.clientX, event.clientY);
+        }
+        onPointerUp(event) {
+          if (!this.drag || event.pointerId !== this.drag.pointerId) return;
+          const current = this.drag;
+          this.drag = null;
+          this.pointerBoard = null;
+          this.stepCooldown = 0;
+          this.game.clearPoolDragging();
+          this.game.commitDrag(current);
+        }
+        updateCandidate(clientX, clientY) {
+          const drag = this.drag;
+          if (!drag) return;
+          const cell = this.game.renderer.screenToBaseCell(clientX, clientY);
+          if (!cell) {
+            drag.candidate = { mode: "invalid", x: null, y: null };
+            return;
+          }
+          this.pointerBoard = { x: cell.x + 0.5, y: cell.y + 0.5 };
+          if (drag.kind === "board" && this.game.designer.wormMoveMode === "slither") {
+            drag.candidate = { mode: "slither", x: cell.x, y: cell.y };
+            return;
+          }
+          const hover = this.game.getWormAtBaseCell(cell.x, cell.y, drag.kind === "board" ? drag.sourceId : null);
+          if (hover && hover.type === drag.worm.type && hover.size === drag.worm.size) {
+            const placement = this.game.findMergePlacement(drag.worm, hover, drag.kind === "board" ? drag.sourceId : null);
+            if (placement) {
+              drag.previewSize = hover.size + 1;
+              drag.candidate = {
+                mode: "merge",
+                target: hover,
+                placement
+              };
+              return;
+            }
+          }
+          drag.previewSize = drag.worm.size;
+          const anchor = Number.isFinite(drag.anchor) ? drag.anchor : Math.floor(drag.worm.size * 0.5);
+          const x = Math.round(cell.x - anchor);
+          const y = cell.y;
+          const valid = this.game.canPlaceWorm(drag.worm, x, y, new Set(drag.kind === "board" ? [drag.sourceId] : []));
+          drag.candidate = {
+            mode: valid ? "place" : "invalid",
+            x,
+            y
+          };
+        }
+        update(dt) {
+          if (!this.drag || this.drag.kind !== "board" || this.game.designer.wormMoveMode !== "slither" || !this.pointerBoard) return;
+          this.stepCooldown = Math.max(0, this.stepCooldown - dt);
+          if (this.stepCooldown > 0) return;
+          const direction = this.game.getSlitherDirection(this.drag.sourceId, this.drag.activeEnd, this.pointerBoard);
+          if (!direction) return;
+          const moved = this.game.stepSlitherWorm(this.drag.sourceId, direction, this.drag.activeEnd);
+          this.stepCooldown = moved ? CONFIG.BALANCE.slitherStepCooldown : CONFIG.BALANCE.slitherStepCooldown * 0.7;
+        }
+      }
+
+      class UIManager {
+        constructor(game) {
+          this.game = game;
+          this.refs = game.refs;
+          this.bind();
+        }
+        bind() {
+          const refs = this.refs;
+          refs.menuPlayButton.addEventListener("click", () => this.game.openLevelSelect());
+          refs.menuContinueButton.addEventListener("click", () => this.game.startLevel(this.game.save.data.lastLevel || 1));
+          refs.menuSandboxButton.addEventListener("click", () => {
+            this.game.toggleDebug(true);
+            this.game.openLevelSelect();
+          });
+          refs.menuLauncherButton.addEventListener("click", () => {
+            window.location.href = "./game_launcher.html";
+          });
+          refs.levelBackButton.addEventListener("click", () => this.game.openMenu());
+          refs.levelDebugButton.addEventListener("click", () => this.game.toggleDebug(true));
+          refs.pauseResumeButton.addEventListener("click", () => this.game.resumeFromPause());
+          refs.pauseRestartButton.addEventListener("click", () => this.game.restartLevel());
+          refs.pauseMenuButton.addEventListener("click", () => this.game.openMenu());
+          refs.pauseDebugButton.addEventListener("click", () => this.game.toggleDebug(true));
+          refs.resultRetryButton.addEventListener("click", () => this.game.restartLevel());
+          refs.resultMenuButton.addEventListener("click", () => this.game.openMenu());
+          refs.resultNextButton.addEventListener("click", () => this.game.handleResultNext());
+          refs.resultDebugButton.addEventListener("click", () => this.game.toggleDebug(true));
+          refs.battleButton.addEventListener("click", () => this.game.startBattle());
+          refs.secondaryBattleButton.addEventListener("click", () => this.game.startBattle());
+          refs.refreshButton.addEventListener("click", () => this.game.refreshShop());
+          refs.secondaryRefreshButton.addEventListener("click", () => this.game.refreshShop());
+          refs.pauseButton.addEventListener("click", () => this.game.togglePause());
+          refs.soundButton.addEventListener("click", () => this.game.toggleSound());
+          refs.speedButton.addEventListener("click", () => this.game.toggleBattleSpeed());
+          refs.debugButton.addEventListener("click", () => this.game.toggleDebug(!this.game.state.debugOpen));
+          refs.menuButton.addEventListener("click", () => this.game.openMenu());
+          refs.closeDebugButton.addEventListener("click", () => this.game.toggleDebug(false));
+          refs.applyDebugButton.addEventListener("click", () => this.game.applyDesignerInputs(true));
+          refs.dbgRegenerateButton.addEventListener("click", () => this.game.regenerateLevel());
+          refs.dbgAddCrystalsButton.addEventListener("click", () => this.game.addCrystals(20));
+          refs.dbgSpawnPoolButton.addEventListener("click", () => this.game.spawnWormInPool());
+          refs.dbgSpawnFieldButton.addEventListener("click", () => this.game.spawnRandomWormOnField());
+          refs.dbgForceMergeButton.addEventListener("click", () => this.game.forceFirstMerge());
+          refs.dbgStartBattleButton.addEventListener("click", () => this.game.startBattle());
+          refs.dbgSkipWaveButton.addEventListener("click", () => this.game.skipWave());
+          refs.dbgKillEnemiesButton.addEventListener("click", () => this.game.killAllEnemies());
+          refs.dbgExportLevelButton.addEventListener("click", () => this.game.exportLevelJson());
+          refs.dbgImportLevelButton.addEventListener("click", () => this.game.importLevelJson());
+          refs.dbgExportBalanceButton.addEventListener("click", () => this.game.exportBalanceJson());
+          refs.dbgImportBalanceButton.addEventListener("click", () => this.game.importBalanceJson());
+        }
+        setScreen(screen) {
+          this.refs.bootScreen.classList.toggle("visible", screen === CONFIG.SCREENS.BOOT);
+          this.refs.menuScreen.classList.toggle("visible", screen === CONFIG.SCREENS.MENU);
+          this.refs.levelScreen.classList.toggle("visible", screen === CONFIG.SCREENS.LEVELS);
+          this.refs.pauseScreen.classList.toggle("visible", screen === CONFIG.SCREENS.PAUSE);
+          this.refs.resultScreen.classList.toggle("visible", screen === CONFIG.SCREENS.RESULT);
+          const showGameplayChrome = screen === CONFIG.SCREENS.GAMEPLAY || screen === CONFIG.SCREENS.PAUSE;
+          this.refs.hudRoot.style.display = showGameplayChrome ? "grid" : "none";
+          this.refs.bottomBar.style.display = showGameplayChrome ? "grid" : "none";
+        }
+        refresh() {
+          const state = this.game.state;
+          const designer = this.game.designer;
+          const refreshCost = this.game.getRefreshCost();
+          this.refs.hudLevel.textContent = String(state.levelIndex || 1);
+          this.refs.hudWave.textContent = `${state.waveIndex || 1} / ${state.totalWaves || 3}`;
+          this.refs.hudPhase.textContent = state.phase === CONFIG.PHASES.BUILD ? "Build" : "Battle";
+          this.refs.hudCrystals.textContent = String(state.crystals || 0);
+          this.refs.hudRefreshCost.textContent = String(refreshCost);
+          this.refs.hudCore.textContent = String(Math.max(0, Math.round(state.core?.hp || designer.baseCoreHp)));
+          const estimate = state.lastEstimate || { playerPower: 0, enemyPower: 0, ratio: 1 };
+          this.refs.hudPower.textContent = `${formatShortNumber(estimate.playerPower)}:${formatShortNumber(estimate.enemyPower)}`;
+          this.refs.soundButton.textContent = this.game.audio.enabled ? "Sound On" : "Sound Off";
+          this.refs.speedButton.textContent = `Speed x${state.battleSpeed.toFixed(0)}`;
+          const buildPhase = state.phase === CONFIG.PHASES.BUILD && state.screen === CONFIG.SCREENS.GAMEPLAY;
+          const canRefresh = buildPhase && state.crystals >= refreshCost;
+          this.refs.refreshButton.disabled = !canRefresh;
+          this.refs.secondaryRefreshButton.disabled = !canRefresh;
+          const canBattle = buildPhase && state.worms.length > 0;
+          this.refs.battleButton.disabled = !canBattle;
+          this.refs.secondaryBattleButton.disabled = !canBattle;
+          this.refs.poolSubtitle.textContent = buildPhase
+            ? "Pool bar: drag worms out, merge equals, place on bonus tiles, then start battle."
+            : "Battle phase: auto-combat running.";
+          this.refs.floatingHint.textContent = this.game.getHintText();
+          this.renderStatus();
+          this.renderPool();
+          this.renderLevels();
+          this.renderResult();
+        }
+        renderStatus() {
+          const state = this.game.state;
+          const estimate = state.lastEstimate || { ratio: 1, targetDuration: 0, expectedDuration: 0 };
+          const tags = [];
+          tags.push(`<div class="statusTag">Mode: ${state.modeLabel || "Campaign"}</div>`);
+          tags.push(`<div class="statusTag">Target: ${Math.round(estimate.targetDuration || 0)}s</div>`);
+          tags.push(`<div class="statusTag">Estimate: ${Math.round(estimate.expectedDuration || 0)}s</div>`);
+          const ratioClass = estimate.ratio >= 1.08 ? "good" : estimate.ratio >= 0.92 ? "warn" : "danger";
+          tags.push(`<div class="statusTag ${ratioClass}">Pressure ${estimate.ratio.toFixed(2)}x</div>`);
+          if (state.phase === CONFIG.PHASES.BATTLE) {
+            tags.push(`<div class="statusTag">Enemies ${state.units.filter((unit) => unit.faction === "enemy" && unit.alive).length}</div>`);
+            tags.push(`<div class="statusTag">Allies ${state.units.filter((unit) => unit.faction === "player" && unit.alive).length}</div>`);
+          } else {
+            tags.push(`<div class="statusTag">Bonus tiles ${state.bonusTiles.length}</div>`);
+            tags.push(`<div class="statusTag">Worms ${state.worms.length}</div>`);
+          }
+          this.refs.statusRow.innerHTML = tags.join("");
+        }
+        renderPool() {
+          const state = this.game.state;
+          const container = this.refs.poolCards;
+          const tags = [];
+          if (!state.pool.length) {
+            container.innerHTML = `<div class="poolCard"><div class="poolCardHeader"><div class="poolType"><div class="poolIcon">…</div><span>Pool empty</span></div></div><div class="poolCardMeta">Refresh the shop or win the wave to refill it.</div></div>`;
+          } else {
+            container.innerHTML = state.pool.map((worm) => {
+              const type = CONFIG.WORM_TYPES[worm.type];
+              return `
+                <div class="poolCard" data-id="${worm.id}" style="border-color:${type.color}44;background:linear-gradient(180deg,${type.soft},rgba(255,255,255,.96))">
+                  <div class="poolCardHeader">
+                    <div class="poolType">
+                      <div class="poolIcon">${type.icon}</div>
+                      <span>${type.short}</span>
+                    </div>
+                    <div class="poolSize">size ${worm.size}</div>
+                  </div>
+                  <div class="poolCardMeta">
+                    <span>Drag to place or merge</span>
+                    <strong>${worm.size} cells</strong>
+                  </div>
+                </div>
+              `;
+            }).join("");
+          }
+          const refreshCost = this.game.getRefreshCost();
+          tags.push(`<div class="statusTag">Refresh cost ${refreshCost}</div>`);
+          tags.push(`<div class="statusTag">Seed ${this.game.designer.seed}</div>`);
+          tags.push(`<div class="statusTag">Types ${this.game.designer.allowedWormTypes.length}</div>`);
+          this.refs.poolFooterText.innerHTML = tags.join("");
+        }
+        renderLevels() {
+          const current = this.game.save.data.highestUnlocked || 1;
+          this.refs.levelGrid.innerHTML = CONFIG.CAMPAIGN_LEVELS.map((level) => {
+            const unlocked = level.id <= current;
+            return `
+              <button class="levelCard ${unlocked ? "" : "locked"}" data-level="${level.id}" ${unlocked ? "" : "disabled"}>
+                <div class="eyebrow">Campaign</div>
+                <strong>${level.name}</strong>
+                <div class="levelMeta"><span>${level.waves} waves</span><span>${unlocked ? "Unlocked" : "Locked"}</span></div>
+              </button>
+            `;
+          }).join("");
+          [...this.refs.levelGrid.querySelectorAll("[data-level]")].forEach((button) => {
+            button.addEventListener("click", () => this.game.startLevel(Number(button.dataset.level)));
+          });
+        }
+        renderResult() {
+          const result = this.game.state.result;
+          if (!result) return;
+          this.refs.resultTitle.textContent = result.title;
+          this.refs.resultBody.textContent = result.body;
+          this.refs.resultLevel.textContent = String(this.game.state.levelIndex);
+          this.refs.resultWave.textContent = `${this.game.state.waveIndex} / ${this.game.state.totalWaves}`;
+          this.refs.resultCrystals.textContent = String(this.game.state.crystals);
+          this.refs.resultUnlocked.textContent = String(this.game.save.data.highestUnlocked);
+          this.refs.resultNextButton.textContent = result.nextLabel;
+        }
+        loadDesignerValues() {
+          const d = this.game.designer;
+          this.refs.dbgBaseFieldWidth.value = d.baseFieldWidth;
+          this.refs.dbgBaseFieldHeight.value = d.baseFieldHeight;
+          this.refs.dbgTotalFieldWidth.value = d.totalFieldWidth;
+          this.refs.dbgTotalFieldHeight.value = d.totalFieldHeight;
+          this.refs.dbgBaseRows.value = d.baseRows;
+          this.refs.dbgBattleRows.value = d.battleRows;
+          this.refs.dbgInitialPoolSize.value = d.initialPoolSize;
+          this.refs.dbgRefreshCostStart.value = d.refreshCostStart;
+          this.refs.dbgInitialWormCount.value = d.initialWormCount;
+          this.refs.dbgWormMoveMode.value = d.wormMoveMode;
+          this.refs.dbgMergeRules.value = d.mergeRules;
+          this.refs.dbgAllowedWormTypes.value = d.allowedWormTypes.join(", ");
+          this.refs.dbgAllowedWormSizes.value = d.allowedWormSizes.join(", ");
+          this.refs.dbgRefreshCostCurve.value = JSON.stringify(d.refreshCostCurve, null, 2);
+          this.refs.dbgBonusStart.value = d.bonusTileStartCount;
+          this.refs.dbgBonusGrowth.value = d.bonusTileGrowthPerWave;
+          this.refs.dbgAllowedBonusTypes.value = d.allowedBonusTypes.join(", ");
+          this.refs.dbgBonusValues.value = JSON.stringify(d.bonusValues, null, 2);
+          this.refs.dbgBarracksSpawnCooldown.value = d.barracksSpawnCooldown;
+          this.refs.dbgTowerBaseRange.value = d.towerBaseRange;
+          this.refs.dbgArcherUnitRange.value = d.archerUnitRange;
+          this.refs.dbgCavalrySpeed.value = d.cavalrySpeed;
+          this.refs.dbgMageSplashRadius.value = d.mageSplashRadius;
+          this.refs.dbgWallBaseHp.value = d.wallBaseHP;
+          this.refs.dbgWaveDurationStart.value = d.waveDurationStart;
+          this.refs.dbgWaveDurationPerWave.value = d.waveDurationPerWave;
+          this.refs.dbgWaveDurationCap.value = d.waveDurationCap;
+          this.refs.dbgBattleSpeed.value = d.battleSpeed;
+          this.refs.dbgSeed.value = d.seed;
+          this.refs.dbgEnemyUnlocks.value = JSON.stringify(d.enemyCompositionUnlockWave, null, 2);
+          this.refs.dbgCanBuildingsBeDestroyed.checked = d.canBuildingsBeDestroyedThisWave;
+          this.refs.dbgRestoreBuildingsAfterWave.checked = d.restoreBuildingsAfterWave;
+          this.refs.dbgRebuildAfterWave.checked = d.rebuildAfterWave;
+          this.refs.dbgUnitBaseStats.value = JSON.stringify(CONFIG.UNIT_TYPES, null, 2);
+          this.refs.dbgEnemyBaseStats.value = JSON.stringify(CONFIG.ENEMY_TYPES, null, 2);
+        }
+      }
+
+      class Game {
+        constructor() {
+          this.canvas = document.getElementById("gameCanvas");
+          this.refs = this.collectRefs();
+          this.save = new SaveManager(CONFIG.SAVE_KEY);
+          this.audio = new AudioManager(this.save.data.soundOn);
+          this.designer = this.normalizeDesigner(deepClone(this.save.data.designer || CONFIG.DEFAULT_DESIGNER));
+          this.state = this.createInitialState();
+          this.renderer = new Renderer(this);
+          this.input = new InputManager(this);
+          this.ui = new UIManager(this);
+          this.lastFrame = performance.now();
+          this.loop = this.loop.bind(this);
+          this.boot();
+          requestAnimationFrame(this.loop);
+        }
+        normalizeDesigner(input) {
+          const designer = { ...deepClone(CONFIG.DEFAULT_DESIGNER), ...(input || {}) };
+          designer.totalFieldWidth = designer.baseFieldWidth = clamp(Number(designer.totalFieldWidth || designer.baseFieldWidth || 8), 6, 12);
+          designer.baseRows = designer.baseFieldHeight = clamp(Number(designer.baseRows || designer.baseFieldHeight || 6), 4, 8);
+          designer.battleRows = clamp(Number(designer.battleRows || 8), 6, 10);
+          designer.totalFieldHeight = designer.baseRows + designer.battleRows;
+          designer.allowedWormSizes = (designer.allowedWormSizes || []).filter((size) => size === 2 || size === 3);
+          if (!designer.allowedWormSizes.length) designer.allowedWormSizes = [2, 3];
+          designer.wormMoveMode = ["slither", "dragPlace"].includes(designer.wormMoveMode) ? designer.wormMoveMode : "slither";
+          return designer;
+        }
+        collectRefs() {
+          return {
+            hudRoot: document.querySelector(".hud"),
+            bottomBar: document.querySelector(".bottomBar"),
+            bootScreen: document.getElementById("bootScreen"),
+            menuScreen: document.getElementById("menuScreen"),
+            levelScreen: document.getElementById("levelScreen"),
+            pauseScreen: document.getElementById("pauseScreen"),
+            resultScreen: document.getElementById("resultScreen"),
+            debugDrawer: document.getElementById("debugDrawer"),
+            floatingHint: document.getElementById("floatingHint"),
+            statusRow: document.getElementById("statusRow"),
+            hudLevel: document.getElementById("hudLevel"),
+            hudWave: document.getElementById("hudWave"),
+            hudPhase: document.getElementById("hudPhase"),
+            hudCrystals: document.getElementById("hudCrystals"),
+            hudRefreshCost: document.getElementById("hudRefreshCost"),
+            hudPower: document.getElementById("hudPower"),
+            hudCore: document.getElementById("hudCore"),
+            battleButton: document.getElementById("battleButton"),
+            speedButton: document.getElementById("speedButton"),
+            pauseButton: document.getElementById("pauseButton"),
+            soundButton: document.getElementById("soundButton"),
+            debugButton: document.getElementById("debugButton"),
+            menuPlayButton: document.getElementById("menuPlayButton"),
+            menuContinueButton: document.getElementById("menuContinueButton"),
+            menuSandboxButton: document.getElementById("menuSandboxButton"),
+            menuLauncherButton: document.getElementById("menuLauncherButton"),
+            levelBackButton: document.getElementById("levelBackButton"),
+            levelDebugButton: document.getElementById("levelDebugButton"),
+            levelGrid: document.getElementById("levelGrid"),
+            pauseResumeButton: document.getElementById("pauseResumeButton"),
+            pauseRestartButton: document.getElementById("pauseRestartButton"),
+            pauseMenuButton: document.getElementById("pauseMenuButton"),
+            pauseDebugButton: document.getElementById("pauseDebugButton"),
+            resultTitle: document.getElementById("resultTitle"),
+            resultBody: document.getElementById("resultBody"),
+            resultLevel: document.getElementById("resultLevel"),
+            resultWave: document.getElementById("resultWave"),
+            resultCrystals: document.getElementById("resultCrystals"),
+            resultUnlocked: document.getElementById("resultUnlocked"),
+            resultRetryButton: document.getElementById("resultRetryButton"),
+            resultMenuButton: document.getElementById("resultMenuButton"),
+            resultNextButton: document.getElementById("resultNextButton"),
+            resultDebugButton: document.getElementById("resultDebugButton"),
+            refreshButton: document.getElementById("refreshButton"),
+            menuButton: document.getElementById("menuButton"),
+            poolCards: document.getElementById("poolCards"),
+            poolSubtitle: document.getElementById("poolSubtitle"),
+            poolFooterText: document.getElementById("poolFooterText"),
+            secondaryBattleButton: document.getElementById("secondaryBattleButton"),
+            secondaryRefreshButton: document.getElementById("secondaryRefreshButton"),
+            closeDebugButton: document.getElementById("closeDebugButton"),
+            applyDebugButton: document.getElementById("applyDebugButton"),
+            dbgBaseFieldWidth: document.getElementById("dbgBaseFieldWidth"),
+            dbgBaseFieldHeight: document.getElementById("dbgBaseFieldHeight"),
+            dbgTotalFieldWidth: document.getElementById("dbgTotalFieldWidth"),
+            dbgTotalFieldHeight: document.getElementById("dbgTotalFieldHeight"),
+            dbgBaseRows: document.getElementById("dbgBaseRows"),
+            dbgBattleRows: document.getElementById("dbgBattleRows"),
+            dbgInitialPoolSize: document.getElementById("dbgInitialPoolSize"),
+            dbgRefreshCostStart: document.getElementById("dbgRefreshCostStart"),
+            dbgInitialWormCount: document.getElementById("dbgInitialWormCount"),
+            dbgWormMoveMode: document.getElementById("dbgWormMoveMode"),
+            dbgMergeRules: document.getElementById("dbgMergeRules"),
+            dbgAllowedWormTypes: document.getElementById("dbgAllowedWormTypes"),
+            dbgAllowedWormSizes: document.getElementById("dbgAllowedWormSizes"),
+            dbgRefreshCostCurve: document.getElementById("dbgRefreshCostCurve"),
+            dbgBonusStart: document.getElementById("dbgBonusStart"),
+            dbgBonusGrowth: document.getElementById("dbgBonusGrowth"),
+            dbgAllowedBonusTypes: document.getElementById("dbgAllowedBonusTypes"),
+            dbgBonusValues: document.getElementById("dbgBonusValues"),
+            dbgBarracksSpawnCooldown: document.getElementById("dbgBarracksSpawnCooldown"),
+            dbgTowerBaseRange: document.getElementById("dbgTowerBaseRange"),
+            dbgArcherUnitRange: document.getElementById("dbgArcherUnitRange"),
+            dbgCavalrySpeed: document.getElementById("dbgCavalrySpeed"),
+            dbgMageSplashRadius: document.getElementById("dbgMageSplashRadius"),
+            dbgWallBaseHp: document.getElementById("dbgWallBaseHp"),
+            dbgWaveDurationStart: document.getElementById("dbgWaveDurationStart"),
+            dbgWaveDurationPerWave: document.getElementById("dbgWaveDurationPerWave"),
+            dbgWaveDurationCap: document.getElementById("dbgWaveDurationCap"),
+            dbgBattleSpeed: document.getElementById("dbgBattleSpeed"),
+            dbgSeed: document.getElementById("dbgSeed"),
+            dbgEnemyUnlocks: document.getElementById("dbgEnemyUnlocks"),
+            dbgCanBuildingsBeDestroyed: document.getElementById("dbgCanBuildingsBeDestroyed"),
+            dbgRestoreBuildingsAfterWave: document.getElementById("dbgRestoreBuildingsAfterWave"),
+            dbgRebuildAfterWave: document.getElementById("dbgRebuildAfterWave"),
+            dbgUnitBaseStats: document.getElementById("dbgUnitBaseStats"),
+            dbgEnemyBaseStats: document.getElementById("dbgEnemyBaseStats"),
+            dbgRegenerateButton: document.getElementById("dbgRegenerateButton"),
+            dbgAddCrystalsButton: document.getElementById("dbgAddCrystalsButton"),
+            dbgSpawnPoolButton: document.getElementById("dbgSpawnPoolButton"),
+            dbgSpawnFieldButton: document.getElementById("dbgSpawnFieldButton"),
+            dbgForceMergeButton: document.getElementById("dbgForceMergeButton"),
+            dbgStartBattleButton: document.getElementById("dbgStartBattleButton"),
+            dbgSkipWaveButton: document.getElementById("dbgSkipWaveButton"),
+            dbgKillEnemiesButton: document.getElementById("dbgKillEnemiesButton"),
+            dbgExportLevelButton: document.getElementById("dbgExportLevelButton"),
+            dbgImportLevelButton: document.getElementById("dbgImportLevelButton"),
+            dbgLevelJson: document.getElementById("dbgLevelJson"),
+            dbgExportBalanceButton: document.getElementById("dbgExportBalanceButton"),
+            dbgImportBalanceButton: document.getElementById("dbgImportBalanceButton"),
+            dbgBalanceJson: document.getElementById("dbgBalanceJson")
+          };
+        }
+        createInitialState() {
+          return {
+            screen: CONFIG.SCREENS.BOOT,
+            phase: CONFIG.PHASES.BUILD,
+            debugOpen: false,
+            mode: CONFIG.MODES.campaign.id,
+            modeLabel: CONFIG.MODES.campaign.label,
+            levelIndex: 1,
+            totalWaves: CONFIG.CAMPAIGN_LEVELS[0].waves,
+            waveIndex: 1,
+            globalWaveIndex: 1,
+            worms: [],
+            pool: [],
+            bonusTiles: [],
+            units: [],
+            projectiles: [],
+            particles: [],
+            result: null,
+            refreshStep: 0,
+            crystals: 0,
+            battleTime: 0,
+            battleSpeed: this.designer.battleSpeed || 1,
+            lastEstimate: { playerPower: 0, enemyPower: 0, ratio: 1, targetDuration: 20, expectedDuration: 20 },
+            wavePlan: null,
+            waveEventCursor: 0,
+            nextId: 1,
+            core: {
+              id: "core",
+              kind: "core",
+              x: this.designer.totalFieldWidth * 0.5,
+              y: this.designer.totalFieldHeight - 0.55,
+              hp: this.designer.baseCoreHp,
+              maxHp: this.designer.baseCoreHp,
+              alive: true
+            }
+          };
+        }
+        boot() {
+          this.ui.setScreen(CONFIG.SCREENS.BOOT);
+          this.ui.refresh();
+          setTimeout(() => {
+            this.openMenu();
+          }, 650);
+        }
+        getBoardConfig() {
+          return {
+            totalFieldWidth: this.designer.totalFieldWidth,
+            totalFieldHeight: this.designer.totalFieldHeight,
+            battleRows: this.designer.battleRows,
+            baseRows: this.designer.baseRows
+          };
+        }
+        openMenu() {
+          this.state.screen = CONFIG.SCREENS.MENU;
+          this.state.phase = CONFIG.PHASES.BUILD;
+          this.ui.setScreen(CONFIG.SCREENS.MENU);
+          this.ui.refresh();
+        }
+        openLevelSelect() {
+          this.state.screen = CONFIG.SCREENS.LEVELS;
+          this.ui.setScreen(CONFIG.SCREENS.LEVELS);
+          this.ui.refresh();
+        }
+        startLevel(levelIndex) {
+          const level = CONFIG.CAMPAIGN_LEVELS[levelIndex - 1] || CONFIG.CAMPAIGN_LEVELS[0];
+          this.state = this.createInitialState();
+          this.state.screen = CONFIG.SCREENS.GAMEPLAY;
+          this.state.mode = CONFIG.MODES.campaign.id;
+          this.state.modeLabel = CONFIG.MODES.campaign.label;
+          this.state.levelIndex = level.id;
+          this.state.totalWaves = level.waves;
+          this.state.waveIndex = 1;
+          this.state.globalWaveIndex = this.computeGlobalWaveIndex(level.id, 1);
+          this.state.crystals = this.designer.startingCrystals;
+          this.state.refreshStep = 0;
+          this.state.result = null;
+          this.state.battleSpeed = this.designer.battleSpeed || 1;
+          this.state.core = {
+            id: "core",
+            kind: "core",
+            x: this.designer.totalFieldWidth * 0.5,
+            y: this.designer.totalFieldHeight - 0.55,
+            hp: this.designer.baseCoreHp,
+            maxHp: this.designer.baseCoreHp,
+            alive: true
+          };
+          this.seedInitialWorms();
+          this.fillPool(true);
+          this.generateBonusTiles();
+          this.recomputeEstimate();
+          this.save.setLastLevel(level.id);
+          this.ui.setScreen(CONFIG.SCREENS.GAMEPLAY);
+          this.ui.refresh();
+        }
+        restartLevel() {
+          this.startLevel(this.state.levelIndex || 1);
+        }
+        resumeFromPause() {
+          if (this.state.screen !== CONFIG.SCREENS.PAUSE) return;
+          this.state.screen = CONFIG.SCREENS.GAMEPLAY;
+          this.ui.setScreen(CONFIG.SCREENS.GAMEPLAY);
+          this.ui.refresh();
+        }
+        togglePause() {
+          if (this.state.screen === CONFIG.SCREENS.GAMEPLAY) {
+            this.state.screen = CONFIG.SCREENS.PAUSE;
+            this.ui.setScreen(CONFIG.SCREENS.PAUSE);
+            this.ui.refresh();
+          } else if (this.state.screen === CONFIG.SCREENS.PAUSE) {
+            this.resumeFromPause();
+          }
+        }
+        toggleSound() {
+          this.audio.setEnabled(!this.audio.enabled);
+          this.save.setSoundOn(this.audio.enabled);
+          this.ui.refresh();
+        }
+        toggleBattleSpeed() {
+          this.state.battleSpeed = this.state.battleSpeed >= 2 ? 1 : 2;
+          this.designer.battleSpeed = this.state.battleSpeed;
+          this.save.setDesigner(this.designer);
+          this.ui.refresh();
+        }
+        toggleDebug(force) {
+          this.state.debugOpen = typeof force === "boolean" ? force : !this.state.debugOpen;
+          this.refs.debugDrawer.classList.toggle("open", this.state.debugOpen);
+          if (this.state.debugOpen) this.ui.loadDesignerValues();
+          this.ui.refresh();
+        }
+        clearPoolDragging() {
+          [...this.refs.poolCards.querySelectorAll(".poolCard.dragging")].forEach((card) => card.classList.remove("dragging"));
+        }
+        getHintText() {
+          if (this.state.screen === CONFIG.SCREENS.RESULT && this.state.result) return this.state.result.body;
+          if (this.state.phase === CONFIG.PHASES.BATTLE) {
+            return `Auto-battle running. ${formatWave(this.state.levelIndex, this.state.waveIndex, this.state.totalWaves)} target ${Math.round(this.state.wavePlan?.targetDuration || 0)} seconds.`;
+          }
+          const mergeReady = this.getMergeReadyMap().size;
+          if (mergeReady > 0) {
+            return `${mergeReady} merge-ready worm${mergeReady > 1 ? "s" : ""}. Drag a matching worm onto the highlighted partner to grow it by one segment.`;
+          }
+          return this.designer.wormMoveMode === "slither"
+            ? "Build phase: drag from the nearest worm end to slither it across the grid. Pool worms still place directly."
+            : "Build phase: drag worms onto bonus tiles, refresh the pool if needed, then press Battle.";
+        }
+        loop(now) {
+          const dt = Math.min(0.05, (now - this.lastFrame) / 1000);
+          this.lastFrame = now;
+          this.input.update(dt);
+          if (this.state.screen === CONFIG.SCREENS.GAMEPLAY && this.state.phase === CONFIG.PHASES.BATTLE) {
+            this.updateBattle(dt);
+          } else {
+            this.updateWormVisuals(dt);
+          }
+          this.renderer.render(now);
+          if (this.state.screen !== CONFIG.SCREENS.BOOT) this.ui.refresh();
+          requestAnimationFrame(this.loop);
+        }
+        updateWormVisuals(dt) {
+          for (const worm of this.state.worms) {
+            this.syncWormGeometry(worm, false);
+            if (!worm.renderCells || worm.renderCells.length !== worm.cells.length) {
+              worm.renderCells = worm.cells.map((cell) => ({ x: cell.x, y: cell.y }));
+            }
+            for (let i = 0; i < worm.cells.length; i++) {
+              worm.renderCells[i].x = lerp(worm.renderCells[i].x, worm.cells[i].x, clamp(dt * CONFIG.BALANCE.dragSnap, 0, 1));
+              worm.renderCells[i].y = lerp(worm.renderCells[i].y, worm.cells[i].y, clamp(dt * CONFIG.BALANCE.dragSnap, 0, 1));
+            }
+            worm.renderX = lerp(worm.renderX ?? worm.x, worm.x, clamp(dt * CONFIG.BALANCE.dragSnap, 0, 1));
+            worm.renderY = lerp(worm.renderY ?? worm.y, worm.y, clamp(dt * CONFIG.BALANCE.dragSnap, 0, 1));
+            worm.mergePulse = Math.max(0, (worm.mergePulse || 0) - dt);
+            worm.flash = Math.max(0, (worm.flash || 0) - dt * 2.2);
+          }
+        }
+        updateBattle(dt) {
+          this.updateWormVisuals(dt);
+          const step = dt * this.state.battleSpeed;
+          this.state.battleTime += step;
+          this.spawnScheduledEnemies();
+          this.updateWormBattle(step);
+          this.updateUnits(step);
+          this.updateProjectiles(step);
+          this.cleanupDeadUnits();
+          this.cleanupParticles();
+          if (this.state.core.hp <= 0) {
+            this.finishBattle(false, "The core collapsed before the wave could be stopped.");
+            return;
+          }
+          const allSpawned = this.state.waveEventCursor >= (this.state.wavePlan?.events.length || 0);
+          const aliveEnemies = this.state.units.some((unit) => unit.alive && unit.faction === "enemy");
+          if (allSpawned && !aliveEnemies) {
+            this.finishBattle(true, `Wave ${this.state.waveIndex} cleared.`);
+          }
+        }
+        cleanupParticles() {
+          if (this.state.particles.length > CONFIG.BALANCE.maxParticles) {
+            this.state.particles.splice(0, this.state.particles.length - CONFIG.BALANCE.maxParticles);
+          }
+        }
+        getRefreshCost() {
+          const curve = this.designer.refreshCostCurve;
+          return curve[Math.min(this.state.refreshStep, curve.length - 1)] ?? this.designer.refreshCostStart;
+        }
+        computeGlobalWaveIndex(levelIndex, waveIndex) {
+          let total = 0;
+          for (let i = 0; i < levelIndex - 1; i++) total += CONFIG.CAMPAIGN_LEVELS[i].waves;
+          return total + waveIndex;
+        }
+        addCrystals(amount) {
+          this.state.crystals += amount;
+          this.ui.refresh();
+        }
+        regenerateLevel() {
+          this.applyDesignerInputs(false);
+          if (this.state.screen === CONFIG.SCREENS.GAMEPLAY) this.restartLevel();
+          else this.openLevelSelect();
+        }
+        applyDesignerInputs(regenerate) {
+          try {
+            const next = deepClone(this.designer);
+            next.baseFieldWidth = Number(this.refs.dbgBaseFieldWidth.value) || next.baseFieldWidth;
+            next.baseFieldHeight = Number(this.refs.dbgBaseFieldHeight.value) || next.baseFieldHeight;
+            next.totalFieldWidth = Number(this.refs.dbgTotalFieldWidth.value) || next.totalFieldWidth;
+            next.totalFieldHeight = Number(this.refs.dbgTotalFieldHeight.value) || next.totalFieldHeight;
+            next.baseRows = Number(this.refs.dbgBaseRows.value) || next.baseRows;
+            next.battleRows = Number(this.refs.dbgBattleRows.value) || next.battleRows;
+            next.initialPoolSize = Number(this.refs.dbgInitialPoolSize.value) || next.initialPoolSize;
+            next.refreshCostStart = Number(this.refs.dbgRefreshCostStart.value) || next.refreshCostStart;
+            next.initialWormCount = Number(this.refs.dbgInitialWormCount.value) || next.initialWormCount;
+            next.wormMoveMode = (this.refs.dbgWormMoveMode.value.trim() || next.wormMoveMode);
+            next.mergeRules = this.refs.dbgMergeRules.value.trim() || next.mergeRules;
+            next.allowedWormTypes = parseStringList(this.refs.dbgAllowedWormTypes.value).filter((id) => CONFIG.WORM_TYPES[id]);
+            next.allowedWormSizes = parseNumberList(this.refs.dbgAllowedWormSizes.value).filter((value) => value >= 2 && value <= 8);
+            next.refreshCostCurve = JSON.parse(this.refs.dbgRefreshCostCurve.value);
+            next.bonusTileStartCount = Number(this.refs.dbgBonusStart.value) || next.bonusTileStartCount;
+            next.bonusTileGrowthPerWave = Number(this.refs.dbgBonusGrowth.value) || next.bonusTileGrowthPerWave;
+            next.allowedBonusTypes = parseStringList(this.refs.dbgAllowedBonusTypes.value).filter((id) => CONFIG.THEME.bonusTypes[id]);
+            next.bonusValues = JSON.parse(this.refs.dbgBonusValues.value);
+            next.barracksSpawnCooldown = Number(this.refs.dbgBarracksSpawnCooldown.value) || next.barracksSpawnCooldown;
+            next.towerBaseRange = Number(this.refs.dbgTowerBaseRange.value) || next.towerBaseRange;
+            next.archerUnitRange = Number(this.refs.dbgArcherUnitRange.value) || next.archerUnitRange;
+            next.cavalrySpeed = Number(this.refs.dbgCavalrySpeed.value) || next.cavalrySpeed;
+            next.mageSplashRadius = Number(this.refs.dbgMageSplashRadius.value) || next.mageSplashRadius;
+            next.wallBaseHP = Number(this.refs.dbgWallBaseHp.value) || next.wallBaseHP;
+            next.waveDurationStart = Number(this.refs.dbgWaveDurationStart.value) || next.waveDurationStart;
+            next.waveDurationPerWave = Number(this.refs.dbgWaveDurationPerWave.value) || next.waveDurationPerWave;
+            next.waveDurationCap = Number(this.refs.dbgWaveDurationCap.value) || next.waveDurationCap;
+            next.battleSpeed = Number(this.refs.dbgBattleSpeed.value) || next.battleSpeed;
+            next.seed = this.refs.dbgSeed.value.trim() || next.seed;
+            next.enemyCompositionUnlockWave = JSON.parse(this.refs.dbgEnemyUnlocks.value);
+            next.canBuildingsBeDestroyedThisWave = this.refs.dbgCanBuildingsBeDestroyed.checked;
+            next.restoreBuildingsAfterWave = this.refs.dbgRestoreBuildingsAfterWave.checked;
+            next.rebuildAfterWave = this.refs.dbgRebuildAfterWave.checked;
+            const nextUnitStats = JSON.parse(this.refs.dbgUnitBaseStats.value);
+            const nextEnemyStats = JSON.parse(this.refs.dbgEnemyBaseStats.value);
+
+            next.totalFieldWidth = next.baseFieldWidth = clamp(next.totalFieldWidth, 6, 16);
+            next.baseRows = next.baseFieldHeight = clamp(next.baseRows, 5, 16);
+            next.battleRows = clamp(next.battleRows, 6, 20);
+            next.totalFieldHeight = next.battleRows + next.baseRows;
+            if (!next.allowedWormTypes.length) next.allowedWormTypes = deepClone(CONFIG.DEFAULT_DESIGNER.allowedWormTypes);
+            if (!next.allowedWormSizes.length) next.allowedWormSizes = deepClone(CONFIG.DEFAULT_DESIGNER.allowedWormSizes);
+            if (!["slither", "dragPlace"].includes(next.wormMoveMode)) next.wormMoveMode = "slither";
+            Object.assign(CONFIG.UNIT_TYPES, nextUnitStats);
+            Object.assign(CONFIG.ENEMY_TYPES, nextEnemyStats);
+            this.designer = this.normalizeDesigner(next);
+            this.state.battleSpeed = this.designer.battleSpeed;
+            this.save.setDesigner(this.designer);
+            this.ui.refresh();
+            if (regenerate && this.state.screen === CONFIG.SCREENS.GAMEPLAY) this.restartLevel();
+          } catch (error) {
+            this.refs.floatingHint.textContent = `Debug parse error: ${error.message}`;
+          }
+        }
+        randomForScope(scope) {
+          return new RNG(`${this.designer.seed}|L${this.state.levelIndex}|W${this.state.waveIndex}|${scope}|${this.state.globalWaveIndex}`);
+        }
+        nextId(prefix = "id") {
+          this.state.nextId += 1;
+          return `${prefix}_${this.state.nextId}`;
+        }
+        seedInitialWorms() {
+          const rng = this.randomForScope("start");
+          this.state.worms = [];
+          for (let i = 0; i < this.designer.initialWormCount; i++) {
+            const worm = this.createRandomWorm(rng, "field");
+            const placed = this.placeWormRandomly(worm, rng);
+            if (placed) this.state.worms.push(placed);
+          }
+          this.refreshWormState();
+        }
+        fillPool(clearExisting) {
+          const rng = this.randomForScope(`pool_${this.state.refreshStep}_${this.state.waveIndex}`);
+          if (clearExisting) this.state.pool = [];
+          while (this.state.pool.length < this.designer.initialPoolSize) {
+            this.state.pool.push(this.createRandomWorm(rng, "pool"));
+          }
+        }
+        refreshShop() {
+          if (this.state.phase !== CONFIG.PHASES.BUILD) return;
+          const cost = this.getRefreshCost();
+          if (this.state.crystals < cost) return;
+          this.state.crystals -= cost;
+          this.state.refreshStep += 1;
+          this.fillPool(true);
+          this.audio.ui();
+          this.ui.refresh();
+        }
+        createRandomWorm(rng, source) {
+          const type = pickWeighted(rng, this.designer.allowedWormTypes, (id) => {
+            if (id === "wall") return 0.7;
+            if (id === "tower") return 0.9;
+            return 1;
+          });
+          const availableSizes = CONFIG.BALANCE.baseShopSizeWeights.filter((entry) => this.designer.allowedWormSizes.includes(entry.size));
+          const size = pickWeighted(rng, availableSizes.length ? availableSizes : [{ size: 2, weight: 1 }], (entry) => entry.weight).size;
+          return {
+            id: this.nextId(source),
+            type,
+            size,
+            x: 0,
+            y: 0,
+            cells: [],
+            renderCells: [],
+            renderX: 0,
+            renderY: 0,
+            seed: rng.range(0, 999),
+            mergePulse: 0,
+            flash: 0,
+            destroyed: false,
+            currentHp: 0,
+            maxHp: 0,
+            bonuses: {}
+          };
+        }
+        placeWormRandomly(worm, rng) {
+          const positions = [];
+          for (let y = 0; y < this.designer.baseRows; y++) {
+            for (let x = 0; x <= this.designer.totalFieldWidth - worm.size; x++) positions.push({ x, y });
+          }
+          rng.shuffle(positions);
+          for (const pos of positions) {
+            if (this.canPlaceWorm(worm, pos.x, pos.y)) {
+              worm.cells = this.createLinearCells(pos.x, pos.y, worm.size);
+              this.syncWormGeometry(worm, true);
+              return worm;
+            }
+          }
+          return null;
+        }
+        createLinearCells(x, y, size) {
+          const cells = [];
+          for (let i = 0; i < size; i++) cells.push({ x: x + i, y });
+          return cells;
+        }
+        syncWormGeometry(worm, snapRender = false) {
+          if (!worm.cells || !worm.cells.length) worm.cells = this.createLinearCells(worm.x || 0, worm.y || 0, worm.size);
+          worm.size = worm.cells.length;
+          worm.x = Math.min(...worm.cells.map((cell) => cell.x));
+          worm.y = Math.min(...worm.cells.map((cell) => cell.y));
+          worm.maxX = Math.max(...worm.cells.map((cell) => cell.x));
+          worm.maxY = Math.max(...worm.cells.map((cell) => cell.y));
+          worm.centerX = worm.cells.reduce((sum, cell) => sum + cell.x + 0.5, 0) / worm.cells.length;
+          worm.centerY = worm.cells.reduce((sum, cell) => sum + cell.y + 0.5, 0) / worm.cells.length;
+          if (snapRender || !worm.renderCells || worm.renderCells.length !== worm.cells.length) {
+            worm.renderCells = worm.cells.map((cell) => ({ x: cell.x, y: cell.y }));
+          }
+          worm.renderX = worm.x;
+          worm.renderY = worm.y;
+        }
+        spawnWormInPool() {
+          const rng = this.randomForScope(`manual_pool_${this.state.nextId}`);
+          this.state.pool.push(this.createRandomWorm(rng, "pool"));
+          this.ui.refresh();
+        }
+        spawnRandomWormOnField() {
+          const rng = this.randomForScope(`manual_field_${this.state.nextId}`);
+          const worm = this.createRandomWorm(rng, "field");
+          const placed = this.placeWormRandomly(worm, rng);
+          if (placed) {
+            this.state.worms.push(placed);
+            this.refreshWormState();
+            this.recomputeEstimate();
+          }
+        }
+        getWormCells(worm, x = worm.x, y = worm.y, size = worm.size) {
+          if (worm.cells?.length && x === worm.x && y === worm.y && size === worm.size) return worm.cells;
+          return this.createLinearCells(x, y, size);
+        }
+        getWormAtBaseCell(x, y, ignoreId = null) {
+          for (const worm of this.state.worms) {
+            if (ignoreId && worm.id === ignoreId) continue;
+            for (const cell of this.getWormCells(worm)) {
+              if (cell.x === x && cell.y === y) return worm;
+            }
+          }
+          return null;
+        }
+        canPlaceWorm(worm, x, y, ignoreIds = new Set()) {
+          if (x < 0 || y < 0) return false;
+          if (x + worm.size > this.designer.totalFieldWidth) return false;
+          if (y >= this.designer.baseRows) return false;
+          for (const cell of this.createLinearCells(x, y, worm.size)) {
+            const occupant = this.getWormAtBaseCell(cell.x, cell.y, null);
+            if (occupant && !ignoreIds.has(occupant.id)) return false;
+          }
+          return true;
+        }
+        getCellOccupant(x, y, ignoreId = null) {
+          return this.getWormAtBaseCell(x, y, ignoreId);
+        }
+        pickClosestWormEnd(worm, cell) {
+          const tail = worm.cells[0];
+          const head = worm.cells[worm.cells.length - 1];
+          const tailDist = Math.abs((tail.x + 0.5) - (cell.x + 0.5)) + Math.abs((tail.y + 0.5) - (cell.y + 0.5));
+          const headDist = Math.abs((head.x + 0.5) - (cell.x + 0.5)) + Math.abs((head.y + 0.5) - (cell.y + 0.5));
+          return tailDist <= headDist ? "tail" : "head";
+        }
+        getSlitherDirection(wormId, activeEnd, pointerBoard) {
+          const worm = this.state.worms.find((entry) => entry.id === wormId);
+          if (!worm) return null;
+          const current = activeEnd === "head" ? worm.cells[worm.cells.length - 1] : worm.cells[0];
+          const dirs = [
+            { name: "right", x: 1, y: 0 },
+            { name: "left", x: -1, y: 0 },
+            { name: "down", x: 0, y: 1 },
+            { name: "up", x: 0, y: -1 }
+          ];
+          let best = null;
+          let bestDistance = Math.hypot(pointerBoard.x - (current.x + 0.5), pointerBoard.y - (current.y + 0.5));
+          for (const dir of dirs) {
+            const next = { x: current.x + dir.x, y: current.y + dir.y };
+            if (!this.canWormStep(worm, next, activeEnd) && !this.canMergeStep(worm, next)) continue;
+            const distance = Math.hypot(pointerBoard.x - (next.x + 0.5), pointerBoard.y - (next.y + 0.5));
+            if (distance < bestDistance - CONFIG.BALANCE.pointerBias) {
+              bestDistance = distance;
+              best = dir.name;
+            }
+          }
+          return best;
+        }
+        canMergeStep(worm, nextCell) {
+          const occupant = this.getCellOccupant(nextCell.x, nextCell.y, worm.id);
+          return !!(occupant && occupant.type === worm.type && occupant.size === worm.size);
+        }
+        canWormStep(worm, nextCell, activeEnd) {
+          if (nextCell.x < 0 || nextCell.x >= this.designer.totalFieldWidth || nextCell.y < 0 || nextCell.y >= this.designer.baseRows) return false;
+          const cells = worm.cells;
+          const releaseCell = activeEnd === "head" ? cells[0] : cells[cells.length - 1];
+          const occupiedBySelf = cells.some((cell, index) => {
+            if (index === (activeEnd === "head" ? 0 : cells.length - 1)) return false;
+            return cell.x === nextCell.x && cell.y === nextCell.y;
+          });
+          if (occupiedBySelf) return false;
+          const occupant = this.getCellOccupant(nextCell.x, nextCell.y, worm.id);
+          if (!occupant) return true;
+          return occupant.id === worm.id || (releaseCell.x === nextCell.x && releaseCell.y === nextCell.y);
+        }
+        stepSlitherWorm(wormId, direction, activeEnd) {
+          const worm = this.state.worms.find((entry) => entry.id === wormId);
+          if (!worm) return false;
+          const delta = {
+            right: { x: 1, y: 0 },
+            left: { x: -1, y: 0 },
+            down: { x: 0, y: 1 },
+            up: { x: 0, y: -1 }
+          }[direction];
+          if (!delta) return false;
+          const anchor = activeEnd === "head" ? worm.cells[worm.cells.length - 1] : worm.cells[0];
+          const next = { x: anchor.x + delta.x, y: anchor.y + delta.y };
+          const occupant = this.getCellOccupant(next.x, next.y, worm.id);
+          if (occupant && occupant.type === worm.type && occupant.size === worm.size) {
+            const placement = this.findMergePlacement(worm, occupant, worm.id);
+            if (placement) {
+              this.applyMerge({ kind: "board", sourceId: worm.id, worm }, occupant, placement);
+              return true;
+            }
+            return false;
+          }
+          if (!this.canWormStep(worm, next, activeEnd)) return false;
+          if (activeEnd === "head") {
+            worm.cells = [...worm.cells.slice(1), next];
+          } else {
+            worm.cells = [next, ...worm.cells.slice(0, -1)];
+          }
+          this.syncWormGeometry(worm, false);
+          worm.flash = 0.18;
+          this.recomputeEstimate();
+          return true;
+        }
+        findMergePlacement(sourceWorm, targetWorm, ignoreBoardId = null) {
+          const ignore = new Set([targetWorm.id]);
+          if (ignoreBoardId) ignore.add(ignoreBoardId);
+          const head = targetWorm.cells[targetWorm.cells.length - 1];
+          const tail = targetWorm.cells[0];
+          const endCandidates = [
+            { ref: head, neighbor: targetWorm.cells[targetWorm.cells.length - 2] || tail, mode: "head" },
+            { ref: tail, neighbor: targetWorm.cells[1] || head, mode: "tail" }
+          ];
+          for (const end of endCandidates) {
+            const dir = { x: end.ref.x - end.neighbor.x, y: end.ref.y - end.neighbor.y };
+            const next = { x: end.ref.x + dir.x, y: end.ref.y + dir.y };
+            if (next.x < 0 || next.x >= this.designer.totalFieldWidth || next.y < 0 || next.y >= this.designer.baseRows) continue;
+            const occupant = this.getCellOccupant(next.x, next.y, null);
+            if (!occupant || ignore.has(occupant.id)) return { x: next.x, y: next.y, attachMode: end.mode, extendCell: next };
+          }
+          const next = { ...targetWorm, size: targetWorm.size + 1 };
+          const startX = Math.max(0, Math.min(targetWorm.x, this.designer.totalFieldWidth - next.size));
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -2; dx <= 2; dx++) {
+              const candidate = { x: startX + dx, y: targetWorm.y + dy };
+              if (this.canPlaceWorm(next, candidate.x, candidate.y, ignore)) return { x: candidate.x, y: candidate.y, linePlacement: true };
+            }
+          }
+          return null;
+        }
+        commitDrag(drag) {
+          if (!drag || this.state.phase !== CONFIG.PHASES.BUILD) return;
+          const candidate = drag.candidate;
+          if (!candidate) return;
+          if (drag.kind === "board" && this.designer.wormMoveMode === "slither") {
+            this.refreshWormState();
+            this.recomputeEstimate();
+            return;
+          }
+          if (candidate.mode === "merge" && candidate.target) {
+            this.applyMerge(drag, candidate.target, candidate.placement);
+            return;
+          }
+          if (candidate.mode !== "place") return;
+          if (drag.kind === "pool") {
+            const index = this.state.pool.findIndex((worm) => worm.id === drag.sourceId);
+            if (index === -1) return;
+            const worm = this.state.pool.splice(index, 1)[0];
+            worm.cells = this.createLinearCells(candidate.x, candidate.y, worm.size);
+            this.syncWormGeometry(worm, true);
+            this.state.worms.push(worm);
+            this.audio.ui();
+          } else {
+            const worm = this.state.worms.find((entry) => entry.id === drag.sourceId);
+            if (!worm) return;
+            worm.cells = this.createLinearCells(candidate.x, candidate.y, worm.size);
+            this.syncWormGeometry(worm, false);
+            this.audio.ui();
+          }
+          this.refreshWormState();
+          this.recomputeEstimate();
+        }
+        applyMerge(drag, targetWorm, x, y) {
+          const target = this.state.worms.find((worm) => worm.id === targetWorm.id);
+          if (!target) return;
+          if (drag.kind === "pool") {
+            const index = this.state.pool.findIndex((worm) => worm.id === drag.sourceId);
+            if (index !== -1) this.state.pool.splice(index, 1);
+          } else {
+            this.state.worms = this.state.worms.filter((worm) => worm.id !== drag.sourceId);
+          }
+          if (typeof x === "object" && x.extendCell) {
+            target.cells = x.attachMode === "tail" ? [x.extendCell, ...target.cells] : [...target.cells, x.extendCell];
+          } else {
+            const placement = typeof x === "object" ? x : { x, y, linePlacement: true };
+            if (placement.linePlacement) target.cells = this.createLinearCells(placement.x, placement.y, target.size + 1);
+            else target.cells = target.cells;
+          }
+          target.size = target.cells.length;
+          this.syncWormGeometry(target, false);
+          target.mergePulse = CONFIG.BALANCE.mergePulseTime;
+          target.flash = 0.5;
+          this.audio.merge();
+          this.emitBurst(target.centerX, this.designer.battleRows + target.centerY, CONFIG.WORM_TYPES[target.type].color, 18, 0.7);
+          this.refreshWormState();
+          this.recomputeEstimate();
+        }
+        refreshWormState() {
+          for (const worm of this.state.worms) {
+            this.syncWormGeometry(worm, worm.renderCells == null);
+            worm.renderX = worm.renderX ?? worm.x;
+            worm.renderY = worm.renderY ?? worm.y;
+            worm.maxHp = this.computeWormMaxHp(worm);
+            worm.currentHp = worm.maxHp;
+            worm.destroyed = false;
+            worm.bonuses = this.computeBonusBundle(worm);
+          }
+        }
+        getMergeReadyMap() {
+          const ready = new Set();
+          const groups = new Map();
+          for (const worm of this.state.worms) {
+            const key = `${worm.type}|${worm.size}`;
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(worm);
+          }
+          for (const worms of groups.values()) {
+            if (worms.length < 2) continue;
+            for (const worm of worms) ready.add(worm.id);
+          }
+          return ready;
+        }
+        generateBonusTiles() {
+          const count = this.designer.bonusTileStartCount + (this.state.waveIndex - 1) * this.designer.bonusTileGrowthPerWave;
+          const rng = this.randomForScope("bonus");
+          const taken = new Set();
+          this.state.bonusTiles = [];
+          while (this.state.bonusTiles.length < count) {
+            const x = rng.int(0, this.designer.totalFieldWidth - 1);
+            const y = rng.int(0, this.designer.baseRows - 1);
+            const key = `${x},${y}`;
+            if (taken.has(key)) continue;
+            taken.add(key);
+            const type = rng.pick(this.designer.allowedBonusTypes);
+            this.state.bonusTiles.push({
+              x,
+              y,
+              type,
+              value: this.designer.bonusValues[type] || 0.1
+            });
+          }
+          this.refreshWormState();
+        }
+        computeBonusBundle(worm) {
+          const bundle = {
+            hp: 0,
+            damage: 0,
+            spawnSpeed: 0,
+            range: 0,
+            attackSpeed: 0,
+            unitMoveSpeed: 0,
+            armor: 0,
+            splashRadius: 0
+          };
+          for (const cell of worm.cells || this.getWormCells(worm)) {
+            for (const tile of this.state.bonusTiles) {
+              if (tile.x === cell.x && tile.y === cell.y) bundle[tile.type] += tile.value;
+            }
+          }
+          return bundle;
+        }
+        computeWormMaxHp(worm) {
+          const type = CONFIG.WORM_TYPES[worm.type];
+          const bonuses = worm.bonuses || { hp: 0, armor: 0 };
+          const baseHp = worm.type === "wall" ? this.designer.wallBaseHP : type.baseHp;
+          return Math.round(baseHp * (1 + (worm.size - 2) * CONFIG.BALANCE.sizeHpStep) * (1 + bonuses.hp));
+        }
+        computeWormPlacementFactor(worm) {
+          const front = 1 + (1 - worm.y / Math.max(1, this.designer.baseRows - 1)) * CONFIG.BALANCE.wormPlacementBonusFront;
+          const center = worm.centerX;
+          const centerWeight = 1 + (1 - Math.abs(center - this.designer.totalFieldWidth * 0.5) / Math.max(1, this.designer.totalFieldWidth * 0.5)) * CONFIG.BALANCE.wormPlacementBonusCenter;
+          return front * centerWeight;
+        }
+        computeUnitStats(baseId, faction, scale, bonuses = null) {
+          const base = faction === "player" ? CONFIG.UNIT_TYPES[baseId] : CONFIG.ENEMY_TYPES[baseId];
+          const stats = deepClone(base);
+          stats.hp = base.hp * scale;
+          stats.damage = base.damage * scale;
+          stats.attackCooldown = base.attackCooldown / clamp(1 + (bonuses?.attackSpeed || 0), 0.5, 3);
+          stats.speed = base.speed * (1 + (bonuses?.unitMoveSpeed || 0));
+          stats.range = base.range * (1 + (bonuses?.range || 0));
+          stats.splashRadius = (base.splashRadius || 0) * (1 + (bonuses?.splashRadius || 0));
+          return stats;
+        }
+        computePlayerPower() {
+          const targetDuration = this.computeWaveTargetDuration();
+          let total = 0;
+          let defense = 0;
+          let offense = 0;
+          const distinct = new Set();
+          for (const worm of this.state.worms) {
+            const type = CONFIG.WORM_TYPES[worm.type];
+            const bonuses = this.computeBonusBundle(worm);
+            worm.bonuses = bonuses;
+            const hp = this.computeWormMaxHp({ ...worm, bonuses });
+            const placement = this.computeWormPlacementFactor(worm);
+            const sizeFactor = 1 + (worm.size - 2) * CONFIG.BALANCE.sizePowerStep;
+            let power = hp * 0.16;
+            if (type.behavior === "spawner") {
+              const unitId = type.unitId;
+              const baseScale = sizeFactor * (1 + bonuses.damage * 0.8);
+              const stats = this.computeUnitStats(unitId, "player", baseScale, bonuses);
+              const cooldownBase = worm.type === "barracks" ? this.designer.barracksSpawnCooldown : type.spawnCooldown;
+              const cooldown = cooldownBase / (1 + (worm.size - 2) * CONFIG.BALANCE.sizeCooldownStep + bonuses.spawnSpeed);
+              const expectedSpawns = targetDuration / Math.max(0.7, cooldown);
+              const dps = stats.damage / Math.max(0.4, stats.attackCooldown);
+              power += expectedSpawns * (stats.hp * 0.16 + dps * 1.3 + stats.range * 1.2 + stats.speed * 1.15);
+              offense += expectedSpawns * dps;
+            } else if (type.behavior === "tower") {
+              const damage = type.damage * sizeFactor * (1 + bonuses.damage);
+              const cooldown = type.attackCooldown / (1 + (worm.size - 2) * CONFIG.BALANCE.sizeCooldownStep + bonuses.attackSpeed);
+              const range = (this.designer.towerBaseRange || type.range) * (1 + bonuses.range);
+              power += damage / Math.max(0.4, cooldown) * targetDuration * 0.75 + range * 3.4;
+              offense += damage / Math.max(0.4, cooldown);
+            } else {
+              power += hp * (0.26 + (type.armor || 0));
+            }
+            defense += hp * (0.18 + (bonuses.armor || 0));
+            total += power * placement * type.powerWeight;
+            distinct.add(worm.type);
+          }
+          total *= 1 + distinct.size * 0.04;
+          return {
+            total: total * CONFIG.BALANCE.playerPowerBias,
+            defense,
+            offense
+          };
+        }
+        computeWaveTargetDuration() {
+          return Math.min(this.designer.waveDurationCap, this.designer.waveDurationStart + (this.state.globalWaveIndex - 1) * this.designer.waveDurationPerWave);
+        }
+        computeEnemyWaveFromPlayerPower() {
+          const player = this.computePlayerPower();
+          const targetDuration = this.computeWaveTargetDuration();
+          const rng = this.randomForScope("wave");
+          const budgetFactor = clamp(CONFIG.BALANCE.enemyBudgetBase + (this.state.globalWaveIndex - 1) * CONFIG.BALANCE.enemyBudgetStep, 0.72, CONFIG.BALANCE.enemyBudgetCap);
+          const enemyBudget = player.total * budgetFactor + this.state.globalWaveIndex * 18;
+          const allowed = Object.entries(this.designer.enemyCompositionUnlockWave)
+            .filter(([, wave]) => this.state.globalWaveIndex >= wave)
+            .map(([id]) => id);
+          if (!allowed.length) allowed.push("melee");
+          const weights = {
+            melee: 1.3,
+            archer: this.state.globalWaveIndex >= (this.designer.enemyCompositionUnlockWave.archer || 99) ? 0.8 : 0,
+            cavalry: this.state.globalWaveIndex >= (this.designer.enemyCompositionUnlockWave.cavalry || 99) ? 0.65 : 0,
+            mage: this.state.globalWaveIndex >= (this.designer.enemyCompositionUnlockWave.mage || 99) ? 0.55 : 0
+          };
+          const hpScale = clamp(0.82 + this.state.globalWaveIndex * 0.06, 0.88, 1.72);
+          const damageScale = clamp(0.84 + this.state.globalWaveIndex * 0.055, 0.88, 1.64);
+          const speedScale = clamp(0.96 + this.state.globalWaveIndex * 0.015, 0.96, 1.28);
+          const events = [];
+          let remaining = enemyBudget;
+          let spawnTime = 0.3;
+          let serial = 0;
+          const minCost = 20;
+          while (remaining > minCost && events.length < 90) {
+            const id = pickWeighted(rng, allowed, (key) => weights[key] || 1);
+            const preview = this.computeUnitStats(id, "enemy", 1, null);
+            const cost = preview.hp * hpScale * 0.16 + preview.damage * damageScale * 1.6 + preview.speed * speedScale * 3.2 + preview.range * 1.4;
+            if (cost > remaining * 1.2 && allowed.length > 1) {
+              remaining *= 0.995;
+              continue;
+            }
+            const pack = id === "melee" ? rng.int(1, 3) : rng.int(1, 2);
+            for (let i = 0; i < pack && remaining > minCost * 0.45; i++) {
+              const x = clamp(rng.range(0.8, this.designer.totalFieldWidth - 0.8), 0.8, this.designer.totalFieldWidth - 0.8);
+              events.push({
+                id: this.nextId("spawn"),
+                unitType: id,
+                at: spawnTime,
+                x,
+                seed: serial++
+              });
+              spawnTime += rng.range(0.3, 0.78);
+              remaining -= cost * 0.92;
+            }
+            spawnTime += rng.range(0.15, CONFIG.BALANCE.enemyPackSpread);
+          }
+          const estimatedEnemyPower = enemyBudget;
+          return {
+            targetDuration,
+            enemyPower: estimatedEnemyPower,
+            playerPower: player.total,
+            ratio: player.total / Math.max(1, estimatedEnemyPower),
+            expectedDuration: clamp(targetDuration * (estimatedEnemyPower / Math.max(player.total, 1)) * 0.92, 12, this.designer.waveDurationCap),
+            hpScale,
+            damageScale,
+            speedScale,
+            events: events.sort((a, b) => a.at - b.at)
+          };
+        }
+        simulateOrEstimateBattleStrength() {
+          const wave = this.computeEnemyWaveFromPlayerPower();
+          return {
+            playerPower: wave.playerPower,
+            enemyPower: wave.enemyPower,
+            ratio: wave.playerPower / Math.max(1, wave.enemyPower),
+            targetDuration: wave.targetDuration,
+            expectedDuration: wave.expectedDuration
+          };
+        }
+        recomputeEstimate() {
+          this.state.lastEstimate = this.simulateOrEstimateBattleStrength();
+        }
+        startBattle() {
+          if (this.state.screen !== CONFIG.SCREENS.GAMEPLAY || this.state.phase !== CONFIG.PHASES.BUILD || !this.state.worms.length) return;
+          this.state.phase = CONFIG.PHASES.BATTLE;
+          this.state.battleTime = 0;
+          this.state.units = [];
+          this.state.projectiles = [];
+          this.state.particles = [];
+          this.state.wavePlan = this.computeEnemyWaveFromPlayerPower();
+          this.state.lastEstimate = {
+            playerPower: this.state.wavePlan.playerPower,
+            enemyPower: this.state.wavePlan.enemyPower,
+            ratio: this.state.wavePlan.playerPower / Math.max(1, this.state.wavePlan.enemyPower),
+            targetDuration: this.state.wavePlan.targetDuration,
+            expectedDuration: this.state.wavePlan.expectedDuration
+          };
+          this.state.waveEventCursor = 0;
+          this.prepareBattleWorms();
+          this.audio.ui();
+          this.ui.refresh();
+        }
+        prepareBattleWorms() {
+          for (const worm of this.state.worms) {
+            worm.bonuses = this.computeBonusBundle(worm);
+            worm.maxHp = this.computeWormMaxHp(worm);
+            worm.currentHp = worm.maxHp;
+            worm.destroyed = false;
+            worm.cooldown = 0.4 + Math.random() * 0.25;
+          }
+          this.state.core.hp = this.state.core.maxHp = this.designer.baseCoreHp;
+          this.state.core.alive = true;
+          this.state.core.x = this.designer.totalFieldWidth * 0.5;
+          this.state.core.y = this.designer.totalFieldHeight - 0.55;
+        }
+        spawnScheduledEnemies() {
+          while (this.state.waveEventCursor < this.state.wavePlan.events.length) {
+            const event = this.state.wavePlan.events[this.state.waveEventCursor];
+            if (event.at > this.state.battleTime) break;
+            this.state.waveEventCursor += 1;
+            this.spawnEnemyUnit(event.unitType, event.x, event.seed);
+          }
+        }
+        spawnEnemyUnit(typeId, x, seed) {
+          const base = deepClone(CONFIG.ENEMY_TYPES[typeId]);
+          const unit = {
+            id: this.nextId("enemy"),
+            kind: "unit",
+            faction: "enemy",
+            type: typeId,
+            label: base.label,
+            icon: base.icon,
+            x,
+            y: 0.55 + (seed % 3) * 0.08,
+            vx: 0,
+            vy: 0,
+            hp: base.hp * this.state.wavePlan.hpScale,
+            maxHp: base.hp * this.state.wavePlan.hpScale,
+            damage: base.damage * this.state.wavePlan.damageScale,
+            speed: base.speed * this.state.wavePlan.speedScale,
+            range: base.range,
+            attackCooldown: base.attackCooldown,
+            cooldown: 0.3,
+            radius: base.radius,
+            projectileSpeed: base.projectileSpeed || 0,
+            splashRadius: base.splashRadius || 0,
+            attackStyle: base.attackStyle,
+            targetId: null,
+            retarget: 0,
+            alive: true,
+            seed: seed + Math.random()
+          };
+          this.state.units.push(unit);
+          this.audio.spawn();
+        }
+        updateWormBattle(dt) {
+          for (const worm of this.state.worms) {
+            if (worm.destroyed) continue;
+            worm.cooldown = Math.max(0, worm.cooldown - dt);
+            if (worm.cooldown > 0) continue;
+            const type = CONFIG.WORM_TYPES[worm.type];
+            const sizeFactor = 1 + (worm.size - 2) * CONFIG.BALANCE.sizePowerStep;
+            if (type.behavior === "spawner") {
+              this.spawnPlayerUnitFromWorm(worm, type.unitId, sizeFactor);
+              const baseCd = worm.type === "barracks" ? this.designer.barracksSpawnCooldown : type.spawnCooldown;
+              worm.cooldown = baseCd / (1 + (worm.size - 2) * CONFIG.BALANCE.sizeCooldownStep + (worm.bonuses.spawnSpeed || 0));
+            } else if (type.behavior === "tower") {
+              const target = this.findTowerTarget(worm, (this.designer.towerBaseRange || type.range) * (1 + (worm.bonuses.range || 0)));
+              if (target) {
+                this.fireTowerProjectile(worm, target, sizeFactor);
+                worm.cooldown = type.attackCooldown / (1 + (worm.size - 2) * CONFIG.BALANCE.sizeCooldownStep + (worm.bonuses.attackSpeed || 0));
+              } else {
+                worm.cooldown = 0.18;
+              }
+            } else {
+              worm.cooldown = 0.5;
+            }
+          }
+        }
+        spawnPlayerUnitFromWorm(worm, unitId, sizeFactor) {
+          const scale = sizeFactor * (1 + (worm.bonuses.damage || 0) * 0.9);
+          const stats = this.computeUnitStats(unitId, "player", scale, worm.bonuses);
+          if (unitId === "archer") stats.range = this.designer.archerUnitRange * (1 + (worm.bonuses.range || 0));
+          if (unitId === "cavalry") stats.speed = this.designer.cavalrySpeed * (1 + (worm.bonuses.unitMoveSpeed || 0));
+          if (unitId === "mage") stats.splashRadius = this.designer.mageSplashRadius * (1 + (worm.bonuses.splashRadius || 0));
+          const unit = {
+            id: this.nextId("ally"),
+            kind: "unit",
+            faction: "player",
+            type: unitId,
+            label: stats.label,
+            icon: stats.icon,
+            x: worm.centerX,
+            y: this.designer.battleRows + worm.centerY - 0.2,
+            vx: 0,
+            vy: 0,
+            hp: stats.hp,
+            maxHp: stats.hp,
+            damage: stats.damage * (1 + (worm.bonuses.damage || 0)),
+            speed: stats.speed,
+            range: stats.range,
+            attackCooldown: stats.attackCooldown,
+            cooldown: 0.25,
+            radius: stats.radius,
+            projectileSpeed: stats.projectileSpeed || 0,
+            splashRadius: stats.splashRadius || 0,
+            attackStyle: stats.attackStyle,
+            targetId: null,
+            retarget: 0,
+            alive: true,
+            seed: Math.random() * 1000
+          };
+          this.state.units.push(unit);
+          this.emitBurst(unit.x, unit.y, CONFIG.WORM_TYPES[worm.type].color, 6, 0.32);
+          this.audio.spawn();
+        }
+        findTowerTarget(worm, range) {
+          const wx = worm.centerX;
+          const wy = this.designer.battleRows + worm.centerY;
+          let best = null;
+          let bestDist = range * range;
+          for (const unit of this.state.units) {
+            if (!unit.alive || unit.faction !== "enemy") continue;
+            const dx = unit.x - wx;
+            const dy = unit.y - wy;
+            const dist = dx * dx + dy * dy;
+            if (dist < bestDist) {
+              bestDist = dist;
+              best = unit;
+            }
+          }
+          return best;
+        }
+        fireTowerProjectile(worm, target, sizeFactor) {
+          const type = CONFIG.WORM_TYPES[worm.type];
+          const damage = type.damage * sizeFactor * (1 + (worm.bonuses.damage || 0));
+          const projectile = {
+            id: this.nextId("proj"),
+            faction: "player",
+            x: worm.centerX,
+            y: this.designer.battleRows + worm.centerY,
+            targetId: target.id,
+            targetKind: "unit",
+            speed: type.projectileSpeed,
+            damage,
+            splashRadius: type.splashRadius || 0,
+            color: type.color,
+            scale: 1
+          };
+          this.state.projectiles.push(projectile);
+        }
+        updateUnits(dt) {
+          for (const unit of this.state.units) {
+            if (!unit.alive) continue;
+            unit.cooldown = Math.max(0, unit.cooldown - dt);
+            unit.retarget = Math.max(0, unit.retarget - dt);
+            if (unit.retarget <= 0 || !this.getTargetEntity(unit.targetId)) {
+              unit.targetId = this.acquireTarget(unit)?.id || null;
+              unit.retarget = CONFIG.BALANCE.targetRetargetTime;
+            }
+            const target = this.getTargetEntity(unit.targetId);
+            const objective = target || this.getFallbackTarget(unit);
+            if (!objective) continue;
+            const dx = objective.x - unit.x;
+            const dy = objective.y - unit.y;
+            const distance = Math.hypot(dx, dy);
+            const attackRange = unit.range + (objective.radius || 0);
+            if (target && distance <= attackRange) {
+              if (unit.cooldown <= 0) {
+                this.unitAttack(unit, target);
+                unit.cooldown = unit.attackCooldown;
+              }
+            } else {
+              const speed = unit.speed * dt;
+              if (distance > 0.001) {
+                unit.x += (dx / distance) * speed;
+                unit.y += (dy / distance) * speed;
+              }
+            }
+          }
+        }
+        getTargetEntity(id) {
+          if (!id) return null;
+          if (id === "core") return this.state.core.hp > 0 ? this.state.core : null;
+          for (const unit of this.state.units) if (unit.id === id && unit.alive) return unit;
+          for (const worm of this.state.worms) if (worm.id === id && !worm.destroyed) {
+            return {
+              id: worm.id,
+              kind: "worm",
+              x: worm.centerX,
+              y: this.designer.battleRows + worm.centerY,
+              hp: worm.currentHp,
+              maxHp: worm.maxHp,
+              radius: Math.max(0.45, worm.size * 0.28),
+              worm
+            };
+          }
+          return null;
+        }
+        getFallbackTarget(unit) {
+          if (unit.faction === "player") {
+            return { id: "front", x: clamp(unit.x, 0.6, this.designer.totalFieldWidth - 0.6), y: 0.6, radius: 0 };
+          }
+          if (this.designer.canBuildingsBeDestroyedThisWave) {
+            let best = null;
+            let bestDist = Infinity;
+            for (const worm of this.state.worms) {
+              if (worm.destroyed) continue;
+              const wx = worm.centerX;
+              const wy = this.designer.battleRows + worm.centerY;
+              const dx = wx - unit.x;
+              const dy = wy - unit.y;
+              const dist = dx * dx + dy * dy;
+              if (dist < bestDist) {
+                bestDist = dist;
+                best = { id: worm.id, x: wx, y: wy, radius: Math.max(0.45, worm.size * 0.28), worm };
+              }
+            }
+            if (best) return best;
+          }
+          return this.state.core;
+        }
+        acquireTarget(unit) {
+          let candidates = [];
+          if (unit.faction === "player") {
+            candidates = this.state.units.filter((entry) => entry.alive && entry.faction === "enemy");
+          } else {
+            candidates = this.state.units.filter((entry) => entry.alive && entry.faction === "player");
+            if (this.designer.canBuildingsBeDestroyedThisWave) {
+              for (const worm of this.state.worms) if (!worm.destroyed) {
+                candidates.push({
+                  id: worm.id,
+                  x: worm.centerX,
+                  y: this.designer.battleRows + worm.centerY,
+                  radius: Math.max(0.45, worm.size * 0.28),
+                  worm,
+                  pseudo: true
+                });
+              }
+            }
+            candidates.push(this.state.core);
+          }
+          let best = null;
+          let bestDist = Infinity;
+          for (const target of candidates) {
+            if (target.id === unit.id) continue;
+            if (target.hp <= 0) continue;
+            const dx = target.x - unit.x;
+            const dy = target.y - unit.y;
+            const dist = dx * dx + dy * dy;
+            if (dist < bestDist) {
+              bestDist = dist;
+              best = target;
+            }
+          }
+          return best;
+        }
+        unitAttack(unit, target) {
+          if (unit.attackStyle === "projectile") {
+            this.state.projectiles.push({
+              id: this.nextId("proj"),
+              faction: unit.faction,
+              x: unit.x,
+              y: unit.y,
+              targetId: target.id,
+              targetKind: target.kind || "unit",
+              speed: unit.projectileSpeed || 10,
+              damage: unit.damage,
+              splashRadius: unit.splashRadius || 0,
+              color: unit.faction === "player" ? "#f7bf6f" : "#9f6677",
+              scale: 1
+            });
+          } else {
+            this.applyDamage(target.id, unit.damage, unit.faction, unit.splashRadius || 0, target.x, target.y);
+          }
+          this.audio.hit();
+        }
+        updateProjectiles(dt) {
+          for (let i = this.state.projectiles.length - 1; i >= 0; i--) {
+            const projectile = this.state.projectiles[i];
+            const target = this.getTargetEntity(projectile.targetId);
+            if (!target) {
+              this.state.projectiles.splice(i, 1);
+              continue;
+            }
+            const dx = target.x - projectile.x;
+            const dy = target.y - projectile.y;
+            const distance = Math.hypot(dx, dy);
+            const step = projectile.speed * dt;
+            if (distance <= step + CONFIG.BALANCE.projectileHitRadius) {
+              this.applyDamage(target.id, projectile.damage, projectile.faction, projectile.splashRadius || 0, target.x, target.y);
+              this.state.projectiles.splice(i, 1);
+              continue;
+            }
+            projectile.x += (dx / distance) * step;
+            projectile.y += (dy / distance) * step;
+          }
+        }
+        applyDamage(targetId, amount, sourceFaction, splashRadius = 0, hitX = 0, hitY = 0) {
+          const target = this.getTargetEntity(targetId);
+          if (!target) return;
+          const burstColor = sourceFaction === "player" ? "#ffd08b" : "#b57082";
+          this.emitBurst(hitX, hitY, burstColor, 6, 0.28);
+          if (target.kind === "worm" && target.worm) {
+            const worm = target.worm;
+            const armor = worm.bonuses?.armor || CONFIG.WORM_TYPES[worm.type].armor || 0;
+            worm.currentHp -= amount * (1 - clamp(armor, 0, 0.75));
+            worm.flash = 0.5;
+            if (worm.currentHp <= 0) {
+              worm.destroyed = true;
+              worm.currentHp = 0;
+            }
+          } else if (target.id === "core") {
+            this.state.core.hp = Math.max(0, this.state.core.hp - amount);
+          } else {
+            target.hp -= amount;
+            if (target.hp <= 0) target.alive = false;
+          }
+          if (splashRadius > 0) {
+            const victims = sourceFaction === "player"
+              ? this.state.units.filter((unit) => unit.alive && unit.faction === "enemy")
+              : this.state.units.filter((unit) => unit.alive && unit.faction === "player");
+            for (const victim of victims) {
+              if (victim.id === targetId) continue;
+              const dx = victim.x - hitX;
+              const dy = victim.y - hitY;
+              if (Math.hypot(dx, dy) <= splashRadius) {
+                victim.hp -= amount * 0.55;
+                if (victim.hp <= 0) victim.alive = false;
+              }
+            }
+          }
+        }
+        cleanupDeadUnits() {
+          this.state.units = this.state.units.filter((unit) => unit.alive && unit.hp > 0 && unit.y > -1 && unit.y < this.designer.totalFieldHeight + 1);
+        }
+        emitBurst(x, y, color, count, spread) {
+          for (let i = 0; i < count; i++) {
+            const angle = Math.random() * TWO_PI;
+            const speed = Math.random() * spread;
+            this.state.particles.push({
+              x,
+              y,
+              vx: Math.cos(angle) * speed,
+              vy: Math.sin(angle) * speed,
+              gravity: 0.16,
+              size: Math.random() * 2.4 + 1.2,
+              color,
+              start: performance.now(),
+              life: 320 + Math.random() * 280
+            });
+          }
+        }
+        finishBattle(win, text) {
+          if (this.state.phase !== CONFIG.PHASES.BATTLE) return;
+          this.state.phase = CONFIG.PHASES.BUILD;
+          this.state.units = [];
+          this.state.projectiles = [];
+          this.state.wavePlan = null;
+          if (win) {
+            this.audio.win();
+            const reward = this.computeWaveReward();
+            this.state.crystals += reward;
+            if (this.designer.restoreBuildingsAfterWave) {
+              for (const worm of this.state.worms) {
+                worm.destroyed = false;
+                worm.maxHp = this.computeWormMaxHp(worm);
+                worm.currentHp = worm.maxHp;
+              }
+            }
+            if (this.state.waveIndex >= this.state.totalWaves) {
+              const unlocked = clamp(this.state.levelIndex + 1, 1, CONFIG.CAMPAIGN_LEVELS.length);
+              this.save.setHighestUnlocked(unlocked);
+              this.state.result = {
+                win: true,
+                title: this.state.levelIndex >= CONFIG.CAMPAIGN_LEVELS.length ? "Campaign Complete" : "Level Clear",
+                body: `${text} Reward: ${reward} crystals. ${this.state.levelIndex >= CONFIG.CAMPAIGN_LEVELS.length ? "All six levels cleared." : "Next level unlocked."}`,
+                nextLabel: this.state.levelIndex >= CONFIG.CAMPAIGN_LEVELS.length ? "Back To Menu" : "Next Level"
+              };
+              this.state.screen = CONFIG.SCREENS.RESULT;
+              this.ui.setScreen(CONFIG.SCREENS.RESULT);
+              this.ui.refresh();
+              return;
+            }
+            this.state.waveIndex += 1;
+            this.state.globalWaveIndex = this.computeGlobalWaveIndex(this.state.levelIndex, this.state.waveIndex);
+            this.fillPool(true);
+            this.generateBonusTiles();
+            this.recomputeEstimate();
+            if (!this.designer.rebuildAfterWave) this.startBattle();
+          } else {
+            this.audio.lose();
+            if (this.designer.restoreBuildingsAfterWave) {
+              for (const worm of this.state.worms) {
+                worm.destroyed = false;
+                worm.currentHp = this.computeWormMaxHp(worm);
+              }
+            }
+            this.state.result = {
+              win: false,
+              title: "Defeat",
+              body: text,
+              nextLabel: "Retry Level"
+            };
+            this.state.screen = CONFIG.SCREENS.RESULT;
+            this.ui.setScreen(CONFIG.SCREENS.RESULT);
+          }
+          this.ui.refresh();
+        }
+        computeWaveReward() {
+          const nextCost = this.designer.refreshCostCurve[Math.min(this.state.refreshStep + 1, this.designer.refreshCostCurve.length - 1)] || this.getRefreshCost();
+          return nextCost + CONFIG.BALANCE.rewardPadding + Math.round(this.state.waveIndex * 0.8);
+        }
+        handleResultNext() {
+          if (!this.state.result) return;
+          if (!this.state.result.win) {
+            this.restartLevel();
+            return;
+          }
+          if (this.state.levelIndex >= CONFIG.CAMPAIGN_LEVELS.length) {
+            this.openMenu();
+          } else {
+            this.startLevel(this.state.levelIndex + 1);
+          }
+        }
+        skipWave() {
+          if (this.state.phase === CONFIG.PHASES.BATTLE) this.finishBattle(true, `Wave ${this.state.waveIndex} skipped from debug.`);
+        }
+        killAllEnemies() {
+          for (const unit of this.state.units) if (unit.faction === "enemy") unit.alive = false;
+        }
+        forceFirstMerge() {
+          const groups = new Map();
+          for (const worm of this.state.worms) {
+            const key = `${worm.type}|${worm.size}`;
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(worm);
+          }
+          for (const worms of groups.values()) {
+            if (worms.length < 2) continue;
+            const [a, b] = worms;
+            const placement = this.findMergePlacement(a, b, a.id);
+            if (!placement) continue;
+            this.applyMerge({ kind: "board", sourceId: a.id, worm: a }, b, placement);
+            return;
+          }
+        }
+        getWormDisplayState(worm) {
+          const cells = (worm.renderCells || worm.cells || [])
+            .filter((cell) => cell && Number.isFinite(cell.x) && Number.isFinite(cell.y))
+            .map((cell) => ({ x: cell.x, y: cell.y }));
+          return {
+            x: worm.renderX ?? worm.x,
+            y: worm.renderY ?? worm.y,
+            cells
+          };
+        }
+        exportLevelJson() {
+          const payload = {
+            levelIndex: this.state.levelIndex,
+            waveIndex: this.state.waveIndex,
+            totalWaves: this.state.totalWaves,
+            crystals: this.state.crystals,
+            refreshStep: this.state.refreshStep,
+            seed: this.designer.seed,
+            designer: this.designer,
+            worms: this.state.worms.map((worm) => ({
+              id: worm.id,
+              type: worm.type,
+              size: worm.size,
+              x: worm.x,
+              y: worm.y
+            })),
+            pool: this.state.pool.map((worm) => ({
+              id: worm.id,
+              type: worm.type,
+              size: worm.size
+            })),
+            bonusTiles: deepClone(this.state.bonusTiles)
+          };
+          this.refs.dbgLevelJson.value = JSON.stringify(payload, null, 2);
+        }
+        importLevelJson() {
+          try {
+            const parsed = JSON.parse(this.refs.dbgLevelJson.value.trim());
+            if (parsed.designer) this.designer = this.normalizeDesigner(parsed.designer);
+            this.state = this.createInitialState();
+            this.state.screen = CONFIG.SCREENS.GAMEPLAY;
+            this.state.levelIndex = parsed.levelIndex || 1;
+            this.state.waveIndex = parsed.waveIndex || 1;
+            this.state.totalWaves = parsed.totalWaves || (CONFIG.CAMPAIGN_LEVELS[this.state.levelIndex - 1]?.waves || 3);
+            this.state.globalWaveIndex = this.computeGlobalWaveIndex(this.state.levelIndex, this.state.waveIndex);
+            this.state.crystals = parsed.crystals || 0;
+            this.state.refreshStep = parsed.refreshStep || 0;
+            this.state.worms = (parsed.worms || []).map((worm) => ({
+              ...worm,
+              renderX: worm.x,
+              renderY: worm.y,
+              seed: Math.random() * 999,
+              mergePulse: 0,
+              flash: 0,
+              destroyed: false,
+              currentHp: 0,
+              maxHp: 0,
+              bonuses: {}
+            }));
+            this.state.pool = (parsed.pool || []).map((worm) => ({
+              ...worm,
+              x: 0,
+              y: 0,
+              renderX: 0,
+              renderY: 0,
+              seed: Math.random() * 999,
+              mergePulse: 0,
+              flash: 0,
+              destroyed: false,
+              currentHp: 0,
+              maxHp: 0,
+              bonuses: {}
+            }));
+            this.state.bonusTiles = parsed.bonusTiles || [];
+            this.save.setDesigner(this.designer);
+            this.refreshWormState();
+            this.recomputeEstimate();
+            this.ui.setScreen(CONFIG.SCREENS.GAMEPLAY);
+            this.ui.refresh();
+          } catch (error) {
+            this.refs.floatingHint.textContent = `Import level error: ${error.message}`;
+          }
+        }
+        exportBalanceJson() {
+          const payload = {
+            designer: this.designer,
+            wormTypes: CONFIG.WORM_TYPES,
+            unitBaseStats: CONFIG.UNIT_TYPES,
+            enemyBaseStats: CONFIG.ENEMY_TYPES,
+            balance: CONFIG.BALANCE
+          };
+          this.refs.dbgBalanceJson.value = JSON.stringify(payload, null, 2);
+        }
+        importBalanceJson() {
+          try {
+            const parsed = JSON.parse(this.refs.dbgBalanceJson.value.trim());
+            if (parsed.designer) this.designer = parsed.designer;
+            if (parsed.wormTypes) Object.assign(CONFIG.WORM_TYPES, parsed.wormTypes);
+            if (parsed.unitBaseStats) Object.assign(CONFIG.UNIT_TYPES, parsed.unitBaseStats);
+            if (parsed.enemyBaseStats) Object.assign(CONFIG.ENEMY_TYPES, parsed.enemyBaseStats);
+            if (parsed.balance) Object.assign(CONFIG.BALANCE, parsed.balance);
+            this.save.setDesigner(this.designer);
+            this.ui.loadDesignerValues();
+            this.ui.refresh();
+          } catch (error) {
+            this.refs.floatingHint.textContent = `Import balance error: ${error.message}`;
+          }
+        }
+      }
+
+      new Game();
+    })();
+  </script>
+</body>
+</html>
