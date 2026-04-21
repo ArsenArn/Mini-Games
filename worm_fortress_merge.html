@@ -731,14 +731,14 @@
           playerCore: "#f7dba1",
           enemyCore: "#6f4452",
           bonusTypes: {
-            hp: { icon: "HP", color: "#7acda1" },
-            damage: { icon: "DMG", color: "#ffb06b" },
-            spawnSpeed: { icon: "SPD", color: "#73b9ff" },
-            range: { icon: "RNG", color: "#c29dff" },
-            attackSpeed: { icon: "AS", color: "#ffd768" },
-            unitMoveSpeed: { icon: "MV", color: "#78d8dc" },
-            armor: { icon: "ARM", color: "#9eb3c5" },
-            splashRadius: { icon: "AOE", color: "#ef91ff" }
+            hp: { icon: "❤", color: "#ff6f91", glow: "rgba(255,111,145,.42)" },
+            damage: { icon: "⚔", color: "#ff9d57", glow: "rgba(255,157,87,.42)" },
+            spawnSpeed: { icon: "⚡", color: "#5ab8ff", glow: "rgba(90,184,255,.42)" },
+            range: { icon: "🏹", color: "#9b7bff", glow: "rgba(155,123,255,.4)" },
+            attackSpeed: { icon: "✦", color: "#ffd34d", glow: "rgba(255,211,77,.4)" },
+            unitMoveSpeed: { icon: "➜", color: "#47e0d1", glow: "rgba(71,224,209,.38)" },
+            armor: { icon: "🛡", color: "#8da7c4", glow: "rgba(141,167,196,.34)" },
+            splashRadius: { icon: "✹", color: "#ef72ff", glow: "rgba(239,114,255,.36)" }
           }
         },
         DEFAULT_DESIGNER: {
@@ -756,7 +756,7 @@
           allowedWormTypes: ["barracks", "archer", "wall", "tower", "cavalry", "mage"],
           allowedWormSizes: [2, 3],
           mergeRules: "sameTypeSameSize",
-          bonusTileStartCount: 2,
+          bonusTileStartCount: 3,
           bonusTileGrowthPerWave: 1,
           allowedBonusTypes: ["hp", "damage", "spawnSpeed", "range", "attackSpeed", "unitMoveSpeed", "armor", "splashRadius"],
           bonusValues: {
@@ -1402,29 +1402,31 @@
         }
         renderBonusTiles(ctx, ts) {
           const board = this.game.getBoardConfig();
-          const m = this.metrics;
           for (const tile of this.game.state.bonusTiles) {
             const totalRow = board.battleRows + tile.y;
             const rect = this.cellRect(tile.x, totalRow);
             const meta = CONFIG.THEME.bonusTypes[tile.type];
-            const pulse = 0.55 + Math.sin(ts * 0.004 + tile.x * 1.2 + tile.y) * 0.14;
+            const pulse = 0.76 + Math.sin(ts * 0.004 + tile.x * 1.2 + tile.y) * 0.18;
             ctx.save();
-            roundRectPath(ctx, rect.x + 3, rect.y + 3, rect.size - 6, rect.size - 6, rect.size * 0.22);
-            ctx.fillStyle = meta.color + "33";
+            ctx.shadowColor = meta.glow || (meta.color + "66");
+            ctx.shadowBlur = rect.size * 0.22;
+            roundRectPath(ctx, rect.x + 3, rect.y + 3, rect.size - 6, rect.size - 6, rect.size * 0.24);
+            ctx.fillStyle = meta.color + "77";
             ctx.fill();
+            ctx.shadowBlur = 0;
             ctx.strokeStyle = meta.color;
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 2.5;
             ctx.stroke();
             ctx.globalAlpha = pulse;
-            roundRectPath(ctx, rect.x + 8, rect.y + 8, rect.size - 16, rect.size - 16, rect.size * 0.18);
-            ctx.fillStyle = meta.color + "44";
+            roundRectPath(ctx, rect.x + 7, rect.y + 7, rect.size - 14, rect.size - 14, rect.size * 0.2);
+            ctx.fillStyle = "#ffffff66";
             ctx.fill();
             ctx.globalAlpha = 1;
-            ctx.fillStyle = "rgba(18,34,56,.86)";
-            ctx.font = `700 ${Math.max(9, rect.size * 0.18)}px Trebuchet MS`;
+            ctx.fillStyle = "rgba(255,255,255,.98)";
+            ctx.font = `700 ${Math.max(13, rect.size * 0.34)}px Trebuchet MS`;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.fillText(meta.icon, rect.x + rect.size * 0.5, rect.y + rect.size * 0.54);
+            ctx.fillText(meta.icon, rect.x + rect.size * 0.5, rect.y + rect.size * 0.55);
             ctx.restore();
           }
         }
@@ -1721,36 +1723,38 @@
           if (!drag) return;
           const candidate = drag.candidate;
           if (!candidate) return;
+          const cellX = this.metrics.cellX;
+          const cellY = this.metrics.cellY;
           if (candidate.mode === "slither") return;
           if (candidate.mode === "merge" && candidate.target) {
             const target = candidate.target;
             const totalRow = board.battleRows + target.y;
             const rect = this.cellRect(target.x, totalRow);
-            const width = target.size * this.metrics.cell;
+            const width = target.size * cellX;
             ctx.save();
             ctx.strokeStyle = `rgba(244,178,79,${0.55 + Math.sin(ts * 0.014) * 0.18})`;
             ctx.lineWidth = 4;
-            roundRectPath(ctx, rect.x + 2, rect.y + 2, width - 4, this.metrics.cell - 4, this.metrics.cell * 0.45);
+            roundRectPath(ctx, rect.x + 2, rect.y + 2, width - 4, cellY - 4, Math.min(cellX, cellY) * 0.45);
             ctx.stroke();
             ctx.restore();
           }
           if (candidate.x == null || candidate.y == null) return;
           const typeId = drag.worm.type;
           const type = CONFIG.WORM_TYPES[typeId];
-          const rectX = this.metrics.boardX + candidate.x * this.metrics.cell;
-          const rectY = this.metrics.boardY + (board.battleRows + candidate.y) * this.metrics.cell;
-          const width = drag.previewSize * this.metrics.cell;
+          const rectX = this.metrics.boardX + candidate.x * cellX;
+          const rectY = this.metrics.boardY + (board.battleRows + candidate.y) * cellY;
+          const width = drag.previewSize * cellX;
           const valid = candidate.mode !== "invalid";
           ctx.save();
           ctx.globalAlpha = 0.72;
           ctx.strokeStyle = valid ? "rgba(44,179,122,.88)" : "rgba(235,110,110,.9)";
           ctx.lineWidth = 3;
           ctx.setLineDash([9, 6]);
-          roundRectPath(ctx, rectX + 2, rectY + 2, width - 4, this.metrics.cell - 4, this.metrics.cell * 0.42);
+          roundRectPath(ctx, rectX + 2, rectY + 2, width - 4, cellY - 4, Math.min(cellX, cellY) * 0.42);
           ctx.stroke();
           ctx.setLineDash([]);
           ctx.fillStyle = type.color + (valid ? "33" : "22");
-          roundRectPath(ctx, rectX + 5, rectY + 5, width - 10, this.metrics.cell - 10, this.metrics.cell * 0.36);
+          roundRectPath(ctx, rectX + 5, rectY + 5, width - 10, cellY - 10, Math.min(cellX, cellY) * 0.36);
           ctx.fill();
           ctx.restore();
         }
