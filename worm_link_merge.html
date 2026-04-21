@@ -1247,7 +1247,7 @@
         <section class="panelCard compactHud">
           <div class="pillRack">
             <div class="pill"><span>Level</span><strong id="hudLevelValue">1</strong></div>
-            <div class="pill"><span>Quest</span><strong id="hudQuestValue">0 / 3</strong></div>
+            <div class="pill"><span>Goal</span><strong id="hudQuestValue">0 / 6</strong></div>
             <div class="pill"><span>Resolve</span><strong id="hudResolveValue">0 / 4</strong></div>
             <div class="pill"><span>Merge Pairs</span><strong id="hudMergeValue">0</strong></div>
             <div class="pill"><span>Pipes</span><strong id="hudPipeValue">0</strong></div>
@@ -1300,6 +1300,7 @@
             <div class="signalLine"><span>Colored pipes</span><strong id="coloredPipeValue">Off</strong></div>
             <div class="signalLine"><span>Seed</span><strong id="seedValue">warm-link</strong></div>
             <div class="signalLine"><span>Edit mode</span><strong id="editModeValue">Play</strong></div>
+            <div class="signalLine"><span>Currency</span><strong id="currencyValue">0</strong></div>
           </div>
           <div id="toastStack" class="toastStack"></div>
         </section>
@@ -1567,7 +1568,7 @@
           <div class="menuTagRow">
             <div id="menuProgressTag" class="menuTag">Unlocked: 1</div>
             <div id="menuBoardTag" class="menuTag">Board: 8 x 14</div>
-            <div id="menuQuestTag" class="menuTag">Quests: 3</div>
+              <div id="menuQuestTag" class="menuTag">Goal: 6 pipes</div>
           </div>
           <div class="screenButtons">
             <button id="menuStartButton" class="actionButton accent" type="button">Generate + Start</button>
@@ -1617,7 +1618,7 @@
       <h2 id="resultTitle">Victory</h2>
       <div class="metaGrid">
         <div class="metaCard"><span>Level</span><strong id="resultLevelValue">1</strong></div>
-        <div class="metaCard"><span>Quests</span><strong id="resultQuestValue">0 / 0</strong></div>
+        <div class="metaCard"><span>Pipes</span><strong id="resultQuestValue">0 / 0</strong></div>
         <div class="metaCard"><span>Resolve Uses</span><strong id="resultResolveValue">0</strong></div>
       </div>
       <div id="resultReason" class="resultTone">The result summary goes here.</div>
@@ -1878,11 +1879,12 @@
             const raw = localStorage.getItem(CONFIG.SAVE_KEY);
             if (raw) {
               const parsed = JSON.parse(raw);
-              return {
-                highestLevel: Math.max(1, parsed.highestLevel || 1),
-                settings: {
-                  sound: parsed.settings?.sound ?? true
-                },
+                return {
+                  highestLevel: Math.max(1, parsed.highestLevel || 1),
+                  currency: Math.max(0, parsed.currency || 0),
+                  settings: {
+                    sound: parsed.settings?.sound ?? true
+                  },
                 designer: parsed.designer || Helpers.deepClone(CONFIG.DEFAULT_DESIGNER)
               };
             }
@@ -1892,6 +1894,7 @@
 
           return {
             highestLevel: 1,
+            currency: 0,
             settings: { sound: true },
             designer: Helpers.deepClone(CONFIG.DEFAULT_DESIGNER)
           };
@@ -1917,6 +1920,11 @@
 
         setDesigner(settings) {
           this.data.designer = Helpers.deepClone(settings);
+          this.persist();
+        }
+
+        addCurrency(amount) {
+          this.data.currency = Math.max(0, (this.data.currency || 0) + amount);
           this.persist();
         }
       }
@@ -2526,6 +2534,7 @@
             coloredPipeValue: document.getElementById("coloredPipeValue"),
             seedValue: document.getElementById("seedValue"),
             editModeValue: document.getElementById("editModeValue"),
+            currencyValue: document.getElementById("currencyValue"),
             modeBadge: document.getElementById("modeBadge"),
             toastStack: document.getElementById("toastStack"),
             hintLine: document.getElementById("hintLine"),
@@ -2761,7 +2770,7 @@
         updateMenuMeta(rules, highestLevel) {
           this.refs.menuProgressTag.textContent = `Unlocked: ${highestLevel}`;
           this.refs.menuBoardTag.textContent = `Board: ${rules.fieldWidth} x ${rules.fieldHeight}`;
-          this.refs.menuQuestTag.textContent = `Quests: ${rules.requiredQuestCount}`;
+          this.refs.menuQuestTag.textContent = `Goal: ${this.game.getLevelPipeGoal(rules.level || this.selectedMenuLevel)} pipes`;
           this.refs.menuMetaField.textContent = `${rules.fieldWidth}x${rules.fieldHeight}`;
           this.refs.menuMetaLengths.textContent = `${rules.startLengthMin}-${rules.startLengthMax}`;
           this.refs.menuMetaPipes.textContent = String(rules.startPipePairs);
@@ -2786,7 +2795,7 @@
           this.refs.resultEyebrow.textContent = result.won ? "Level Clear" : "Run Ended";
           this.refs.resultTitle.textContent = result.won ? "Victory" : "Stalled";
           this.refs.resultLevelValue.textContent = String(this.game.state.level);
-          this.refs.resultQuestValue.textContent = `${this.game.board.progress.completedQuestCount} / ${this.game.board.progress.requiredQuestCount}`;
+          this.refs.resultQuestValue.textContent = `${this.game.board.stats.pipeConnections} / ${this.game.getLevelPipeGoal()}`;
           this.refs.resultResolveValue.textContent = String(this.game.board.stats.resolveUses);
           this.refs.resultReason.textContent = result.reason;
           this.refs.resultNextButton.disabled = !result.won;
@@ -2809,14 +2818,14 @@
           const game = this.game;
           const board = game.board;
           const level = game.state.level || this.selectedMenuLevel;
-          const progressCount = board ? board.progress.completedQuestCount : 0;
-          const requiredCount = board ? board.progress.requiredQuestCount : (game.rules?.requiredQuestCount || 0);
+          const progressCount = board ? Math.min(board.stats.pipeConnections, game.getLevelPipeGoal()) : 0;
+          const requiredCount = game.getLevelPipeGoal(level);
           this.setText("hudLevelValue", level);
           this.setText("hudQuestValue", `${progressCount} / ${requiredCount}`);
           this.setText("hudResolveValue", board ? `${board.connectedHoleCount} / ${game.rules.resolveThresholdHoles}` : `0 / ${game.rules?.resolveThresholdHoles || CONFIG.PIPE.resolveThresholdHoles}`);
           this.setText("hudMergeValue", board ? String(board.availableMergePairs) : "0");
           this.setText("hudPipeValue", board ? String(board.pipes.length) : "0");
-          this.setText("questProgressBadge", `${progressCount} / ${requiredCount} done`);
+          this.setText("questProgressBadge", board ? `+${board.stats.currencyEarned} coins` : "Bonus only");
           this.setText("inventoryBadge", board ? `${board.worms.length} worms` : "0 worms");
           this.setText("pendingPipeValue", board?.pendingPipeBatch ? `${board.pendingPipeBatch.count} waiting` : "No");
           this.setText("coloredPipeValue", game.rules?.coloredPipesActive ? "Active" : "Off");
@@ -2826,6 +2835,7 @@
             : game.designer.editMode === "select"
               ? "Select"
               : "Wall");
+          this.setText("currencyValue", game.save.data.currency || 0);
           this.setText("soundButton", game.audio.enabled ? "Sound On" : "Sound Off");
           this.setText("soundButtonDesktop", game.audio.enabled ? "Sound On" : "Sound Off");
           this.setText("modeBadge", CONFIG.FUTURE_MODES.classic.label);
@@ -3430,6 +3440,7 @@
           this.pointer = null;
           this.pointerBoard = null;
           this.dragging = false;
+          this.dragDistance = 0;
           this.pointerStepCooldown = 0;
           this.keyDirection = null;
           this.keyboardStepCooldown = 0;
@@ -3447,9 +3458,13 @@
         }
 
         reset() {
+          if (this.pointer?.id !== null && this.pointer?.id !== undefined) {
+            try { this.canvas.releasePointerCapture(this.pointer.id); } catch {}
+          }
           this.pointer = null;
           this.pointerBoard = null;
           this.dragging = false;
+          this.dragDistance = 0;
           this.pointerStepCooldown = 0;
           this.keyDirection = null;
           this.keyboardStepCooldown = 0;
@@ -3470,7 +3485,7 @@
         }
 
         getDesiredStep() {
-          if (!this.dragging || !this.pointerBoard) return null;
+          if (!this.dragging || !this.pointerBoard || this.dragDistance <= CONFIG.INPUT.dragThreshold) return null;
           if (!this.game.board || this.game.state.screen !== CONFIG.GAME_STATES.GAMEPLAY) return null;
           if (this.game.designer.editMode !== "play") return null;
           const selection = this.game.state.selection;
@@ -3519,9 +3534,13 @@
             startX: event.clientX,
             startY: event.clientY,
             cell,
-            hit
+            hit,
+            selectionBefore: this.game.state.selection?.kind === "worm" ? this.game.state.selection.id : null,
+            endBefore: this.game.state.selectedEnd,
+            switchedOnDown: false
           };
-          this.dragging = true;
+          this.dragging = false;
+          this.dragDistance = 0;
           this.pointerStepCooldown = 0;
           this.canvas.setPointerCapture(event.pointerId);
           if (this.game.designer.editMode === "wall") {
@@ -3529,8 +3548,16 @@
             return;
           }
           if (hit) {
-            this.game.selectFromHit(hit, cell);
-            if (hit.kind === "worm") {
+            const sameSelectedWorm = hit.kind === "worm"
+              && this.game.state.selection?.kind === "worm"
+              && this.game.state.selection.id === hit.id;
+            if (!sameSelectedWorm || this.game.designer.editMode !== "play") {
+              this.game.selectFromHit(hit, cell);
+            } else {
+              this.game.toggleEndIfSameWorm(hit.id, cell);
+              this.pointer.switchedOnDown = true;
+            }
+            if (hit.kind === "worm" && !sameSelectedWorm) {
               const worm = this.game.getWormById(hit.id);
               this.game.state.selectedEnd = this.pickClosestEnd(worm);
             }
@@ -3542,14 +3569,21 @@
         onPointerMove(event) {
           if (!this.pointer || this.pointer.id !== event.pointerId) return;
           this.updateBoardPosition(event);
+          this.dragDistance = Math.abs(event.clientX - this.pointer.startX) + Math.abs(event.clientY - this.pointer.startY);
+          if (this.game.designer.editMode === "play" && this.pointer.hit?.kind === "worm" && this.dragDistance > CONFIG.INPUT.dragThreshold) {
+            this.dragging = true;
+          }
         }
 
         onPointerUp(event) {
           if (!this.pointer || this.pointer.id !== event.pointerId) return;
           const pointer = this.pointer;
+          try { this.canvas.releasePointerCapture(event.pointerId); } catch {}
           this.pointer = null;
+          const wasDragging = this.dragging;
           this.dragging = false;
           this.pointerBoard = null;
+          this.dragDistance = 0;
           const dx = event.clientX - pointer.startX;
           const dy = event.clientY - pointer.startY;
           const moved = Math.abs(dx) + Math.abs(dy) > CONFIG.INPUT.dragThreshold;
@@ -3565,8 +3599,12 @@
             return;
           }
 
-          if (this.game.designer.editMode === "play" && pointer.hit?.kind === "worm") {
-            this.game.toggleEndIfSameWorm(pointer.hit.id, pointer.cell);
+          if (this.game.designer.editMode === "play" && pointer.hit?.kind === "worm" && !pointer.switchedOnDown) {
+            if (pointer.selectionBefore === pointer.hit.id && !wasDragging) {
+              this.game.toggleEndIfSameWorm(pointer.hit.id, pointer.cell);
+            } else {
+              this.game.selectFromHit(pointer.hit, pointer.cell);
+            }
           }
         }
 
@@ -3707,9 +3745,15 @@
             resolveUses: 0,
             pipeConnections: 0,
             closedColoredPairs: 0,
+            currencyEarned: 0,
             newWormsSpawnedByLength: {},
             createdWormsByLength: {}
           };
+        }
+
+        getLevelPipeGoal(level = this.state.level || 1) {
+          const safeLevel = Math.max(1, level);
+          return 6 + (safeLevel - 1) * 2;
         }
 
         previewLevelRules(level) {
@@ -4020,10 +4064,7 @@
 
         refillActiveQuests() {
           if (!this.board) return;
-          while (
-            this.board.progress.activeQuests.length < CONFIG.QUEST.activeSlots &&
-            this.board.progress.completedQuestCount + this.board.progress.activeQuests.length < this.board.progress.requiredQuestCount
-          ) {
+          while (this.board.progress.activeQuests.length < CONFIG.QUEST.activeSlots) {
             this.board.progress.activeQuests.push(QuestFactory.create(this));
           }
         }
@@ -4035,18 +4076,18 @@
             const quest = this.board.progress.activeQuests[index];
             const progress = QuestFactory.progress(quest, this);
             if (progress.done) {
+              const reward = 1;
               completedThisPass++;
               this.board.progress.completedQuestCount += 1;
+              this.board.stats.currencyEarned += reward;
+              this.save.addCurrency(reward);
               this.board.progress.activeQuests.splice(index, 1);
-              this.animations.addToast(`Quest complete: ${QuestFactory.describe(quest)}`, "success");
+              this.animations.addToast(`Quest complete: ${QuestFactory.describe(quest)} +${reward} coin`, "success");
               this.audio.playQuest();
               this.spawnCellParticlesFromSelection("#4ecb90", 14);
             }
           }
           if (completedThisPass > 0) this.refillActiveQuests();
-          if (this.board.progress.completedQuestCount >= this.board.progress.requiredQuestCount) {
-            this.finishRun(true, `Level ${this.state.level} cleared. The quest stack is complete.`);
-          }
         }
 
         finishRun(won, reason) {
@@ -4152,9 +4193,17 @@
         toggleEndIfSameWorm(wormId, cell) {
           const worm = this.getWormById(wormId);
           if (!worm) return;
-          const preferred = this.pickEndForCell(worm, cell);
+          const tail = worm.cells[0];
+          const head = worm.cells[worm.cells.length - 1];
+          const clickedTail = tail.x === cell.x && tail.y === cell.y;
+          const clickedHead = head.x === cell.x && head.y === cell.y;
+          const preferred = clickedTail ? "tail" : clickedHead ? "head" : this.pickEndForCell(worm, cell);
           if (this.state.selection?.kind === "worm" && this.state.selection.id === wormId) {
-            this.state.selectedEnd = this.state.selectedEnd === preferred ? (preferred === "head" ? "tail" : "head") : preferred;
+            if (clickedTail || clickedHead) {
+              this.state.selectedEnd = preferred;
+            } else {
+              this.state.selectedEnd = this.state.selectedEnd === "head" ? "tail" : "head";
+            }
           } else {
             this.state.selection = { kind: "worm", id: wormId };
             this.state.selectedEnd = preferred;
@@ -4371,6 +4420,10 @@
           this.resolvePipeConnections();
           this.computeMergeOptions();
           this.evaluateQuests();
+          if (!skipWinLose && !this.state.result && this.board.stats.pipeConnections >= this.getLevelPipeGoal()) {
+            this.finishRun(true, `Level ${this.state.level} cleared. You assembled ${this.board.stats.pipeConnections} / ${this.getLevelPipeGoal()} pipe pairs.`);
+            return;
+          }
           if (!skipWinLose && !this.state.result && this.isStrategicallyStalled()) {
             this.finishRun(false, "No pipe on the board can be matched by the current worm stock, no mandatory merge is available, and Resolve is not ready.");
           }
@@ -4583,7 +4636,10 @@
           }
           this.resolvePipeConnections();
           this.computeMergeOptions();
-          const pipeBatchTarget = Math.min(this.rules.pipesPerResolve, Math.max(2, this.board.worms.length));
+          const pipeBatchTarget = Math.max(
+            this.rules.pipesPerResolve,
+            Math.min(this.board.worms.length, Math.max(4, Math.ceil(this.board.worms.length * 0.75)))
+          );
           if (this.board.availableMergePairs > 0) {
             this.board.pendingPipeBatch = { count: pipeBatchTarget };
             this.animations.addToast("Mandatory merge detected. Next pipe batch is waiting.", "warn");
@@ -4595,11 +4651,29 @@
 
         generatePipeBatchForBoard(board, rules, requestedCount, rng, quiet = false) {
           if (!board.worms.length) return 0;
-          const desired = Math.min(requestedCount, Math.max(2, board.worms.length));
+          const desired = Math.max(
+            requestedCount,
+            Math.min(board.worms.length, Math.max(4, Math.ceil(board.worms.length * 0.75)))
+          );
           const specs = this.buildPipeSpecs(board, rules, desired, rng);
           let created = 0;
-          const reserved = new Set();
+          const reserved = new Set(board.pipes.flatMap((pipe) => (pipe.ghostPath || [pipe.a, pipe.b]).map((cell) => Helpers.cellKey(cell.x, cell.y))));
           for (const spec of specs) {
+            const pipe = this.findPipePlacement(board, spec, rng, reserved);
+            if (!pipe) continue;
+            board.pipes.push(pipe);
+            for (const cell of pipe.ghostPath) reserved.add(Helpers.cellKey(cell.x, cell.y));
+            created++;
+          }
+          let fallbackGuard = CONFIG.PIPE.generationAttempts;
+          while (created < desired && fallbackGuard > 0) {
+            fallbackGuard -= 1;
+            const source = rng.pick(board.worms) || board.worms[0];
+            if (!source) break;
+            const spec = {
+              length: source.length,
+              color: rules.coloredPipesActive ? source.color : ""
+            };
             const pipe = this.findPipePlacement(board, spec, rng, reserved);
             if (!pipe) continue;
             board.pipes.push(pipe);
@@ -4637,7 +4711,7 @@
           const blocked = new Set([
             ...board.walls.map((cell) => Helpers.cellKey(cell.x, cell.y)),
             ...board.worms.flatMap((worm) => worm.cells.map((cell) => Helpers.cellKey(cell.x, cell.y))),
-            ...board.pipes.flatMap((pipe) => [Helpers.cellKey(pipe.a.x, pipe.a.y), Helpers.cellKey(pipe.b.x, pipe.b.y)]),
+            ...board.pipes.flatMap((pipe) => (pipe.ghostPath || [pipe.a, pipe.b]).map((cell) => Helpers.cellKey(cell.x, cell.y))),
             ...reserved
           ]);
           const path = BoardUtils.findRandomPathOfLength({
