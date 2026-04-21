@@ -1029,7 +1029,7 @@
 
     .boardPrimaryActions{
       display:grid;
-      grid-template-columns:repeat(4,minmax(0,1fr));
+      grid-template-columns:repeat(5,minmax(0,1fr));
       gap:10px;
     }
 
@@ -1150,7 +1150,7 @@
       }
 
       .boardPrimaryActions{
-        grid-template-columns:repeat(2,minmax(0,1fr));
+        grid-template-columns:repeat(3,minmax(0,1fr));
       }
 
       .boardMoveStrip{
@@ -1270,6 +1270,7 @@
           </div>
           <div class="boardActionArea">
             <div class="boardPrimaryActions">
+              <button id="detachButton" class="actionButton secondary" type="button">Detach</button>
               <button id="switchEndButton" class="actionButton secondary" type="button">Switch End</button>
               <button id="cycleWormButton" class="actionButton secondary" type="button">Next Worm</button>
               <button id="mergeButton" class="actionButton accent" type="button">Merge</button>
@@ -1495,6 +1496,9 @@
               <option value="blue">Blue</option>
               <option value="red">Red</option>
               <option value="green">Green</option>
+              <option value="purple">Purple</option>
+              <option value="orange">Orange</option>
+              <option value="cyan">Cyan</option>
             </select>
           </label>
           <label class="field">
@@ -1509,6 +1513,9 @@
               <option value="blue">Blue</option>
               <option value="red">Red</option>
               <option value="green">Green</option>
+              <option value="purple">Purple</option>
+              <option value="orange">Orange</option>
+              <option value="cyan">Cyan</option>
             </select>
           </label>
         </div>
@@ -1647,7 +1654,10 @@
           yellow: { fill: "#f5c94d", soft: "#fff1be", dark: "#875f0a", glow: "rgba(245,201,77,.34)", pipe: "#ffe8a0" },
           blue: { fill: "#5a87ff", soft: "#dce8ff", dark: "#26458b", glow: "rgba(90,135,255,.34)", pipe: "#cfe0ff" },
           red: { fill: "#ff6c79", soft: "#ffd9de", dark: "#8c2b39", glow: "rgba(255,108,121,.34)", pipe: "#ffd0d4" },
-          green: { fill: "#4ecb90", soft: "#d8f6e8", dark: "#187652", glow: "rgba(78,203,144,.34)", pipe: "#d2f4e4" }
+          green: { fill: "#4ecb90", soft: "#d8f6e8", dark: "#187652", glow: "rgba(78,203,144,.34)", pipe: "#d2f4e4" },
+          purple: { fill: "#9a73ff", soft: "#ece2ff", dark: "#50319a", glow: "rgba(154,115,255,.34)", pipe: "#e1d3ff" },
+          orange: { fill: "#ff9a4d", soft: "#ffe3cc", dark: "#9a5318", glow: "rgba(255,154,77,.34)", pipe: "#ffd9bd" },
+          cyan: { fill: "#4dd8e6", soft: "#d7f9fc", dark: "#1d6c78", glow: "rgba(77,216,230,.34)", pipe: "#cef5f9" }
         },
         THEME_TOKENS: {
           boardTop: "#fffbed",
@@ -2540,6 +2550,7 @@
             hintLine: document.getElementById("hintLine"),
             selectionMeta: document.getElementById("selectionMeta"),
             selectedCardBody: document.getElementById("selectedCardBody"),
+            detachButton: document.getElementById("detachButton"),
             mergeButton: document.getElementById("mergeButton"),
             resolveButton: document.getElementById("resolveButton"),
             switchEndButton: document.getElementById("switchEndButton"),
@@ -2675,6 +2686,7 @@
           this.refs.designerOpenButton.addEventListener("click", () => this.game.toggleDesigner(true));
           this.refs.designerCloseButton.addEventListener("click", () => this.game.toggleDesigner(false));
 
+          this.refs.detachButton.addEventListener("click", () => this.game.detachSelectedWorm());
           this.refs.switchEndButton.addEventListener("click", () => this.game.switchEnd());
           this.refs.mergeButton.addEventListener("click", () => this.game.mergeSelected());
           this.refs.resolveButton.addEventListener("click", () => this.game.resolveConnections());
@@ -2848,6 +2860,7 @@
           this.refs.designerDrawer.classList.toggle("open", game.state.designerOpen);
           this.refs.designerDrawer.setAttribute("aria-hidden", game.state.designerOpen ? "false" : "true");
           this.refs.mergeButton.disabled = !board || !game.canMergeSelected();
+          this.refs.detachButton.disabled = !board || !game.canDetachSelectedWorm();
           this.refs.resolveButton.disabled = !board || board.connectedHoleCount < game.rules.resolveThresholdHoles;
         }
 
@@ -2960,7 +2973,7 @@
               <div class="selectedInfo">
                 <strong style="color:${CONFIG.COLORS[worm.color].dark}">${worm.color[0].toUpperCase() + worm.color.slice(1)} worm • length ${worm.length}</strong>
                 <span>${pipe ? `Connected to ${pipe.color || "neutral"} pipe ${pipe.id}.` : "Free worm."}</span>
-                <span>${mergeOption ? `Merge ready with ${mergeOption.partnerColor} length ${mergeOption.partnerLength}.` : "No valid merge partner right now."}</span>
+                <span>${pipe ? "Click the worm again or press Detach to pull it off the pipe." : (mergeOption ? `Merge ready with ${mergeOption.partnerColor} length ${mergeOption.partnerLength}.` : "No valid merge partner right now.")}</span>
               </div>
             `, `worm|${worm.id}|${worm.color}|${worm.length}|${worm.connectedPipeId || ""}|${mergeOption?.partnerId || ""}|${this.game.state.selectedEnd}`);
             return;
@@ -3551,10 +3564,13 @@
             const sameSelectedWorm = hit.kind === "worm"
               && this.game.state.selection?.kind === "worm"
               && this.game.state.selection.id === hit.id;
+            const sameWormEntity = sameSelectedWorm ? this.game.getWormById(hit.id) : null;
             if (!sameSelectedWorm || this.game.designer.editMode !== "play") {
               this.game.selectFromHit(hit, cell);
             } else {
-              this.game.toggleEndIfSameWorm(hit.id, cell);
+              const preferredEnd = this.game.pickEndForCell(sameWormEntity, cell);
+              const detached = this.game.detachConnectedWorm(hit.id, preferredEnd, true);
+              if (!detached) this.game.toggleEndIfSameWorm(hit.id, cell);
               this.pointer.switchedOnDown = true;
             }
             if (hit.kind === "worm" && !sameSelectedWorm) {
@@ -3754,6 +3770,33 @@
         getLevelPipeGoal(level = this.state.level || 1) {
           const safeLevel = Math.max(1, level);
           return 6 + (safeLevel - 1) * 2;
+        }
+
+        getDesiredPipeCountForBoard(board = this.board, rules = this.rules) {
+          if (!board?.worms?.length) return 0;
+          return Math.min(
+            board.worms.length,
+            Math.max(rules?.pipesPerResolve || 4, Math.ceil(board.worms.length * 0.85))
+          );
+        }
+
+        chooseBiasedWormColor(board = this.board, rng = new RNG(Math.random()), allowedColors = COLOR_KEYS) {
+          const counts = Object.fromEntries(allowedColors.map((color) => [color, 0]));
+          for (const worm of board?.worms || []) {
+            if (worm.color in counts) counts[worm.color] += 1;
+          }
+          let bestColor = allowedColors[0] || "yellow";
+          let bestScore = -Infinity;
+          for (const color of allowedColors) {
+            const count = counts[color] || 0;
+            const noise = rng.range(0, 0.35);
+            const score = (1 / (1 + count * 1.4)) + noise;
+            if (score > bestScore) {
+              bestScore = score;
+              bestColor = color;
+            }
+          }
+          return bestColor;
         }
 
         previewLevelRules(level) {
@@ -4210,6 +4253,41 @@
           }
         }
 
+        canDetachSelectedWorm() {
+          const selection = this.state.selection;
+          if (!selection || selection.kind !== "worm") return false;
+          const worm = this.getWormById(selection.id);
+          return !!worm?.connectedPipeId;
+        }
+
+        detachConnectedWorm(wormId, preferredEnd = this.state.selectedEnd, silent = false) {
+          const worm = this.getWormById(wormId);
+          if (!worm?.connectedPipeId) return false;
+          const ends = [preferredEnd, preferredEnd === "head" ? "tail" : "head"];
+          for (const end of ends) {
+            const pivot = end === "head" ? worm.cells[worm.cells.length - 1] : worm.cells[0];
+            for (const [direction, delta] of Object.entries(DIRS)) {
+              const nextCell = { x: pivot.x + delta.x, y: pivot.y + delta.y };
+              if (!this.canWormStep(worm, nextCell, end)) continue;
+              this.state.selection = { kind: "worm", id: worm.id };
+              this.state.selectedEnd = end;
+              return this.stepSelected(direction, {
+                endOverride: end,
+                suppressSelectionToast: true,
+                silentBlocked: silent
+              });
+            }
+          }
+          if (!silent) this.animations.addToast("No free tile to detach this worm from its pipe.", "warn");
+          return false;
+        }
+
+        detachSelectedWorm() {
+          const selection = this.state.selection;
+          if (!selection || selection.kind !== "worm") return false;
+          return this.detachConnectedWorm(selection.id, this.state.selectedEnd, false);
+        }
+
         switchEnd() {
           if (this.state.selection?.kind !== "worm") return;
           this.state.selectedEnd = this.state.selectedEnd === "head" ? "tail" : "head";
@@ -4590,8 +4668,14 @@
           if (this.board.pendingPipeBatch) {
             const count = this.board.pendingPipeBatch.count;
             this.board.pendingPipeBatch = null;
-            this.generatePipeBatchForBoard(this.board, this.rules, count, new RNG(`${this.board.seed}|pendingPipe|${count}`));
-            this.animations.addToast(`New pipe batch released: ${count} pair${count > 1 ? "s" : ""}.`, "success");
+            const desiredTotal = Math.max(this.getDesiredPipeCountForBoard(this.board, this.rules), this.board.pipes.length + count);
+            const needed = Math.max(1, desiredTotal - this.board.pipes.length);
+            const created = this.generatePipeBatchForBoard(this.board, this.rules, needed, new RNG(`${this.board.seed}|pendingPipe|${count}|${this.board.worms.length}`));
+            if (created <= 0 && this.board.worms.length) {
+              this.animations.addToast("Merge released the next pipe batch, but the board is too crowded for new placements.", "warn");
+            } else {
+              this.animations.addToast(`New pipe batch released: ${created} pair${created !== 1 ? "s" : ""}.`, "success");
+            }
           }
           this.refreshBoardState();
         }
@@ -4631,34 +4715,33 @@
           const rewardRng = new RNG(`${this.board.seed}|reward|${this.board.stats.resolveUses}|${closedHoleCount}`);
           for (let index = 0; index < rewardCount; index++) {
             const length = rewardLengths[index % rewardLengths.length] || this.rules.startLengthMin;
-            const color = rewardRng.pick(COLOR_KEYS) || "yellow";
+            const color = this.chooseBiasedWormColor(this.board, rewardRng, COLOR_KEYS);
             this.spawnWorm(length, color, false);
           }
           this.resolvePipeConnections();
           this.computeMergeOptions();
           const pipeBatchTarget = Math.max(
             this.rules.pipesPerResolve,
-            Math.min(this.board.worms.length, Math.max(4, Math.ceil(this.board.worms.length * 0.75)))
+            this.getDesiredPipeCountForBoard(this.board, this.rules)
           );
           if (this.board.availableMergePairs > 0) {
             this.board.pendingPipeBatch = { count: pipeBatchTarget };
             this.animations.addToast("Mandatory merge detected. Next pipe batch is waiting.", "warn");
           } else {
-            this.generatePipeBatchForBoard(this.board, this.rules, pipeBatchTarget, new RNG(`${this.board.seed}|resolve|${this.board.stats.resolveUses}`));
+            const needed = Math.max(1, pipeBatchTarget - this.board.pipes.length);
+            this.generatePipeBatchForBoard(this.board, this.rules, needed, new RNG(`${this.board.seed}|resolve|${this.board.stats.resolveUses}`));
           }
           this.refreshBoardState();
         }
 
         generatePipeBatchForBoard(board, rules, requestedCount, rng, quiet = false) {
           if (!board.worms.length) return 0;
-          const desired = Math.max(
-            requestedCount,
-            Math.min(board.worms.length, Math.max(4, Math.ceil(board.worms.length * 0.75)))
-          );
-          const specs = this.buildPipeSpecs(board, rules, desired, rng);
+          const desired = Math.max(1, requestedCount);
+          const specs = this.buildPipeSpecs(board, rules, Math.max(desired * 2, desired + 4), rng);
           let created = 0;
           const reserved = new Set(board.pipes.flatMap((pipe) => (pipe.ghostPath || [pipe.a, pipe.b]).map((cell) => Helpers.cellKey(cell.x, cell.y))));
           for (const spec of specs) {
+            if (created >= desired) break;
             const pipe = this.findPipePlacement(board, spec, rng, reserved);
             if (!pipe) continue;
             board.pipes.push(pipe);
@@ -4701,7 +4784,7 @@
             const source = worms.length ? worms[specs.length % worms.length] : null;
             specs.push({
               length: source ? Helpers.clamp(source.length, rules.pipeLengthMin, maxDynamicLength) : rng.int(rules.pipeLengthMin, maxDynamicLength),
-              color: rules.coloredPipesActive ? (source ? source.color : rng.pick(COLOR_KEYS)) : ""
+              color: rules.coloredPipesActive ? (source ? source.color : this.chooseBiasedWormColor(board, rng, COLOR_KEYS)) : ""
             });
           }
           return specs;

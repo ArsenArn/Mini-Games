@@ -717,11 +717,14 @@
           sandbox: { id: "sandbox", label: "Sandbox", implemented: false },
           challenge: { id: "challenge", label: "Challenge", implemented: false }
         },
-        CAMPAIGN_LEVELS: Array.from({ length: 6 }, (_, index) => ({
-          id: index + 1,
-          name: `Level ${index + 1}`,
-          waves: Math.min(8, 3 + index)
-        })),
+        CAMPAIGN_LEVELS: [
+          { id: 1, name: "Level 1", waves: 3, layout: { width: 8, baseRows: 6, battleRows: 8 }, enemyPressure: 0.88 },
+          { id: 2, name: "Level 2", waves: 4, layout: { width: 8, baseRows: 6, battleRows: 9 }, enemyPressure: 0.92 },
+          { id: 3, name: "Level 3", waves: 5, layout: { width: 9, baseRows: 6, battleRows: 9 }, enemyPressure: 0.96 },
+          { id: 4, name: "Level 4", waves: 6, layout: { width: 9, baseRows: 7, battleRows: 9 }, enemyPressure: 1.0 },
+          { id: 5, name: "Level 5", waves: 7, layout: { width: 10, baseRows: 7, battleRows: 10 }, enemyPressure: 1.04 },
+          { id: 6, name: "Level 6", waves: 8, layout: { width: 10, baseRows: 8, battleRows: 10 }, enemyPressure: 1.08 }
+        ],
         THEME: {
           playerRing: "#ffd98a",
           enemyRing: "#8b5364",
@@ -801,9 +804,10 @@
           wormBreathSpeed: 2.1,
           maxParticles: 260,
           baseShopSizeWeights: [
-            { size: 2, weight: 12 },
-            { size: 3, weight: 5 }
+            { size: 2, weight: 16 },
+            { size: 3, weight: 2 }
           ],
+          shopSizeWaveRamp: 0.9,
           sizePowerStep: 0.26,
           sizeHpStep: 0.34,
           sizeCooldownStep: 0.08,
@@ -1030,13 +1034,15 @@
         return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) * 0.5;
       }
       function roundRectPath(ctx, x, y, w, h, r) {
-        const radius = Math.min(r, w * 0.5, h * 0.5);
+        const safeW = Math.max(0, w);
+        const safeH = Math.max(0, h);
+        const radius = Math.max(0, Math.min(r, safeW * 0.5, safeH * 0.5));
         ctx.beginPath();
         ctx.moveTo(x + radius, y);
-        ctx.arcTo(x + w, y, x + w, y + h, radius);
-        ctx.arcTo(x + w, y + h, x, y + h, radius);
-        ctx.arcTo(x, y + h, x, y, radius);
-        ctx.arcTo(x, y, x + w, y, radius);
+        ctx.arcTo(x + safeW, y, x + safeW, y + safeH, radius);
+        ctx.arcTo(x + safeW, y + safeH, x, y + safeH, radius);
+        ctx.arcTo(x, y + safeH, x, y, radius);
+        ctx.arcTo(x, y, x + safeW, y, radius);
         ctx.closePath();
       }
       function deepClone(value) {
@@ -1435,8 +1441,8 @@
               if (!display.cells || !display.cells.length || display.cells.some((cell) => !Number.isFinite(cell.x) || !Number.isFinite(cell.y))) continue;
               const cellX = this.metrics.cellX;
               const cellY = this.metrics.cellY;
-              const segmentW = cellX * 0.88;
-              const segmentH = cellY * 0.72;
+              const segmentW = cellX * 0.96;
+              const segmentH = cellY * 0.84;
               const halfW = segmentW * 0.5;
               const halfH = segmentH * 0.5;
               const breath = 1 + Math.sin(ts * 0.001 * CONFIG.BALANCE.wormBreathSpeed + worm.seed) * 0.03;
@@ -1461,11 +1467,13 @@
                 const dy = to.y - from.y;
                 const length = Math.hypot(dx, dy);
                 const angle = Math.atan2(dy, dx);
+                const connectorWidth = Math.max(0, length - cellX * 0.08);
+                if (!Number.isFinite(length) || !Number.isFinite(angle) || connectorWidth <= 0.01) continue;
                 ctx.save();
                 ctx.translate(from.x, from.y);
                 ctx.rotate(angle);
-                const connectorHeight = segmentH * 0.64;
-                roundRectPath(ctx, cellX * 0.08, -connectorHeight * 0.5, length - cellX * 0.16, connectorHeight, connectorHeight * 0.5);
+                const connectorHeight = segmentH * 0.68;
+                roundRectPath(ctx, cellX * 0.04, -connectorHeight * 0.5, connectorWidth, connectorHeight, connectorHeight * 0.5);
                 ctx.globalAlpha = 0.92;
                 ctx.fillStyle = worm.destroyed ? "rgba(160,172,186,.88)" : type.color;
                 ctx.fill();
@@ -1494,7 +1502,7 @@
                 roundRectPath(ctx, rectX + segmentW * 0.14, rectY + segmentH * 0.08, segmentW * 0.72, segmentH * 0.18, segmentH * 0.12);
                 ctx.fill();
                 ctx.fillStyle = "rgba(18,34,56,.9)";
-                ctx.font = `${Math.max(13, this.metrics.cell * 0.34)}px Trebuchet MS`;
+                ctx.font = `700 ${Math.max(15, this.metrics.cell * 0.38)}px Trebuchet MS`;
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle";
                 const icon = i === 0 || i === display.cells.length - 1 || i === Math.floor((display.cells.length - 1) * 0.5) ? type.icon : ".";
@@ -1505,13 +1513,13 @@
               ctx.textAlign = "left";
               ctx.fillText(`${type.short} ${worm.size}`, this.metrics.boardX + worm.x * cellX + 8, this.metrics.boardY + (board.battleRows + worm.maxY + 1) * cellY + Math.max(8, this.metrics.cell * 0.1));
               if (this.game.state.phase === CONFIG.PHASES.BATTLE) {
-                const spanW = Math.max(cellX * 1.4, (worm.maxX - worm.x + 1) * cellX * 0.78);
-                const hpWidth = Math.max(this.metrics.cell * 1.2, spanW);
+                const spanW = Math.max(cellX * 1.6, (worm.maxX - worm.x + 1) * cellX * 0.86);
+                const hpWidth = Math.max(this.metrics.cell * 1.3, spanW);
                 const hp = clamp(worm.currentHp / Math.max(1, worm.maxHp), 0, 1);
-                roundRectPath(ctx, cx - hpWidth * 0.5, cy - cellY * 0.62, hpWidth, 5, 3);
+                roundRectPath(ctx, cx - hpWidth * 0.5, cy - cellY * 0.68, hpWidth, 6, 3);
                 ctx.fillStyle = "rgba(18,34,56,.18)";
                 ctx.fill();
-                roundRectPath(ctx, cx - hpWidth * 0.5, cy - cellY * 0.62, hpWidth * hp, 5, 3);
+                roundRectPath(ctx, cx - hpWidth * 0.5, cy - cellY * 0.68, hpWidth * hp, 6, 3);
                 ctx.fillStyle = worm.destroyed ? "rgba(160,172,186,.8)" : "#6be2a4";
                 ctx.fill();
               }
@@ -1596,7 +1604,7 @@
             if (!unit.alive) continue;
             const px = m.boardX + unit.x * m.cellX;
             const py = m.boardY + unit.y * m.cellY;
-            const radius = unit.radius * m.cell;
+            const radius = unit.radius * m.cell * 1.28;
             const pulse = 1 + Math.sin(ts * 0.01 + unit.seed) * 0.04;
             const colorA = unit.faction === "player" ? "#ffd697" : "#8d5968";
             const colorB = unit.faction === "player" ? "#f2a755" : "#5a3543";
@@ -1621,7 +1629,7 @@
             ctx.arc(px, py - radius * 0.12, radius * 0.64, 0, TWO_PI);
             ctx.stroke();
             ctx.fillStyle = "rgba(15,27,44,.92)";
-            ctx.font = `${Math.max(10, radius * 1.08)}px Trebuchet MS`;
+            ctx.font = `700 ${Math.max(13, radius * 1.12)}px Trebuchet MS`;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.fillText(unit.icon, px, py - radius * 0.08);
@@ -2113,12 +2121,12 @@
         }
         normalizeDesigner(input) {
           const designer = { ...deepClone(CONFIG.DEFAULT_DESIGNER), ...(input || {}) };
-          designer.baseFieldWidth = clamp(Number(designer.baseFieldWidth || designer.totalFieldWidth || 8), 6, 12);
-          designer.totalFieldWidth = clamp(Number(designer.totalFieldWidth || designer.baseFieldWidth || 8), designer.baseFieldWidth, 12);
+          designer.totalFieldWidth = clamp(Number(designer.totalFieldWidth || designer.baseFieldWidth || 8), 6, 12);
+          designer.baseFieldWidth = designer.totalFieldWidth;
           designer.baseRows = clamp(Number(designer.baseRows || designer.baseFieldHeight || 6), 4, 8);
           designer.baseFieldHeight = designer.baseRows;
           designer.battleRows = clamp(Number(designer.battleRows || 8), 6, 10);
-          designer.totalFieldHeight = clamp(Number(designer.totalFieldHeight || (designer.baseRows + designer.battleRows)), designer.baseRows + designer.battleRows, 20);
+          designer.totalFieldHeight = designer.baseRows + designer.battleRows;
           designer.playerSpawnCooldownMultiplier = clamp(Number(designer.playerSpawnCooldownMultiplier || 2), 0.5, 4);
           designer.playerMoveSpeedMultiplier = clamp(Number(designer.playerMoveSpeedMultiplier || 0.67), 0.3, 2);
           designer.enemyHpMultiplier = clamp(Number(designer.enemyHpMultiplier || 1.65), 0.5, 4);
@@ -2282,7 +2290,7 @@
         getBoardConfig() {
           return {
             totalFieldWidth: this.designer.totalFieldWidth,
-            totalFieldHeight: this.designer.totalFieldHeight,
+            totalFieldHeight: this.designer.baseRows + this.designer.battleRows,
             battleRows: this.designer.battleRows,
             baseRows: this.designer.baseRows
           };
@@ -2298,8 +2306,19 @@
           this.ui.setScreen(CONFIG.SCREENS.LEVELS);
           this.ui.refresh();
         }
+        applyCampaignLevelTuning(level) {
+          if (!level || !level.layout) return;
+          const layout = level.layout;
+          this.designer.totalFieldWidth = clamp(Number(layout.width) || this.designer.totalFieldWidth, 6, 12);
+          this.designer.baseFieldWidth = this.designer.totalFieldWidth;
+          this.designer.baseRows = clamp(Number(layout.baseRows) || this.designer.baseRows, 4, 8);
+          this.designer.baseFieldHeight = this.designer.baseRows;
+          this.designer.battleRows = clamp(Number(layout.battleRows) || this.designer.battleRows, 6, 10);
+          this.designer.totalFieldHeight = this.designer.baseRows + this.designer.battleRows;
+        }
         startLevel(levelIndex) {
           const level = CONFIG.CAMPAIGN_LEVELS[levelIndex - 1] || CONFIG.CAMPAIGN_LEVELS[0];
+          this.applyCampaignLevelTuning(level);
           this.state = this.createInitialState();
           this.state.screen = CONFIG.SCREENS.GAMEPLAY;
           this.state.mode = CONFIG.MODES.campaign.id;
@@ -2327,6 +2346,7 @@
           this.recomputeEstimate();
           this.save.setLastLevel(level.id);
           this.ui.setScreen(CONFIG.SCREENS.GAMEPLAY);
+          this.renderer.resize();
           this.ui.refresh();
         }
         restartLevel() {
@@ -2390,7 +2410,6 @@
             this.updateWormVisuals(dt);
           }
           this.renderer.render(now);
-          if (this.state.screen !== CONFIG.SCREENS.BOOT) this.ui.refresh();
           requestAnimationFrame(this.loop);
         }
         updateWormVisuals(dt) {
@@ -2494,12 +2513,12 @@
             const nextUnitStats = JSON.parse(this.refs.dbgUnitBaseStats.value);
             const nextEnemyStats = JSON.parse(this.refs.dbgEnemyBaseStats.value);
 
-            next.baseFieldWidth = clamp(next.baseFieldWidth, 6, 12);
-            next.totalFieldWidth = clamp(next.totalFieldWidth, next.baseFieldWidth, 12);
-            next.baseRows = next.baseFieldHeight = clamp(next.baseRows, 4, 8);
-            const requestedTotalHeight = clamp(next.totalFieldHeight, 12, 20);
+            next.totalFieldWidth = clamp(Number(this.refs.dbgTotalFieldWidth.value) || Number(this.refs.dbgBaseFieldWidth.value) || next.totalFieldWidth, 6, 12);
+            next.baseFieldWidth = next.totalFieldWidth;
+            next.baseRows = next.baseFieldHeight = clamp(Number(this.refs.dbgBaseFieldHeight.value) || Number(this.refs.dbgBaseRows.value) || next.baseRows, 4, 8);
+            const requestedTotalHeight = clamp(Number(this.refs.dbgTotalFieldHeight.value) || next.totalFieldHeight, 12, 20);
             const heightDrivenBattleRows = requestedTotalHeight - next.baseRows;
-            next.battleRows = clamp(Number(this.refs.dbgTotalFieldHeight.value) ? heightDrivenBattleRows : next.battleRows, 6, 12);
+            next.battleRows = clamp(Number(this.refs.dbgBattleRows.value) || heightDrivenBattleRows, 6, 12);
             next.totalFieldHeight = next.baseRows + next.battleRows;
             if (!next.allowedWormTypes.length) next.allowedWormTypes = deepClone(CONFIG.DEFAULT_DESIGNER.allowedWormTypes);
             if (!next.allowedWormSizes.length) next.allowedWormSizes = deepClone(CONFIG.DEFAULT_DESIGNER.allowedWormSizes);
@@ -2509,6 +2528,7 @@
             this.designer = this.normalizeDesigner(next);
             this.state.battleSpeed = this.designer.battleSpeed;
             this.save.setDesigner(this.designer);
+            this.renderer.resize();
             this.ui.loadDesignerValues();
             this.ui.refresh();
             if (regenerate && this.state.screen === CONFIG.SCREENS.GAMEPLAY) this.restartLevel();
@@ -2556,7 +2576,7 @@
             if (id === "tower") return 0.9;
             return 1;
           });
-          const availableSizes = CONFIG.BALANCE.baseShopSizeWeights.filter((entry) => this.designer.allowedWormSizes.includes(entry.size));
+          const availableSizes = this.getScaledSizeWeights(source);
           const size = pickWeighted(rng, availableSizes.length ? availableSizes : [{ size: 2, weight: 1 }], (entry) => entry.weight).size;
           return {
             id: this.nextId(source),
@@ -2576,6 +2596,21 @@
             maxHp: 0,
             bonuses: {}
           };
+        }
+        getScaledSizeWeights(source) {
+          const wave = Math.max(1, this.state.globalWaveIndex || 1);
+          return CONFIG.BALANCE.baseShopSizeWeights
+            .filter((entry) => this.designer.allowedWormSizes.includes(entry.size))
+            .map((entry) => {
+              let weight = entry.weight;
+              if (entry.size === 2) {
+                weight += source === "field" ? 3 : 0;
+              } else if (entry.size === 3) {
+                const unlockBias = Math.max(0, wave - 2) * CONFIG.BALANCE.shopSizeWaveRamp;
+                weight = source === "field" ? Math.max(0.4, entry.weight + unlockBias * 0.5) : Math.max(0.5, entry.weight + unlockBias);
+              }
+              return { size: entry.size, weight };
+            });
         }
         placeWormRandomly(worm, rng) {
           const positions = [];
@@ -2597,7 +2632,21 @@
           for (let i = 0; i < size; i++) cells.push({ x: x + i, y });
           return cells;
         }
+        sanitizeWormCells(worm) {
+          const safeSize = clamp(Number(worm.size) || 2, 2, 8);
+          const fallbackX = clamp(Number(worm.x) || 0, 0, Math.max(0, this.designer.totalFieldWidth - safeSize));
+          const fallbackY = clamp(Number(worm.y) || 0, 0, Math.max(0, this.designer.baseRows - 1));
+          const sourceCells = Array.isArray(worm.cells) ? worm.cells : [];
+          const cleaned = sourceCells
+            .filter((cell) => cell && Number.isFinite(cell.x) && Number.isFinite(cell.y))
+            .map((cell) => ({
+              x: clamp(Math.round(cell.x), 0, this.designer.totalFieldWidth - 1),
+              y: clamp(Math.round(cell.y), 0, this.designer.baseRows - 1)
+            }));
+          worm.cells = cleaned.length ? cleaned : this.createLinearCells(fallbackX, fallbackY, safeSize);
+        }
         syncWormGeometry(worm, snapRender = false) {
+          this.sanitizeWormCells(worm);
           if (!worm.cells || !worm.cells.length) worm.cells = this.createLinearCells(worm.x || 0, worm.y || 0, worm.size);
           worm.size = worm.cells.length;
           worm.x = Math.min(...worm.cells.map((cell) => cell.x));
@@ -2765,6 +2814,7 @@
           if (drag.kind === "board" && this.designer.wormMoveMode === "slither") {
             this.refreshWormState();
             this.recomputeEstimate();
+            this.ui.refresh();
             return;
           }
           if (candidate.mode === "merge" && candidate.target) {
@@ -2789,6 +2839,7 @@
           }
           this.refreshWormState();
           this.recomputeEstimate();
+          this.ui.refresh();
         }
         applyMerge(drag, targetWorm, x, y) {
           const target = this.state.worms.find((worm) => worm.id === targetWorm.id);
@@ -2814,8 +2865,10 @@
           this.emitBurst(target.centerX, this.designer.battleRows + target.centerY, CONFIG.WORM_TYPES[target.type].color, 18, 0.7);
           this.refreshWormState();
           this.recomputeEstimate();
+          this.ui.refresh();
         }
         refreshWormState() {
+          this.state.worms = this.state.worms.filter((worm) => worm && (worm.cells?.length || worm.size));
           for (const worm of this.state.worms) {
             this.syncWormGeometry(worm, worm.renderCells == null);
             worm.renderX = worm.renderX ?? worm.x;
@@ -2955,7 +3008,8 @@
           const player = this.computePlayerPower();
           const targetDuration = this.computeWaveTargetDuration();
           const rng = this.randomForScope("wave");
-          const budgetFactor = clamp(CONFIG.BALANCE.enemyBudgetBase + (this.state.globalWaveIndex - 1) * CONFIG.BALANCE.enemyBudgetStep, 0.72, CONFIG.BALANCE.enemyBudgetCap);
+          const levelPressure = CONFIG.CAMPAIGN_LEVELS[this.state.levelIndex - 1]?.enemyPressure || 1;
+          const budgetFactor = clamp((CONFIG.BALANCE.enemyBudgetBase + (this.state.globalWaveIndex - 1) * CONFIG.BALANCE.enemyBudgetStep) * levelPressure, 0.66, CONFIG.BALANCE.enemyBudgetCap);
           const enemyBudget = player.total * budgetFactor + this.state.globalWaveIndex * 18;
           const allowed = Object.entries(this.designer.enemyCompositionUnlockWave)
             .filter(([, wave]) => this.state.globalWaveIndex >= wave)
@@ -2967,8 +3021,8 @@
             cavalry: this.state.globalWaveIndex >= (this.designer.enemyCompositionUnlockWave.cavalry || 99) ? 0.65 : 0,
             mage: this.state.globalWaveIndex >= (this.designer.enemyCompositionUnlockWave.mage || 99) ? 0.55 : 0
           };
-          const hpScale = clamp((0.82 + this.state.globalWaveIndex * 0.06) * this.designer.enemyHpMultiplier, 0.95, 3.2);
-          const damageScale = clamp(0.84 + this.state.globalWaveIndex * 0.055, 0.88, 1.64);
+          const hpScale = clamp((0.8 + this.state.globalWaveIndex * 0.055) * this.designer.enemyHpMultiplier * (0.96 + (levelPressure - 0.88) * 0.25), 0.88, 3.0);
+          const damageScale = clamp((0.8 + this.state.globalWaveIndex * 0.05) * (0.97 + (levelPressure - 0.88) * 0.2), 0.82, 1.56);
           const speedScale = clamp(0.88 + this.state.globalWaveIndex * 0.012, 0.82, 1.08);
           const events = [];
           let remaining = enemyBudget;
@@ -3568,6 +3622,7 @@
             this.refreshWormState();
             this.recomputeEstimate();
             this.ui.setScreen(CONFIG.SCREENS.GAMEPLAY);
+            this.renderer.resize();
             this.ui.refresh();
           } catch (error) {
             this.refs.floatingHint.textContent = `Import level error: ${error.message}`;
@@ -3593,6 +3648,7 @@
             if (parsed.balance) Object.assign(CONFIG.BALANCE, parsed.balance);
             this.save.setDesigner(this.designer);
             this.ui.loadDesignerValues();
+            this.renderer.resize();
             this.ui.refresh();
           } catch (error) {
             this.refs.floatingHint.textContent = `Import balance error: ${error.message}`;
