@@ -1154,7 +1154,17 @@
       }
 
       .boardMoveStrip{
-        grid-template-columns:repeat(4,minmax(0,1fr));
+        display:none;
+      }
+
+      #detachButton,
+      #switchEndButton,
+      #cycleWormButton{
+        display:none;
+      }
+
+      .boardPrimaryActions{
+        grid-template-columns:repeat(2,minmax(0,1fr));
       }
 
       .boardPrimaryActions .actionButton,
