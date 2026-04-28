@@ -1,0 +1,2006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Worm Place Puzzle</title>
+  <style>
+    :root{
+      --bg-a:#fff7e8;
+      --bg-b:#eef8ff;
+      --bg-c:#f5f0e8;
+      --text:#18314f;
+      --muted:#637b97;
+      --panel:rgba(255,255,255,.84);
+      --panel-strong:rgba(255,255,255,.95);
+      --stroke:rgba(24,49,79,.09);
+      --shadow:0 20px 44px rgba(24,49,79,.14);
+      --shadow-strong:0 28px 68px rgba(24,49,79,.2);
+      --accent:#244d82;
+      --accent-soft:#edf5ff;
+      --success:#36b87b;
+      --danger:#ff737d;
+      --warm:#f4b548;
+    }
+
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{margin:0;min-height:100%;font-family:"Trebuchet MS","Avenir Next","Segoe UI",sans-serif;color:var(--text)}
+    body{
+      min-height:100vh;
+      display:flex;
+      justify-content:center;
+      background:
+        radial-gradient(circle at top left,rgba(255,197,106,.22),transparent 32%),
+        radial-gradient(circle at 80% 15%,rgba(90,135,255,.18),transparent 28%),
+        radial-gradient(circle at bottom right,rgba(78,203,144,.13),transparent 28%),
+        linear-gradient(180deg,var(--bg-a),var(--bg-b) 56%,var(--bg-c));
+    }
+    button,input,select,textarea{font:inherit}
+    button{border:0}
+    h1,h2,h3,p{margin:0}
+
+    .app{
+      width:min(100vw,1480px);
+      height:100vh;
+      min-height:100vh;
+      padding:16px;
+      display:grid;
+      grid-template-columns:minmax(230px,300px) minmax(0,1fr) minmax(230px,300px);
+      gap:14px;
+      overflow:hidden;
+    }
+
+    .panel{
+      background:linear-gradient(180deg,var(--panel-strong),var(--panel));
+      border:1px solid var(--stroke);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(12px);
+    }
+
+    .leftCol,.rightCol{
+      min-height:0;
+      overflow:auto;
+      display:grid;
+      align-content:start;
+      gap:14px;
+      padding-right:2px;
+    }
+
+    .centerCol{
+      min-height:0;
+      display:grid;
+      grid-template-rows:auto minmax(0,1fr) auto;
+      gap:14px;
+    }
+
+    .titleCard,.targetCard,.selectedCard,.controlsCard,.tipsCard,.hudCard{
+      padding:14px;
+      display:grid;
+      gap:10px;
+      align-content:start;
+    }
+
+    .eyebrow{
+      font-size:11px;
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      color:var(--muted);
+    }
+
+    h1{font-size:clamp(26px,3.1vw,38px);line-height:.95}
+    h2{font-size:20px;line-height:1}
+    .muted{color:var(--muted);line-height:1.45;font-size:13px}
+
+    .hudCard{
+      grid-template-columns:minmax(0,1fr) auto;
+      align-items:center;
+    }
+
+    .pillRack{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:10px;
+    }
+
+    .pill{
+      min-height:62px;
+      padding:10px;
+      border-radius:16px;
+      background:rgba(255,255,255,.76);
+      border:1px solid rgba(24,49,79,.06);
+      display:grid;
+      gap:5px;
+      align-content:center;
+      text-align:center;
+      box-shadow:0 12px 24px rgba(24,49,79,.06);
+    }
+    .pill span{
+      font-size:10px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      color:var(--muted);
+      font-weight:700;
+    }
+    .pill strong{font-size:18px;line-height:1}
+
+    .buttonRack{
+      display:grid;
+      gap:8px;
+      grid-auto-flow:row;
+      min-width:132px;
+    }
+
+    .actionButton{
+      min-height:42px;
+      padding:10px 12px;
+      border-radius:14px;
+      cursor:pointer;
+      font-weight:700;
+      color:var(--text);
+      background:linear-gradient(180deg,#fff,#eef4ff);
+      box-shadow:0 10px 20px rgba(24,49,79,.1);
+      transition:transform .16s ease,box-shadow .16s ease,opacity .16s ease;
+    }
+    .actionButton:hover{transform:translateY(-1px);box-shadow:0 16px 28px rgba(24,49,79,.13)}
+    .actionButton:active{transform:translateY(1px) scale(.985)}
+    .actionButton.accent{color:#fff;background:linear-gradient(180deg,#3663a0,#244d82);box-shadow:0 16px 32px rgba(36,77,130,.24)}
+    .actionButton.success{color:#fff;background:linear-gradient(180deg,#49c88d,#239965);box-shadow:0 16px 32px rgba(35,153,101,.22)}
+    .actionButton.secondary{background:linear-gradient(180deg,#fff,#f4f8ff)}
+    .actionButton.ghost{background:rgba(255,255,255,.74);border:1px solid rgba(24,49,79,.08);box-shadow:none}
+    .actionButton.small{min-height:36px;padding:8px 10px;font-size:13px}
+    .actionButton:disabled{cursor:not-allowed;opacity:.46;transform:none;box-shadow:none}
+
+    .canvasWrap{
+      position:relative;
+      min-height:0;
+      overflow:hidden;
+      border-radius:24px;
+      background:
+        radial-gradient(circle at top left,rgba(255,238,206,.9),transparent 34%),
+        radial-gradient(circle at bottom right,rgba(90,135,255,.1),transparent 34%),
+        linear-gradient(180deg,#fffef7,#f4fbff);
+      border:1px solid rgba(24,49,79,.08);
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.45),var(--shadow);
+    }
+    canvas{width:100%;height:100%;display:block;touch-action:none}
+
+    .boardFooter{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      gap:10px;
+      align-items:stretch;
+    }
+    .hintLine,.selectionMeta{
+      min-height:48px;
+      padding:11px 13px;
+      border-radius:16px;
+      background:rgba(238,245,255,.76);
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.45;
+      display:flex;
+      align-items:center;
+    }
+    .selectionMeta{color:var(--text);font-weight:700}
+
+    .targetList,.wormList,.toastStack{
+      display:grid;
+      gap:9px;
+    }
+    .targetItem,.wormItem,.toast{
+      padding:11px 12px;
+      border-radius:16px;
+      background:rgba(238,245,255,.76);
+      border:1px solid rgba(24,49,79,.05);
+      display:grid;
+      gap:5px;
+      box-shadow:0 10px 20px rgba(24,49,79,.05);
+      font-size:13px;
+    }
+    .targetItem.done,.wormItem.done{
+      background:rgba(78,203,144,.17);
+      border-color:rgba(78,203,144,.24);
+    }
+    .targetTop,.wormTop{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      font-weight:700;
+    }
+    .colorDot{
+      width:14px;
+      height:14px;
+      border-radius:50%;
+      display:inline-block;
+      vertical-align:-2px;
+      margin-right:6px;
+      box-shadow:0 3px 8px rgba(24,49,79,.16);
+    }
+    .tag{
+      padding:5px 8px;
+      border-radius:999px;
+      background:rgba(255,255,255,.78);
+      color:var(--accent);
+      font-size:11px;
+      font-weight:700;
+      white-space:nowrap;
+    }
+
+    .selectedBox{
+      min-height:108px;
+      padding:12px;
+      border-radius:16px;
+      background:rgba(255,255,255,.76);
+      display:grid;
+      gap:8px;
+      align-content:center;
+    }
+    .selectedActions{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:8px;
+    }
+    .dpad{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:9px;
+    }
+    .dpad .actionButton{min-height:56px}
+    .dpadSpacer{visibility:hidden}
+
+    .screen{
+      position:fixed;
+      inset:0;
+      z-index:30;
+      padding:18px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:linear-gradient(180deg,rgba(255,247,232,.25),rgba(238,245,255,.72)),rgba(24,49,79,.14);
+      backdrop-filter:blur(10px);
+    }
+    .screen.hidden{display:none}
+    .screenCard{
+      width:min(100%,940px);
+      padding:24px;
+      border-radius:30px;
+      background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(245,249,255,.94));
+      border:1px solid rgba(24,49,79,.08);
+      box-shadow:var(--shadow-strong);
+      display:grid;
+      gap:18px;
+    }
+    .menuGrid{
+      display:grid;
+      grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);
+      gap:14px;
+    }
+    .menuPanel{
+      padding:16px;
+      border-radius:22px;
+      background:rgba(238,245,255,.74);
+      display:grid;
+      gap:12px;
+      align-content:start;
+      box-shadow:0 14px 28px rgba(24,49,79,.06);
+    }
+    .menuStats,.resultStats{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:10px;
+    }
+    .statCard{
+      padding:14px;
+      border-radius:18px;
+      background:rgba(255,255,255,.76);
+      display:grid;
+      gap:6px;
+      box-shadow:0 12px 24px rgba(24,49,79,.06);
+    }
+    .statCard span{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+    .statCard strong{font-size:24px;line-height:1}
+    .screenButtons,.buttonRow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .screenButtons .actionButton{min-width:150px}
+
+    .designerDrawer{
+      position:fixed;
+      right:18px;
+      top:18px;
+      bottom:18px;
+      z-index:40;
+      width:min(460px,calc(100vw - 24px));
+      border-radius:30px;
+      background:linear-gradient(180deg,rgba(255,255,255,.97),rgba(246,250,255,.94));
+      border:1px solid rgba(24,49,79,.08);
+      box-shadow:var(--shadow-strong);
+      display:grid;
+      grid-template-rows:auto 1fr;
+      transform:translateX(calc(100% + 28px));
+      transition:transform .24s ease;
+      overflow:hidden;
+      backdrop-filter:blur(14px);
+    }
+    .designerDrawer.open{transform:translateX(0)}
+    .drawerHeader{
+      padding:18px;
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      border-bottom:1px solid rgba(24,49,79,.08);
+      background:rgba(255,255,255,.88);
+    }
+    .designerScroll{
+      overflow:auto;
+      padding:16px 18px 18px;
+      display:grid;
+      gap:14px;
+      align-content:start;
+    }
+    .designerSection{
+      padding:16px;
+      border-radius:22px;
+      background:rgba(238,245,255,.72);
+      box-shadow:0 14px 28px rgba(24,49,79,.05);
+      display:grid;
+      gap:12px;
+      align-content:start;
+    }
+    .formGrid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+    }
+    .field{display:grid;gap:6px;min-width:0}
+    .field span{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+    .field input,.field select,.field textarea{
+      width:100%;
+      padding:11px 12px;
+      border-radius:15px;
+      border:1px solid rgba(24,49,79,.12);
+      background:rgba(255,255,255,.94);
+      color:var(--text);
+    }
+    .field textarea{
+      min-height:180px;
+      resize:vertical;
+      font-family:Consolas,"SFMono-Regular","Liberation Mono",monospace;
+      font-size:12px;
+      line-height:1.35;
+    }
+    .drawerNote,.toast{font-size:12px;color:var(--muted);line-height:1.45}
+    .toast{background:rgba(36,77,130,.08);color:var(--accent);font-weight:700}
+    .toast.warn{background:rgba(255,115,125,.14);color:#8b2d37}
+    .toast.success{background:rgba(54,184,123,.16);color:#0f754f}
+
+    @media (max-width:1100px){
+      .app{height:auto;min-height:100vh;overflow:auto;grid-template-columns:1fr}
+      .centerCol{min-height:720px}
+      .leftCol,.rightCol{overflow:visible;padding-right:0}
+      .rightCol{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .tipsCard{grid-column:1/-1}
+    }
+    @media (max-width:720px){
+      .app{padding:10px;gap:10px}
+      .hudCard,.boardFooter,.menuGrid,.menuStats,.resultStats,.formGrid,.rightCol{grid-template-columns:1fr}
+      .pillRack{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .buttonRack{grid-template-columns:repeat(3,minmax(0,1fr));min-width:0}
+      .screen{padding:10px}
+      .screenCard{padding:18px;border-radius:24px}
+      .designerDrawer{top:10px;right:10px;bottom:10px;width:calc(100vw - 20px);border-radius:24px}
+      .screenButtons,.buttonRow{flex-direction:column;align-items:stretch}
+      .screenButtons .actionButton{width:100%}
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <aside class="leftCol">
+      <section class="panel titleCard">
+        <div class="eyebrow">Worm Jam Prototype</div>
+        <h1>Worm Place Puzzle</h1>
+        <p class="muted">Place every worm on its matching pipe path. Sockets mark the ends; the line marks the exact body route.</p>
+      </section>
+
+      <section class="panel targetCard">
+        <div class="targetTop">
+          <h2>Targets</h2>
+          <span id="targetBadge" class="tag">0 / 0</span>
+        </div>
+        <div id="targetList" class="targetList"></div>
+      </section>
+
+      <section class="panel targetCard">
+        <div class="targetTop">
+          <h2>Worms</h2>
+          <span id="wormBadge" class="tag">0 worms</span>
+        </div>
+        <div id="wormList" class="wormList"></div>
+      </section>
+    </aside>
+
+    <section class="centerCol">
+      <section class="panel hudCard">
+        <div class="pillRack">
+          <div class="pill"><span>Mode</span><strong id="hudMode">Menu</strong></div>
+          <div class="pill"><span>Level</span><strong id="hudLevel">-</strong></div>
+          <div class="pill"><span>Placed</span><strong id="hudPlaced">0 / 0</strong></div>
+          <div class="pill"><span>Moves</span><strong id="hudMoves">0</strong></div>
+        </div>
+        <div class="buttonRack">
+          <button id="restartButton" class="actionButton secondary small" type="button">Restart</button>
+          <button id="menuButton" class="actionButton secondary small" type="button">Menu</button>
+          <button id="debugButton" class="actionButton accent small" type="button">Debug</button>
+        </div>
+      </section>
+
+      <section class="canvasWrap">
+        <canvas id="gameCanvas" aria-label="Worm puzzle board"></canvas>
+      </section>
+
+      <section class="boardFooter">
+        <div id="hintLine" class="hintLine">Choose Campaign or Sandbox from the menu.</div>
+        <div id="selectionMeta" class="selectionMeta">No worm selected</div>
+      </section>
+    </section>
+
+    <aside class="rightCol">
+      <section class="panel selectedCard">
+        <h2>Selected</h2>
+        <div id="selectedBox" class="selectedBox">
+          <p class="muted">Tap a worm, then drag an end or use the arrows.</p>
+        </div>
+        <div class="selectedActions">
+          <button id="tailButton" class="actionButton ghost small" type="button">Tail</button>
+          <button id="cycleButton" class="actionButton ghost small" type="button">Cycle</button>
+          <button id="headButton" class="actionButton ghost small" type="button">Head</button>
+        </div>
+      </section>
+
+      <section class="panel controlsCard">
+        <h2>Move</h2>
+        <div class="dpad">
+          <span class="dpadSpacer"></span>
+          <button class="actionButton" data-dir="up" type="button">Up</button>
+          <span class="dpadSpacer"></span>
+          <button class="actionButton" data-dir="left" type="button">Left</button>
+          <button id="switchEndButton" class="actionButton secondary" type="button">End</button>
+          <button class="actionButton" data-dir="right" type="button">Right</button>
+          <span class="dpadSpacer"></span>
+          <button class="actionButton" data-dir="down" type="button">Down</button>
+          <span class="dpadSpacer"></span>
+        </div>
+      </section>
+
+      <section class="panel tipsCard">
+        <h2>Signals</h2>
+        <p class="muted">Completed worms glow and lock. Wrong color or length can touch a socket, but it will not count.</p>
+        <div id="toastStack" class="toastStack"></div>
+      </section>
+    </aside>
+  </main>
+
+  <div id="menuScreen" class="screen">
+    <div class="screenCard">
+      <div>
+        <div class="eyebrow">Main Menu</div>
+        <h2>Worm Place Puzzle</h2>
+      </div>
+      <div class="menuGrid">
+        <section class="menuPanel">
+          <h3>Campaign</h3>
+          <p class="muted">A 100 level sequence with short FTUE hints and a gradual mix of small boards, long paths, dense starts, and color matching.</p>
+          <div class="menuStats">
+            <div class="statCard"><span>Unlocked</span><strong id="menuUnlocked">1</strong></div>
+            <div class="statCard"><span>Total</span><strong>100</strong></div>
+            <div class="statCard"><span>Save</span><strong>Local</strong></div>
+          </div>
+          <div class="screenButtons">
+            <button id="campaignButton" class="actionButton accent" type="button">Campaign</button>
+            <button id="campaignRestartButton" class="actionButton secondary" type="button">Restart Level 1</button>
+          </div>
+        </section>
+        <section class="menuPanel">
+          <h3>Sandbox</h3>
+          <p class="muted">Generate, restart, export, and import boards without changing campaign progress.</p>
+          <div class="menuStats">
+            <div class="statCard"><span>Width</span><strong>5-20</strong></div>
+            <div class="statCard"><span>Height</span><strong>5-30</strong></div>
+            <div class="statCard"><span>Length</span><strong>2-12</strong></div>
+          </div>
+          <div class="screenButtons">
+            <button id="sandboxButton" class="actionButton success" type="button">Sandbox</button>
+            <button id="sandboxDesignerButton" class="actionButton secondary" type="button">Open Designer</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div id="victoryScreen" class="screen hidden">
+    <div class="screenCard">
+      <div>
+        <div class="eyebrow">Victory</div>
+        <h2 id="victoryTitle">Level Complete</h2>
+      </div>
+      <div class="resultStats">
+        <div class="statCard"><span>Level</span><strong id="resultLevel">1</strong></div>
+        <div class="statCard"><span>Worms</span><strong id="resultPlaced">0 / 0</strong></div>
+        <div class="statCard"><span>Moves</span><strong id="resultMoves">0</strong></div>
+      </div>
+      <p id="victoryText" class="muted">All worms are on their target paths.</p>
+      <div class="screenButtons">
+        <button id="nextLevelButton" class="actionButton accent" type="button">Next Level</button>
+        <button id="victoryRestartButton" class="actionButton secondary" type="button">Restart</button>
+        <button id="victoryMenuButton" class="actionButton secondary" type="button">Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <aside id="designerDrawer" class="designerDrawer" aria-hidden="true">
+    <div class="drawerHeader">
+      <div>
+        <div class="eyebrow">Sandbox Designer</div>
+        <h2>Level Tools</h2>
+      </div>
+      <button id="designerCloseButton" class="actionButton secondary small" type="button">Close</button>
+    </div>
+    <div class="designerScroll">
+      <section class="designerSection">
+        <h3>Generation</h3>
+        <div class="formGrid">
+          <label class="field"><span>Field width</span><input id="fieldWidthInput" data-setting="fieldWidth" type="number" min="5" max="20" step="1"></label>
+          <label class="field"><span>Field height</span><input id="fieldHeightInput" data-setting="fieldHeight" type="number" min="5" max="30" step="1"></label>
+          <label class="field"><span>Start worms</span><input id="startWormsInput" data-setting="startWorms" type="number" min="1" max="40" step="1"></label>
+          <label class="field"><span>Pipe pairs</span><input id="pipePairsInput" data-setting="pipePairs" type="number" min="1" max="40" step="1"></label>
+          <label class="field"><span>Worm length min</span><input id="lengthMinInput" data-setting="lengthMin" type="number" min="2" max="12" step="1"></label>
+          <label class="field"><span>Worm length max</span><input id="lengthMaxInput" data-setting="lengthMax" type="number" min="2" max="12" step="1"></label>
+          <label class="field"><span>Colors</span><input id="colorCountInput" data-setting="colorCount" type="number" min="1" max="7" step="1"></label>
+          <label class="field"><span>Seed</span><input id="seedInput" data-setting="seed" type="text"></label>
+        </div>
+        <div class="drawerNote" id="designerNote">Pipe pairs are normalized to the worm count so every worm has one valid target.</div>
+        <div class="buttonRow">
+          <button id="generateButton" class="actionButton accent" type="button">Generate</button>
+          <button id="designerRestartButton" class="actionButton secondary" type="button">Restart</button>
+        </div>
+      </section>
+
+      <section class="designerSection">
+        <h3>JSON</h3>
+        <label class="field">
+          <span>Export / Import</span>
+          <textarea id="jsonBox" spellcheck="false"></textarea>
+        </label>
+        <div class="buttonRow">
+          <button id="exportButton" class="actionButton secondary" type="button">Export JSON</button>
+          <button id="importButton" class="actionButton secondary" type="button">Import JSON</button>
+        </div>
+      </section>
+    </div>
+  </aside>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const CONFIG = {
+        SAVE_KEY: "worm_place_puzzle_save_v1",
+        MAX_LEVEL: 100,
+        COLORS: {
+          yellow: { fill: "#f5c94d", soft: "#fff1be", dark: "#875f0a", pipe: "#ffe8a0", glow: "rgba(245,201,77,.35)" },
+          blue: { fill: "#5a87ff", soft: "#dce8ff", dark: "#26458b", pipe: "#cfe0ff", glow: "rgba(90,135,255,.35)" },
+          red: { fill: "#ff6c79", soft: "#ffd9de", dark: "#8c2b39", pipe: "#ffd0d4", glow: "rgba(255,108,121,.35)" },
+          green: { fill: "#4ecb90", soft: "#d8f6e8", dark: "#187652", pipe: "#d2f4e4", glow: "rgba(78,203,144,.35)" },
+          purple: { fill: "#9a73ff", soft: "#ece2ff", dark: "#50319a", pipe: "#e1d3ff", glow: "rgba(154,115,255,.35)" },
+          orange: { fill: "#ff9a4d", soft: "#ffe3cc", dark: "#9a5318", pipe: "#ffd9bd", glow: "rgba(255,154,77,.35)" },
+          cyan: { fill: "#4dd8e6", soft: "#d7f9fc", dark: "#1d6c78", pipe: "#cef5f9", glow: "rgba(77,216,230,.35)" }
+        },
+        DEFAULT_SANDBOX: {
+          fieldWidth: 7,
+          fieldHeight: 8,
+          startWorms: 3,
+          pipePairs: 3,
+          lengthMin: 2,
+          lengthMax: 5,
+          colorCount: 3,
+          seed: "worm-jam"
+        },
+        INPUT: {
+          dragThreshold: 18,
+          pointerStepInterval: 0.085,
+          keyboardStepInterval: 0.07,
+          pointerBias: 0.02
+        },
+        ANIM: {
+          wormMoveDuration: 0.09,
+          toastDuration: 2.2,
+          victoryDelay: 1
+        }
+      };
+
+      const COLOR_KEYS = Object.keys(CONFIG.COLORS);
+      const DIRS = {
+        up: { x: 0, y: -1 },
+        down: { x: 0, y: 1 },
+        left: { x: -1, y: 0 },
+        right: { x: 1, y: 0 }
+      };
+
+      const Helpers = {
+        clamp(value, min, max) {
+          return Math.max(min, Math.min(max, value));
+        },
+        lerp(a, b, t) {
+          return a + (b - a) * t;
+        },
+        easeOutCubic(t) {
+          return 1 - Math.pow(1 - t, 3);
+        },
+        cellKey(x, y) {
+          return `${x},${y}`;
+        },
+        sameCell(a, b) {
+          return a && b && a.x === b.x && a.y === b.y;
+        },
+        manhattan(a, b) {
+          return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+        },
+        dist(x1, y1, x2, y2) {
+          return Math.hypot(x2 - x1, y2 - y1);
+        },
+        deepClone(value) {
+          return JSON.parse(JSON.stringify(value));
+        },
+        randomId(prefix) {
+          return `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
+        },
+        range(min, max) {
+          const out = [];
+          for (let i = min; i <= max; i++) out.push(i);
+          return out;
+        }
+      };
+
+      class RNG {
+        constructor(seed) {
+          this.state = RNG.hash(seed);
+        }
+        static hash(seed) {
+          const text = String(seed ?? "seed");
+          let h = 2166136261 >>> 0;
+          for (let i = 0; i < text.length; i++) {
+            h ^= text.charCodeAt(i);
+            h = Math.imul(h, 16777619);
+          }
+          return h >>> 0 || 0x9e3779b9;
+        }
+        next() {
+          let x = this.state >>> 0;
+          x ^= x << 13;
+          x ^= x >>> 17;
+          x ^= x << 5;
+          this.state = x >>> 0;
+          return (this.state >>> 0) / 4294967296;
+        }
+        int(min, max) {
+          return Math.floor(this.next() * (max - min + 1)) + min;
+        }
+        range(min, max) {
+          return min + (max - min) * this.next();
+        }
+        pick(list) {
+          return list.length ? list[this.int(0, list.length - 1)] : null;
+        }
+        shuffle(list) {
+          for (let i = list.length - 1; i > 0; i--) {
+            const j = this.int(0, i);
+            [list[i], list[j]] = [list[j], list[i]];
+          }
+          return list;
+        }
+      }
+
+      const Save = {
+        data: {
+          unlockedLevel: 1,
+          sandbox: Helpers.deepClone(CONFIG.DEFAULT_SANDBOX)
+        },
+        load() {
+          try {
+            const raw = localStorage.getItem(CONFIG.SAVE_KEY);
+            if (!raw) return;
+            const parsed = JSON.parse(raw);
+            this.data.unlockedLevel = Helpers.clamp(Number(parsed.unlockedLevel) || 1, 1, CONFIG.MAX_LEVEL);
+            this.data.sandbox = { ...Helpers.deepClone(CONFIG.DEFAULT_SANDBOX), ...(parsed.sandbox || {}) };
+          } catch (error) {
+            this.data = { unlockedLevel: 1, sandbox: Helpers.deepClone(CONFIG.DEFAULT_SANDBOX) };
+          }
+        },
+        commit() {
+          localStorage.setItem(CONFIG.SAVE_KEY, JSON.stringify(this.data));
+        },
+        unlock(level) {
+          this.data.unlockedLevel = Helpers.clamp(Math.max(this.data.unlockedLevel, level), 1, CONFIG.MAX_LEVEL);
+          this.commit();
+        },
+        saveSandbox(settings) {
+          this.data.sandbox = Helpers.deepClone(settings);
+          this.commit();
+        }
+      };
+
+      const BoardUtils = {
+        isInside(width, height, x, y) {
+          return x >= 0 && y >= 0 && x < width && y < height;
+        },
+        neighbors(width, height, x, y) {
+          return Object.values(DIRS)
+            .map((d) => ({ x: x + d.x, y: y + d.y }))
+            .filter((cell) => BoardUtils.isInside(width, height, cell.x, cell.y));
+        },
+        pathsEqual(a, b) {
+          if (!a || !b || a.length !== b.length) return false;
+          const forward = a.every((cell, i) => Helpers.sameCell(cell, b[i]));
+          const reverse = a.every((cell, i) => Helpers.sameCell(cell, b[b.length - 1 - i]));
+          return forward || reverse;
+        },
+        overlapCount(a, b) {
+          const set = new Set(a.map((cell) => Helpers.cellKey(cell.x, cell.y)));
+          return b.reduce((count, cell) => count + (set.has(Helpers.cellKey(cell.x, cell.y)) ? 1 : 0), 0);
+        },
+        findRandomPathOfLength({ width, height, length, isBlocked, rng, limitStarts = 90 }) {
+          const starts = [];
+          for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+              if (!isBlocked(x, y)) starts.push({ x, y });
+            }
+          }
+          rng.shuffle(starts);
+          const sample = starts.slice(0, Math.min(starts.length, limitStarts));
+          for (const start of sample) {
+            const used = new Set([Helpers.cellKey(start.x, start.y)]);
+            const path = [start];
+            if (BoardUtils.expandPath(path, used, width, height, length, isBlocked, rng)) {
+              return path.map((cell) => ({ ...cell }));
+            }
+          }
+          return null;
+        },
+        expandPath(path, used, width, height, length, isBlocked, rng) {
+          if (path.length >= length) return true;
+          const last = path[path.length - 1];
+          const neighbors = BoardUtils.neighbors(width, height, last.x, last.y)
+            .filter((cell) => {
+              const key = Helpers.cellKey(cell.x, cell.y);
+              return !used.has(key) && !isBlocked(cell.x, cell.y);
+            })
+            .map((cell) => ({
+              cell,
+              degree: BoardUtils.neighbors(width, height, cell.x, cell.y)
+                .filter((n) => {
+                  const key = Helpers.cellKey(n.x, n.y);
+                  return !used.has(key) && !isBlocked(n.x, n.y);
+                }).length
+            }))
+            .sort((a, b) => a.degree - b.degree || rng.next() - 0.5)
+            .map((entry) => entry.cell);
+
+          rng.shuffle(neighbors);
+          for (const cell of neighbors) {
+            const key = Helpers.cellKey(cell.x, cell.y);
+            used.add(key);
+            path.push(cell);
+            if (BoardUtils.expandPath(path, used, width, height, length, isBlocked, rng)) return true;
+            path.pop();
+            used.delete(key);
+          }
+          return false;
+        }
+      };
+
+      const Campaign = {
+        getSettings(level) {
+          const safeLevel = Helpers.clamp(Number(level) || 1, 1, CONFIG.MAX_LEVEL);
+          if (safeLevel === 1) {
+            return {
+              fieldWidth: 5,
+              fieldHeight: 5,
+              startWorms: 1,
+              pipePairs: 1,
+              lengthMin: 3,
+              lengthMax: 3,
+              colorCount: 1,
+              seed: "campaign-001"
+            };
+          }
+          if (safeLevel <= 5) {
+            const early = [
+              null,
+              null,
+              { fieldWidth: 5, fieldHeight: 5, startWorms: 2, pipePairs: 2, lengthMin: 2, lengthMax: 3, colorCount: 1 },
+              { fieldWidth: 5, fieldHeight: 6, startWorms: 2, pipePairs: 2, lengthMin: 3, lengthMax: 4, colorCount: 2 },
+              { fieldWidth: 6, fieldHeight: 6, startWorms: 3, pipePairs: 3, lengthMin: 2, lengthMax: 3, colorCount: 2 },
+              { fieldWidth: 6, fieldHeight: 6, startWorms: 3, pipePairs: 3, lengthMin: 3, lengthMax: 4, colorCount: 2 }
+            ][safeLevel];
+            return { ...early, seed: `campaign-${String(safeLevel).padStart(3, "0")}` };
+          }
+
+          const t = safeLevel - 6;
+          const band = Math.floor(t / 5) % 6;
+          const tier = Math.floor(t / 10);
+          let width = 6 + Math.floor(t / 9);
+          let height = 7 + Math.floor(t / 6);
+          let count = 3 + Math.floor(t / 8);
+          let lengthMin = 2 + Math.floor(t / 34);
+          let lengthMax = 4 + Math.floor(t / 14);
+          let colorCount = 2 + Math.floor(t / 16);
+
+          if (band === 0) {
+            count += 1;
+            lengthMin = 2;
+            lengthMax = Math.max(3, Math.min(lengthMax, 5));
+          } else if (band === 1) {
+            count = Math.max(2, count - 1);
+            lengthMin += 2;
+            lengthMax += 3;
+            width += 1;
+            height += 1;
+          } else if (band === 2) {
+            colorCount += 1;
+            count += 1;
+          } else if (band === 3) {
+            width = Math.max(5, width - 1);
+            height = Math.max(5, height - 2);
+            count += 2;
+            lengthMax = Math.min(lengthMax, 6);
+          } else if (band === 4) {
+            width += 3;
+            height += 2;
+            lengthMax += 4;
+          } else {
+            count += tier % 3;
+            lengthMin += 1;
+            colorCount += 1;
+          }
+
+          return {
+            fieldWidth: Helpers.clamp(width, 5, 20),
+            fieldHeight: Helpers.clamp(height, 5, 30),
+            startWorms: Helpers.clamp(count, 2, 22),
+            pipePairs: Helpers.clamp(count, 2, 22),
+            lengthMin: Helpers.clamp(lengthMin, 2, 12),
+            lengthMax: Helpers.clamp(Math.max(lengthMin, lengthMax), 2, 12),
+            colorCount: Helpers.clamp(colorCount, 1, 7),
+            seed: `campaign-${String(safeLevel).padStart(3, "0")}`
+          };
+        },
+        hint(level) {
+          if (level === 1) return "Pick the worm and place its two ends on the two glowing sockets.";
+          if (level === 2) return "Now there are multiple worms. Tap a worm or press Tab to switch.";
+          if (level === 3) return "Colors matter: each worm belongs on the matching colored line.";
+          if (level === 4) return "Length matters: the worm body must cover every cell of the line.";
+          if (level === 5) return "Completed worms glow and lock, so finish clear placements first.";
+          return "Place every worm on its matching pipe path.";
+        }
+      };
+
+      const LevelGenerator = {
+        normalizeSettings(settings, mode) {
+          const repaired = {
+            fieldWidth: Helpers.clamp(Math.round(Number(settings.fieldWidth) || 5), 5, 20),
+            fieldHeight: Helpers.clamp(Math.round(Number(settings.fieldHeight) || 5), 5, 30),
+            startWorms: Math.max(1, Math.round(Number(settings.startWorms) || 1)),
+            pipePairs: Math.max(1, Math.round(Number(settings.pipePairs) || Number(settings.startWorms) || 1)),
+            lengthMin: Helpers.clamp(Math.round(Number(settings.lengthMin) || 2), 2, 12),
+            lengthMax: Helpers.clamp(Math.round(Number(settings.lengthMax) || 2), 2, 12),
+            colorCount: Helpers.clamp(Math.round(Number(settings.colorCount) || 1), 1, COLOR_KEYS.length),
+            seed: String(settings.seed || "worm-jam")
+          };
+          if (repaired.lengthMax < repaired.lengthMin) repaired.lengthMax = repaired.lengthMin;
+          let count = Math.max(repaired.startWorms, repaired.pipePairs);
+          const minCells = () => count * repaired.lengthMin;
+          while (minCells() > Math.floor(repaired.fieldWidth * repaired.fieldHeight * 0.58)) {
+            if (repaired.fieldWidth < 20) repaired.fieldWidth++;
+            else if (repaired.fieldHeight < 30) repaired.fieldHeight++;
+            else if (count > 1) count--;
+            else break;
+          }
+          while (count * repaired.lengthMax > Math.floor(repaired.fieldWidth * repaired.fieldHeight * 0.72) && repaired.lengthMax > repaired.lengthMin) {
+            repaired.lengthMax--;
+          }
+          const maxByArea = Math.max(1, Math.floor((repaired.fieldWidth * repaired.fieldHeight * 0.58) / repaired.lengthMin));
+          count = Helpers.clamp(count, mode === "campaign" && Number(settings.level) > 1 ? 2 : 1, maxByArea);
+          repaired.startWorms = count;
+          repaired.pipePairs = count;
+          return repaired;
+        },
+        build(level, mode, inputSettings) {
+          const settings = LevelGenerator.normalizeSettings({ ...inputSettings, level }, mode);
+          if (mode === "campaign" && level === 1) return LevelGenerator.firstLevel(settings);
+          for (let round = 0; round < 6; round++) {
+            const attemptSettings = { ...settings };
+            if (round > 1) attemptSettings.lengthMax = Math.max(attemptSettings.lengthMin, attemptSettings.lengthMax - round + 1);
+            if (round > 3) {
+              attemptSettings.startWorms = Math.max(mode === "campaign" && level > 1 ? 2 : 1, attemptSettings.startWorms - 1);
+              attemptSettings.pipePairs = attemptSettings.startWorms;
+            }
+            const board = LevelGenerator.tryBuild(level, mode, attemptSettings);
+            if (board) return board;
+          }
+          return LevelGenerator.fallback(level, mode, settings);
+        },
+        firstLevel(settings) {
+          const targetPath = [{ x: 1, y: 1 }, { x: 2, y: 1 }, { x: 3, y: 1 }];
+          const startPath = [{ x: 1, y: 3 }, { x: 2, y: 3 }, { x: 3, y: 3 }];
+          return {
+            version: 1,
+            level: 1,
+            mode: "campaign",
+            seed: "campaign-001|fixed",
+            settings: { ...settings, fieldWidth: 5, fieldHeight: 5, startWorms: 1, pipePairs: 1, lengthMin: 3, lengthMax: 3, colorCount: 1 },
+            width: 5,
+            height: 5,
+            worms: [{
+              id: "worm_level_1",
+              targetId: "pipe_level_1",
+              color: "yellow",
+              length: 3,
+              cells: startPath,
+              prevCells: startPath.map((cell) => ({ ...cell })),
+              moveT: 1,
+              completed: false,
+              pulseSeed: 0
+            }],
+            pipes: [{
+              id: "pipe_level_1",
+              targetWormId: "worm_level_1",
+              color: "yellow",
+              requiredLength: 3,
+              path: targetPath,
+              a: { ...targetPath[0] },
+              b: { ...targetPath[targetPath.length - 1] },
+              completed: false,
+              pulseSeed: 0,
+              connectedWormId: null
+            }],
+            moves: 0,
+            completedCount: 0,
+            won: false,
+            victoryPending: 0,
+            victoryFlash: 0
+          };
+        },
+        tryBuild(level, mode, settings) {
+          const baseSeed = `${settings.seed}|${mode}|L${level}|${settings.fieldWidth}x${settings.fieldHeight}|${settings.startWorms}`;
+          for (let attempt = 0; attempt < 120; attempt++) {
+            const rng = new RNG(`${baseSeed}|A${attempt}`);
+            const board = {
+              version: 1,
+              level,
+              mode,
+              seed: `${baseSeed}|A${attempt}`,
+              settings: Helpers.deepClone(settings),
+              width: settings.fieldWidth,
+              height: settings.fieldHeight,
+              worms: [],
+              pipes: [],
+              moves: 0,
+              completedCount: 0,
+              won: false,
+              victoryPending: 0,
+              victoryFlash: 0
+            };
+            const specs = LevelGenerator.buildSpecs(settings, rng);
+            if (!LevelGenerator.placeTargets(board, specs, rng)) continue;
+            if (!LevelGenerator.placeWorms(board, specs, rng)) continue;
+            return board;
+          }
+          return null;
+        },
+        buildSpecs(settings, rng) {
+          const lengths = [];
+          const allowed = Helpers.range(settings.lengthMin, settings.lengthMax);
+          for (let i = 0; i < settings.startWorms; i++) {
+            const wave = i % 4 === 0 ? allowed[allowed.length - 1] : rng.pick(allowed);
+            lengths.push(wave);
+          }
+          rng.shuffle(lengths);
+          return lengths.map((length, index) => ({
+            length,
+            color: COLOR_KEYS[index % settings.colorCount],
+            targetId: Helpers.randomId("pipe"),
+            wormId: Helpers.randomId("worm")
+          }));
+        },
+        placeTargets(board, specs, rng) {
+          const reserved = new Set();
+          for (const spec of specs) {
+            const path = BoardUtils.findRandomPathOfLength({
+              width: board.width,
+              height: board.height,
+              length: spec.length,
+              isBlocked: (x, y) => reserved.has(Helpers.cellKey(x, y)),
+              rng,
+              limitStarts: 110
+            });
+            if (!path) return false;
+            path.forEach((cell) => reserved.add(Helpers.cellKey(cell.x, cell.y)));
+            board.pipes.push({
+              id: spec.targetId,
+              targetWormId: spec.wormId,
+              color: spec.color,
+              requiredLength: spec.length,
+              path,
+              a: { ...path[0] },
+              b: { ...path[path.length - 1] },
+              completed: false,
+              connectedWormId: null,
+              pulseSeed: rng.range(0, 100)
+            });
+          }
+          return true;
+        },
+        placeWorms(board, specs, rng) {
+          const occupied = new Set();
+          for (const spec of specs) {
+            const target = board.pipes.find((pipe) => pipe.id === spec.targetId);
+            let chosen = null;
+            for (let attempt = 0; attempt < 80; attempt++) {
+              const path = BoardUtils.findRandomPathOfLength({
+                width: board.width,
+                height: board.height,
+                length: spec.length,
+                isBlocked: (x, y) => occupied.has(Helpers.cellKey(x, y)),
+                rng,
+                limitStarts: 80
+              });
+              if (!path) continue;
+              const overlap = BoardUtils.overlapCount(path, target.path);
+              if (BoardUtils.pathsEqual(path, target.path)) continue;
+              if (spec.color === target.color && overlap >= Math.max(2, spec.length - 1)) continue;
+              chosen = path;
+              break;
+            }
+            if (!chosen) return false;
+            chosen.forEach((cell) => occupied.add(Helpers.cellKey(cell.x, cell.y)));
+            board.worms.push({
+              id: spec.wormId,
+              targetId: spec.targetId,
+              color: spec.color,
+              length: spec.length,
+              cells: chosen,
+              prevCells: chosen.map((cell) => ({ ...cell })),
+              moveT: 1,
+              completed: false,
+              pulseSeed: rng.range(0, 100)
+            });
+          }
+          return true;
+        },
+        fallback(level, mode, settings) {
+          const width = Math.max(5, settings.fieldWidth);
+          const height = Math.max(5, settings.fieldHeight);
+          const length = Math.min(Math.max(settings.lengthMin, 3), width);
+          const path = Array.from({ length }, (_, i) => ({ x: i + 1, y: 1 }));
+          const start = Array.from({ length }, (_, i) => ({ x: i + 1, y: Math.min(height - 2, 3) }));
+          return {
+            version: 1,
+            level,
+            mode,
+            seed: `${settings.seed}|fallback`,
+            settings: { ...settings, fieldWidth: width, fieldHeight: height, startWorms: 1, pipePairs: 1, lengthMin: length, lengthMax: length },
+            width,
+            height,
+            worms: [{
+              id: "worm_fallback",
+              targetId: "pipe_fallback",
+              color: "yellow",
+              length,
+              cells: start,
+              prevCells: start.map((cell) => ({ ...cell })),
+              moveT: 1,
+              completed: false,
+              pulseSeed: 0
+            }],
+            pipes: [{
+              id: "pipe_fallback",
+              targetWormId: "worm_fallback",
+              color: "yellow",
+              requiredLength: length,
+              path,
+              a: { ...path[0] },
+              b: { ...path[path.length - 1] },
+              completed: false,
+              pulseSeed: 0,
+              connectedWormId: null
+            }],
+            moves: 0,
+            completedCount: 0,
+            won: false,
+            victoryPending: 0,
+            victoryFlash: 0
+          };
+        }
+      };
+
+      class Renderer {
+        constructor(game, canvas) {
+          this.game = game;
+          this.canvas = canvas;
+          this.ctx = canvas.getContext("2d");
+          this.view = { scale: 1, ox: 0, oy: 0, cell: 32, boardW: 0, boardH: 0 };
+          this.resize();
+          window.addEventListener("resize", () => this.resize());
+        }
+        resize() {
+          const rect = this.canvas.getBoundingClientRect();
+          const dpr = window.devicePixelRatio || 1;
+          this.canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+          this.canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+          this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          this.render();
+        }
+        updateView(board) {
+          const rect = this.canvas.getBoundingClientRect();
+          const pad = 28;
+          const cell = Math.floor(Math.min((rect.width - pad * 2) / board.width, (rect.height - pad * 2) / board.height));
+          this.view.cell = Math.max(16, cell);
+          this.view.boardW = this.view.cell * board.width;
+          this.view.boardH = this.view.cell * board.height;
+          this.view.ox = Math.floor((rect.width - this.view.boardW) / 2);
+          this.view.oy = Math.floor((rect.height - this.view.boardH) / 2);
+        }
+        cellCenter(cell) {
+          return {
+            x: this.view.ox + cell.x * this.view.cell + this.view.cell / 2,
+            y: this.view.oy + cell.y * this.view.cell + this.view.cell / 2
+          };
+        }
+        screenToCell(clientX, clientY) {
+          const rect = this.canvas.getBoundingClientRect();
+          const x = clientX - rect.left;
+          const y = clientY - rect.top;
+          return {
+            x: Math.floor((x - this.view.ox) / this.view.cell),
+            y: Math.floor((y - this.view.oy) / this.view.cell)
+          };
+        }
+        render() {
+          const ctx = this.ctx;
+          const rect = this.canvas.getBoundingClientRect();
+          ctx.clearRect(0, 0, rect.width, rect.height);
+          const board = this.game.board;
+          if (!board) return;
+          this.updateView(board);
+          this.drawBoard(ctx, board);
+          this.drawPipes(ctx, board);
+          this.drawWorms(ctx, board);
+          this.drawBoardEffects(ctx, board);
+          this.drawParticles(ctx);
+        }
+        drawBoard(ctx, board) {
+          const { ox, oy, cell, boardW, boardH } = this.view;
+          ctx.save();
+          ctx.fillStyle = "rgba(255,255,255,.42)";
+          this.roundRect(ctx, ox - 12, oy - 12, boardW + 24, boardH + 24, 22);
+          ctx.fill();
+          for (let y = 0; y < board.height; y++) {
+            for (let x = 0; x < board.width; x++) {
+              ctx.fillStyle = (x + y) % 2 ? "rgba(236,244,255,.58)" : "rgba(255,255,255,.62)";
+              this.roundRect(ctx, ox + x * cell + 2, oy + y * cell + 2, cell - 4, cell - 4, Math.max(6, cell * 0.16));
+              ctx.fill();
+            }
+          }
+          ctx.strokeStyle = "rgba(24,49,79,.08)";
+          ctx.lineWidth = 1;
+          this.roundRect(ctx, ox, oy, boardW, boardH, 18);
+          ctx.stroke();
+          ctx.restore();
+        }
+        drawPipes(ctx, board) {
+          const now = this.game.time;
+          for (const pipe of board.pipes) {
+            const palette = CONFIG.COLORS[pipe.color] || CONFIG.COLORS.yellow;
+            const points = pipe.path.map((cell) => this.cellCenter(cell));
+            const pulse = 0.5 + Math.sin(now * 2.1 + pipe.pulseSeed) * 0.5;
+            ctx.save();
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.strokeStyle = pipe.completed ? "rgba(54,184,123,.52)" : palette.pipe;
+            ctx.lineWidth = Math.max(10, this.view.cell * 0.34);
+            ctx.globalAlpha = pipe.completed ? 0.9 : 0.72;
+            this.strokePath(ctx, points);
+            ctx.strokeStyle = pipe.completed ? "rgba(255,255,255,.88)" : palette.fill;
+            ctx.lineWidth = Math.max(3, this.view.cell * 0.1);
+            ctx.globalAlpha = pipe.completed ? 0.95 : 0.42 + pulse * 0.16;
+            this.strokePath(ctx, points);
+            ctx.globalAlpha = 1;
+            this.drawSocket(ctx, pipe.a, palette, pipe.completed, pulse);
+            this.drawSocket(ctx, pipe.b, palette, pipe.completed, pulse);
+            this.drawLengthLabel(ctx, points, pipe.requiredLength, palette, pipe.completed);
+            ctx.restore();
+          }
+        }
+        drawLengthLabel(ctx, points, length, palette, completed) {
+          if (!points.length) return;
+          const middle = points[Math.floor(points.length / 2)];
+          const radius = Math.max(10, this.view.cell * 0.24);
+          ctx.save();
+          ctx.font = `700 ${Math.max(11, Math.floor(this.view.cell * 0.23))}px "Trebuchet MS", sans-serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.shadowColor = "rgba(24,49,79,.12)";
+          ctx.shadowBlur = 8;
+          ctx.fillStyle = completed ? "rgba(255,255,255,.94)" : "rgba(255,255,255,.88)";
+          ctx.beginPath();
+          ctx.arc(middle.x, middle.y, radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = completed ? "#36b87b" : palette.fill;
+          ctx.stroke();
+          ctx.fillStyle = completed ? "#187652" : palette.dark;
+          ctx.fillText(String(length), middle.x, middle.y + 0.5);
+          ctx.restore();
+        }
+        drawSocket(ctx, cell, palette, completed, pulse) {
+          const p = this.cellCenter(cell);
+          const r = Math.max(8, this.view.cell * 0.31);
+          ctx.save();
+          ctx.shadowColor = completed ? "rgba(54,184,123,.42)" : palette.glow;
+          ctx.shadowBlur = completed ? 18 : 10 + pulse * 8;
+          ctx.fillStyle = "#fff";
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+          ctx.lineWidth = Math.max(4, this.view.cell * 0.13);
+          ctx.strokeStyle = completed ? "#36b87b" : palette.fill;
+          ctx.stroke();
+          ctx.fillStyle = completed ? "#36b87b" : palette.soft;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, r * 0.42, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+        drawWorms(ctx, board) {
+          for (const worm of board.worms) {
+            const palette = CONFIG.COLORS[worm.color] || CONFIG.COLORS.yellow;
+            const points = this.getWormPoints(worm);
+            ctx.save();
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            if (worm.completed) {
+              ctx.shadowColor = "rgba(54,184,123,.42)";
+              ctx.shadowBlur = 18;
+            }
+            ctx.strokeStyle = worm.completed ? "#36b87b" : palette.dark;
+            ctx.globalAlpha = worm.completed ? 0.38 : 0.2;
+            ctx.lineWidth = Math.max(22, this.view.cell * 0.58);
+            this.strokePath(ctx, points);
+            ctx.globalAlpha = 1;
+            ctx.strokeStyle = palette.fill;
+            ctx.lineWidth = Math.max(16, this.view.cell * 0.44);
+            this.strokePath(ctx, points);
+            ctx.shadowBlur = 0;
+            for (let i = 0; i < points.length; i++) {
+              const p = points[i];
+              const radius = Math.max(8, this.view.cell * 0.25);
+              ctx.fillStyle = i === 0 || i === points.length - 1 ? palette.soft : palette.fill;
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.lineWidth = Math.max(2, this.view.cell * 0.055);
+              ctx.strokeStyle = i === 0 || i === points.length - 1 ? palette.dark : "rgba(255,255,255,.6)";
+              ctx.stroke();
+            }
+            this.drawEyes(ctx, points[points.length - 1], palette.dark);
+            this.drawSelection(ctx, worm, points);
+            ctx.restore();
+          }
+        }
+        getWormPoints(worm) {
+          const t = Helpers.clamp(worm.moveT ?? 1, 0, 1);
+          const eased = Helpers.easeOutCubic(t);
+          return worm.cells.map((cell, i) => {
+            const prev = worm.prevCells?.[i] || cell;
+            const x = Helpers.lerp(prev.x, cell.x, eased);
+            const y = Helpers.lerp(prev.y, cell.y, eased);
+            return this.cellCenter({ x, y });
+          });
+        }
+        drawEyes(ctx, head, color) {
+          if (!head) return;
+          const r = Math.max(1.5, this.view.cell * 0.045);
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(head.x - r * 1.8, head.y - r, r, 0, Math.PI * 2);
+          ctx.arc(head.x + r * 1.8, head.y - r, r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        drawSelection(ctx, worm, points) {
+          const selected = this.game.state.selection?.id === worm.id;
+          if (!selected) return;
+          const index = this.game.state.selectedEnd === "tail" ? 0 : points.length - 1;
+          const p = points[index];
+          ctx.save();
+          ctx.strokeStyle = worm.completed ? "#36b87b" : "#244d82";
+          ctx.lineWidth = 3;
+          ctx.setLineDash([6, 5]);
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, Math.max(14, this.view.cell * 0.38), 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+        drawBoardEffects(ctx, board) {
+          const { ox, oy, boardW, boardH } = this.view;
+          if (board.victoryFlash > 0) {
+            const alpha = Math.min(0.42, board.victoryFlash * 0.42);
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = "#36b87b";
+            this.roundRect(ctx, ox - 12, oy - 12, boardW + 24, boardH + 24, 22);
+            ctx.fill();
+            ctx.globalAlpha = Math.min(0.85, board.victoryFlash);
+            ctx.strokeStyle = "#36b87b";
+            ctx.lineWidth = 6;
+            this.roundRect(ctx, ox - 8, oy - 8, boardW + 16, boardH + 16, 20);
+            ctx.stroke();
+            ctx.restore();
+          }
+          for (const burst of this.game.bursts) {
+            const t = 1 - burst.life / burst.maxLife;
+            const center = this.cellCenter(burst.cell);
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, burst.life / burst.maxLife);
+            ctx.strokeStyle = burst.color;
+            ctx.lineWidth = Math.max(2, this.view.cell * 0.06);
+            ctx.beginPath();
+            ctx.arc(center.x, center.y, this.view.cell * (0.3 + t * 0.65), 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
+        drawParticles(ctx) {
+          for (const part of this.game.particles) {
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, part.life / part.maxLife);
+            ctx.fillStyle = part.color;
+            ctx.beginPath();
+            ctx.arc(part.x, part.y, part.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+        }
+        strokePath(ctx, points) {
+          if (!points.length) return;
+          ctx.beginPath();
+          ctx.moveTo(points[0].x, points[0].y);
+          for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+          ctx.stroke();
+        }
+        roundRect(ctx, x, y, w, h, r) {
+          const radius = Math.min(r, w / 2, h / 2);
+          ctx.beginPath();
+          ctx.moveTo(x + radius, y);
+          ctx.arcTo(x + w, y, x + w, y + h, radius);
+          ctx.arcTo(x + w, y + h, x, y + h, radius);
+          ctx.arcTo(x, y + h, x, y, radius);
+          ctx.arcTo(x, y, x + w, y, radius);
+          ctx.closePath();
+        }
+      }
+
+      class Game {
+        constructor() {
+          this.refs = {};
+          this.board = null;
+          this.state = {
+            screen: "menu",
+            mode: "menu",
+            level: 1,
+            selection: null,
+            selectedEnd: "head",
+            designerOpen: false,
+            pointer: null,
+            pointerBoard: null,
+            dragging: false,
+            dragDistance: 0,
+            pointerStepCooldown: 0,
+            keyDirection: null,
+            keyboardStepCooldown: 0
+          };
+          this.time = 0;
+          this.lastTime = performance.now();
+          this.toasts = [];
+          this.particles = [];
+          this.bursts = [];
+          this.sandboxSettings = Helpers.deepClone(Save.data.sandbox);
+          this.bindRefs();
+          this.renderer = new Renderer(this, this.refs.canvas);
+          this.bindEvents();
+          this.loadDesignerInputs();
+          this.updateUI();
+          requestAnimationFrame((time) => this.tick(time));
+        }
+        bindRefs() {
+          const ids = [
+            "gameCanvas","menuScreen","victoryScreen","designerDrawer","designerCloseButton","campaignButton","campaignRestartButton",
+            "sandboxButton","sandboxDesignerButton","restartButton","menuButton","debugButton","targetBadge","targetList","wormBadge","wormList",
+            "hudMode","hudLevel","hudPlaced","hudMoves","hintLine","selectionMeta","selectedBox","tailButton","headButton","cycleButton",
+            "switchEndButton","toastStack","menuUnlocked","victoryTitle","victoryText","resultLevel","resultPlaced","resultMoves",
+            "nextLevelButton","victoryRestartButton","victoryMenuButton","generateButton","designerRestartButton","exportButton","importButton",
+            "jsonBox","designerNote"
+          ];
+          ids.forEach((id) => { this.refs[id] = document.getElementById(id); });
+          this.refs.canvas = this.refs.gameCanvas;
+          this.settingInputs = Array.from(document.querySelectorAll("[data-setting]"));
+        }
+        bindEvents() {
+          this.refs.campaignButton.addEventListener("click", () => this.startCampaign(Save.data.unlockedLevel));
+          this.refs.campaignRestartButton.addEventListener("click", () => {
+            Save.data.unlockedLevel = 1;
+            Save.commit();
+            this.startCampaign(1);
+          });
+          this.refs.sandboxButton.addEventListener("click", () => this.startSandbox(false));
+          this.refs.sandboxDesignerButton.addEventListener("click", () => this.startSandbox(true));
+          this.refs.restartButton.addEventListener("click", () => this.restart());
+          this.refs.menuButton.addEventListener("click", () => this.openMenu());
+          this.refs.debugButton.addEventListener("click", () => this.toggleDesigner());
+          this.refs.designerCloseButton.addEventListener("click", () => this.toggleDesigner(false));
+          this.refs.nextLevelButton.addEventListener("click", () => this.nextLevel());
+          this.refs.victoryRestartButton.addEventListener("click", () => this.restart());
+          this.refs.victoryMenuButton.addEventListener("click", () => this.openMenu());
+          this.refs.generateButton.addEventListener("click", () => this.generateSandbox());
+          this.refs.designerRestartButton.addEventListener("click", () => this.restart());
+          this.refs.exportButton.addEventListener("click", () => this.exportJSON());
+          this.refs.importButton.addEventListener("click", () => this.importJSON());
+          this.refs.tailButton.addEventListener("click", () => this.setSelectedEnd("tail"));
+          this.refs.headButton.addEventListener("click", () => this.setSelectedEnd("head"));
+          this.refs.cycleButton.addEventListener("click", () => this.cycleWorm());
+          this.refs.switchEndButton.addEventListener("click", () => this.switchEnd());
+          document.querySelectorAll("[data-dir]").forEach((button) => {
+            button.addEventListener("click", () => this.stepSelected(button.dataset.dir));
+          });
+          this.settingInputs.forEach((input) => {
+            input.addEventListener("input", () => this.readDesignerInputs());
+          });
+          this.refs.canvas.addEventListener("pointerdown", (event) => this.onPointerDown(event));
+          this.refs.canvas.addEventListener("pointermove", (event) => this.onPointerMove(event));
+          this.refs.canvas.addEventListener("pointerup", (event) => this.onPointerUp(event));
+          this.refs.canvas.addEventListener("pointercancel", (event) => this.onPointerUp(event));
+          this.refs.canvas.addEventListener("pointerleave", (event) => this.onPointerUp(event));
+          window.addEventListener("keydown", (event) => this.onKeyDown(event));
+          window.addEventListener("keyup", (event) => this.onKeyUp(event));
+        }
+        tick(time) {
+          const dt = Math.min(0.05, (time - this.lastTime) / 1000);
+          this.lastTime = time;
+          this.time += dt;
+          if (this.board) {
+            for (const worm of this.board.worms) {
+              if (worm.moveT < 1) worm.moveT = Math.min(1, worm.moveT + dt / CONFIG.ANIM.wormMoveDuration);
+            }
+            if (this.board.victoryFlash > 0) this.board.victoryFlash = Math.max(0, this.board.victoryFlash - dt / CONFIG.ANIM.victoryDelay);
+            if (this.board.victoryPending > 0) {
+              this.board.victoryPending = Math.max(0, this.board.victoryPending - dt);
+              if (this.board.victoryPending <= 0 && this.state.screen === "gameplay") this.showVictory();
+            }
+          }
+          this.updatePointerDrag(dt);
+          this.updateKeyboard(dt);
+          this.toasts = this.toasts.filter((toast) => (toast.life -= dt) > 0);
+          this.bursts = this.bursts.filter((burst) => (burst.life -= dt) > 0);
+          for (const part of this.particles) {
+            part.x += part.vx * dt;
+            part.y += part.vy * dt;
+            part.life -= dt;
+          }
+          this.particles = this.particles.filter((part) => part.life > 0);
+          this.renderer.render();
+          this.renderToasts();
+          requestAnimationFrame((next) => this.tick(next));
+        }
+        startCampaign(level) {
+          const safeLevel = Helpers.clamp(Number(level) || 1, 1, CONFIG.MAX_LEVEL);
+          this.state.mode = "campaign";
+          this.state.level = safeLevel;
+          this.board = LevelGenerator.build(safeLevel, "campaign", Campaign.getSettings(safeLevel));
+          this.resetInput();
+          this.state.screen = "gameplay";
+          this.state.selection = this.board.worms[0] ? { id: this.board.worms[0].id } : null;
+          this.state.selectedEnd = "head";
+          this.refs.menuScreen.classList.add("hidden");
+          this.refs.victoryScreen.classList.add("hidden");
+          this.toggleDesigner(false);
+          this.refreshCompletion(true);
+          this.toast(Campaign.hint(safeLevel), "success");
+        }
+        startSandbox(openDesigner) {
+          this.state.mode = "sandbox";
+          this.state.level = 0;
+          this.board = LevelGenerator.build(0, "sandbox", this.sandboxSettings);
+          this.resetInput();
+          this.state.screen = "gameplay";
+          this.state.selection = this.board.worms[0] ? { id: this.board.worms[0].id } : null;
+          this.state.selectedEnd = "head";
+          this.refs.menuScreen.classList.add("hidden");
+          this.refs.victoryScreen.classList.add("hidden");
+          this.toggleDesigner(!!openDesigner);
+          this.refreshCompletion(true);
+          this.toast("Sandbox board generated.", "success");
+        }
+        restart() {
+          if (this.state.mode === "campaign") this.startCampaign(this.state.level);
+          else if (this.state.mode === "sandbox") this.startSandbox(this.state.designerOpen);
+          else this.openMenu();
+        }
+        nextLevel() {
+          if (this.state.mode !== "campaign") {
+            this.startSandbox(false);
+            return;
+          }
+          const next = Helpers.clamp(this.state.level + 1, 1, CONFIG.MAX_LEVEL);
+          this.startCampaign(next);
+        }
+        openMenu() {
+          this.state.screen = "menu";
+          this.state.mode = "menu";
+          this.board = null;
+          this.state.selection = null;
+          this.resetInput();
+          this.refs.menuScreen.classList.remove("hidden");
+          this.refs.victoryScreen.classList.add("hidden");
+          this.toggleDesigner(false);
+          this.updateUI();
+        }
+        showVictory() {
+          this.state.screen = "victory";
+          if (this.state.mode === "campaign") Save.unlock(Math.min(CONFIG.MAX_LEVEL, this.state.level + 1));
+          this.refs.resultLevel.textContent = this.state.mode === "campaign" ? String(this.state.level) : "Sandbox";
+          this.refs.resultPlaced.textContent = `${this.board.completedCount} / ${this.board.worms.length}`;
+          this.refs.resultMoves.textContent = String(this.board.moves);
+          this.refs.victoryTitle.textContent = this.state.mode === "campaign" ? `Level ${this.state.level} Complete` : "Sandbox Complete";
+          this.refs.victoryText.textContent = "All worms are on their target paths.";
+          this.refs.nextLevelButton.textContent = this.state.mode === "campaign" ? "Next Level" : "Generate";
+          this.refs.nextLevelButton.disabled = this.state.mode === "campaign" && this.state.level >= CONFIG.MAX_LEVEL;
+          this.refs.victoryScreen.classList.remove("hidden");
+          this.updateUI();
+        }
+        resetInput() {
+          if (this.state.pointer?.id !== null && this.state.pointer?.id !== undefined) {
+            try { this.refs.canvas.releasePointerCapture(this.state.pointer.id); } catch (error) {}
+          }
+          this.state.pointer = null;
+          this.state.pointerBoard = null;
+          this.state.dragging = false;
+          this.state.dragDistance = 0;
+          this.state.pointerStepCooldown = 0;
+          this.state.keyDirection = null;
+          this.state.keyboardStepCooldown = 0;
+        }
+        generateSandbox() {
+          this.readDesignerInputs();
+          Save.saveSandbox(this.sandboxSettings);
+          this.startSandbox(true);
+        }
+        loadDesignerInputs() {
+          this.sandboxSettings = { ...Helpers.deepClone(CONFIG.DEFAULT_SANDBOX), ...Save.data.sandbox };
+          for (const input of this.settingInputs) {
+            const key = input.dataset.setting;
+            input.value = this.sandboxSettings[key] ?? "";
+          }
+        }
+        readDesignerInputs() {
+          const next = {};
+          for (const input of this.settingInputs) {
+            const key = input.dataset.setting;
+            next[key] = input.type === "number" ? Number(input.value) : input.value;
+          }
+          this.sandboxSettings = LevelGenerator.normalizeSettings(next, "sandbox");
+          for (const input of this.settingInputs) {
+            const key = input.dataset.setting;
+            if (document.activeElement !== input) input.value = this.sandboxSettings[key] ?? "";
+          }
+          this.refs.designerNote.textContent = `Validated: ${this.sandboxSettings.fieldWidth}x${this.sandboxSettings.fieldHeight}, ${this.sandboxSettings.startWorms} worms, length ${this.sandboxSettings.lengthMin}-${this.sandboxSettings.lengthMax}, ${this.sandboxSettings.colorCount} colors.`;
+        }
+        toggleDesigner(force) {
+          const open = typeof force === "boolean" ? force : !this.state.designerOpen;
+          this.state.designerOpen = open;
+          this.refs.designerDrawer.classList.toggle("open", open);
+          this.refs.designerDrawer.setAttribute("aria-hidden", open ? "false" : "true");
+        }
+        exportJSON() {
+          if (!this.board) return;
+          const payload = {
+            type: "worm_place_puzzle_board",
+            exportedAt: new Date().toISOString(),
+            settings: this.state.mode === "sandbox" ? this.sandboxSettings : this.board.settings,
+            board: this.board
+          };
+          this.refs.jsonBox.value = JSON.stringify(payload, null, 2);
+          this.toast("Board exported.", "success");
+        }
+        importJSON() {
+          try {
+            const parsed = JSON.parse(this.refs.jsonBox.value);
+            const board = parsed.board || parsed;
+            if (!this.validateBoard(board)) throw new Error("Invalid board schema.");
+            this.board = Helpers.deepClone(board);
+            this.state.mode = "sandbox";
+            this.state.level = 0;
+            this.state.screen = "gameplay";
+            this.state.selection = this.board.worms[0] ? { id: this.board.worms[0].id } : null;
+            this.refs.menuScreen.classList.add("hidden");
+            this.refs.victoryScreen.classList.add("hidden");
+            this.refreshCompletion(true);
+            this.toast("Board imported.", "success");
+          } catch (error) {
+            this.toast(`Import failed: ${error.message}`, "warn");
+          }
+        }
+        validateBoard(board) {
+          if (!board || board.width < 5 || board.height < 5) return false;
+          if (!Array.isArray(board.worms) || !Array.isArray(board.pipes)) return false;
+          if (board.worms.length < 1 || board.worms.length !== board.pipes.length) return false;
+          const pipeById = new Map(board.pipes.map((pipe) => [pipe.id, pipe]));
+          for (const worm of board.worms) {
+            const pipe = pipeById.get(worm.targetId);
+            if (!pipe) return false;
+            if (!Array.isArray(worm.cells) || worm.cells.length < 2 || worm.cells.length !== pipe.requiredLength) return false;
+            if (!Array.isArray(pipe.path) || pipe.path.length !== worm.cells.length) return false;
+            if (pipe.color !== worm.color) return false;
+            for (const cell of [...worm.cells, ...pipe.path]) {
+              if (!BoardUtils.isInside(board.width, board.height, cell.x, cell.y)) return false;
+            }
+          }
+          return true;
+        }
+        updatePointerBoard(event) {
+          const cell = this.renderer.screenToCell(event.clientX, event.clientY);
+          this.state.pointerBoard = BoardUtils.isInside(this.board.width, this.board.height, cell.x, cell.y)
+            ? { x: cell.x + 0.5, y: cell.y + 0.5 }
+            : null;
+          return cell;
+        }
+        getDesiredPointerStep() {
+          if (!this.state.dragging || !this.state.pointerBoard || this.state.dragDistance <= CONFIG.INPUT.dragThreshold) return null;
+          if (!this.board || this.state.screen !== "gameplay") return null;
+          const worm = this.getSelectedWorm();
+          if (!worm || worm.completed) return null;
+          const activeEnd = this.state.selectedEnd;
+          const current = activeEnd === "head" ? worm.cells[worm.cells.length - 1] : worm.cells[0];
+          let bestDirection = null;
+          let bestDistance = Helpers.dist(this.state.pointerBoard.x, this.state.pointerBoard.y, current.x + 0.5, current.y + 0.5);
+          for (const [direction, delta] of Object.entries(DIRS)) {
+            const nextCell = { x: current.x + delta.x, y: current.y + delta.y };
+            if (!this.canWormStep(worm, nextCell, activeEnd)) continue;
+            const distance = Helpers.dist(this.state.pointerBoard.x, this.state.pointerBoard.y, nextCell.x + 0.5, nextCell.y + 0.5);
+            if (distance < bestDistance - CONFIG.INPUT.pointerBias) {
+              bestDistance = distance;
+              bestDirection = direction;
+            }
+          }
+          return bestDirection;
+        }
+        updatePointerDrag(dt) {
+          this.state.pointerStepCooldown = Math.max(0, this.state.pointerStepCooldown - dt);
+          const direction = this.getDesiredPointerStep();
+          if (!direction || this.state.pointerStepCooldown > 0) return;
+          const moved = this.stepSelected(direction, { suppressSelectionToast: true, silentBlocked: true });
+          this.state.pointerStepCooldown = moved ? CONFIG.INPUT.pointerStepInterval : CONFIG.INPUT.pointerStepInterval * 0.6;
+        }
+        updateKeyboard(dt) {
+          this.state.keyboardStepCooldown = Math.max(0, this.state.keyboardStepCooldown - dt);
+          if (!this.state.keyDirection || this.state.keyboardStepCooldown > 0 || this.state.screen !== "gameplay") return;
+          const moved = this.stepSelected(this.state.keyDirection, { suppressSelectionToast: true, silentBlocked: true });
+          this.state.keyboardStepCooldown = moved ? CONFIG.INPUT.keyboardStepInterval : CONFIG.INPUT.keyboardStepInterval * 0.7;
+        }
+        onPointerDown(event) {
+          if (!this.board || this.state.screen !== "gameplay") return;
+          const cell = this.updatePointerBoard(event);
+          if (!BoardUtils.isInside(this.board.width, this.board.height, cell.x, cell.y)) return;
+          const worm = this.findWormAt(cell);
+          if (worm) {
+            const selectionBefore = this.state.selection?.id || null;
+            this.state.selection = { id: worm.id };
+            this.state.selectedEnd = this.pickEndForCell(worm, cell);
+            this.state.pointer = {
+              id: event.pointerId,
+              startX: event.clientX,
+              startY: event.clientY,
+              hitId: worm.id,
+              cell,
+              selectionBefore
+            };
+            this.state.dragging = false;
+            this.state.dragDistance = 0;
+            this.state.pointerStepCooldown = 0;
+            this.refs.canvas.setPointerCapture(event.pointerId);
+            this.updateUI();
+          }
+        }
+        onPointerMove(event) {
+          if (!this.state.pointer || this.state.pointer.id !== event.pointerId || !this.board || this.state.screen !== "gameplay") return;
+          this.updatePointerBoard(event);
+          this.state.dragDistance = Math.abs(event.clientX - this.state.pointer.startX) + Math.abs(event.clientY - this.state.pointer.startY);
+          if (this.state.dragDistance > CONFIG.INPUT.dragThreshold) this.state.dragging = true;
+        }
+        onPointerUp(event) {
+          if (!this.state.pointer || this.state.pointer.id !== event.pointerId) return;
+          const pointer = this.state.pointer;
+          try {
+            this.refs.canvas.releasePointerCapture(event.pointerId);
+          } catch (error) {}
+          const wasDragging = this.state.dragging;
+          this.state.pointer = null;
+          this.state.pointerBoard = null;
+          this.state.dragging = false;
+          this.state.dragDistance = 0;
+          if (!wasDragging && this.board && this.state.screen === "gameplay") {
+            const worm = this.board.worms.find((candidate) => candidate.id === pointer.hitId);
+            if (worm) {
+              if (pointer.selectionBefore === worm.id) this.state.selectedEnd = this.state.selectedEnd === "head" ? "tail" : "head";
+              else this.state.selection = { id: worm.id };
+              this.updateUI();
+            }
+          }
+        }
+        onKeyDown(event) {
+          if (this.state.screen !== "gameplay") return;
+          const key = event.key.toLowerCase();
+          const map = { arrowup: "up", w: "up", arrowdown: "down", s: "down", arrowleft: "left", a: "left", arrowright: "right", d: "right" };
+          if (map[key]) {
+            event.preventDefault();
+            if (event.repeat && this.state.keyDirection === map[key]) return;
+            this.state.keyDirection = map[key];
+            this.state.keyboardStepCooldown = 0;
+            this.stepSelected(map[key], { suppressSelectionToast: true, silentBlocked: true });
+          } else if (event.key === "Tab") {
+            event.preventDefault();
+            this.cycleWorm();
+          } else if (key === "q" || key === "e") {
+            this.switchEnd();
+          } else if (key === "g") {
+            this.toggleDesigner();
+          }
+        }
+        onKeyUp(event) {
+          const key = event.key.toLowerCase();
+          const map = { arrowup: "up", w: "up", arrowdown: "down", s: "down", arrowleft: "left", a: "left", arrowright: "right", d: "right" };
+          if (map[key] && this.state.keyDirection === map[key]) this.state.keyDirection = null;
+        }
+        findWormAt(cell) {
+          return this.board?.worms.find((worm) => worm.cells.some((part) => Helpers.sameCell(part, cell))) || null;
+        }
+        getSelectedWorm() {
+          return this.board?.worms.find((worm) => worm.id === this.state.selection?.id) || null;
+        }
+        pickEndForCell(worm, cell) {
+          const tail = worm.cells[0];
+          const head = worm.cells[worm.cells.length - 1];
+          return Helpers.manhattan(tail, cell) <= Helpers.manhattan(head, cell) ? "tail" : "head";
+        }
+        setSelectedEnd(end) {
+          if (!this.getSelectedWorm()) return;
+          this.state.selectedEnd = end;
+          this.updateUI();
+        }
+        switchEnd() {
+          this.state.selectedEnd = this.state.selectedEnd === "head" ? "tail" : "head";
+          this.updateUI();
+        }
+        cycleWorm() {
+          if (!this.board?.worms.length) return;
+          const current = this.state.selection ? this.board.worms.findIndex((worm) => worm.id === this.state.selection.id) : -1;
+          const next = this.board.worms[(current + 1 + this.board.worms.length) % this.board.worms.length];
+          this.state.selection = { id: next.id };
+          this.state.selectedEnd = "head";
+          this.updateUI();
+        }
+        stepSelected(direction, options = {}) {
+          if (!this.board || this.state.screen !== "gameplay") return false;
+          if (this.board.won) return false;
+          const worm = this.getSelectedWorm();
+          if (!worm) {
+            if (!options.suppressSelectionToast) this.toast("Select a worm first.", "warn");
+            return false;
+          }
+          if (worm.completed) {
+            if (!options.silentBlocked) this.toast("Completed worms are locked.", "warn");
+            return false;
+          }
+          const delta = DIRS[direction];
+          if (!delta) return false;
+          const end = this.state.selectedEnd;
+          const pivot = end === "head" ? worm.cells[worm.cells.length - 1] : worm.cells[0];
+          const next = { x: pivot.x + delta.x, y: pivot.y + delta.y };
+          if (!this.canWormStep(worm, next, end)) {
+            if (!options.silentBlocked) this.toast("That tile is blocked.", "warn");
+            return false;
+          }
+          worm.prevCells = worm.cells.map((cell) => ({ ...cell }));
+          worm.moveT = 0;
+          if (end === "head") worm.cells = worm.cells.slice(1).concat([next]);
+          else worm.cells = [next].concat(worm.cells.slice(0, -1));
+          this.board.moves++;
+          this.refreshCompletion();
+          return true;
+        }
+        canWormStep(worm, next, end) {
+          if (!BoardUtils.isInside(this.board.width, this.board.height, next.x, next.y)) return false;
+          const ignoreIndex = end === "head" ? 0 : worm.cells.length - 1;
+          const occupied = new Set();
+          for (const other of this.board.worms) {
+            other.cells.forEach((cell, index) => {
+              if (other.id === worm.id && index === ignoreIndex) return;
+              occupied.add(Helpers.cellKey(cell.x, cell.y));
+            });
+          }
+          return !occupied.has(Helpers.cellKey(next.x, next.y));
+        }
+        refreshCompletion(skipVictory) {
+          if (!this.board) return;
+          const previousCompletedPipeIds = new Set(this.board.pipes.filter((pipe) => pipe.completed).map((pipe) => pipe.id));
+          for (const worm of this.board.worms) worm.completed = false;
+          for (const pipe of this.board.pipes) {
+            pipe.completed = false;
+            pipe.connectedWormId = null;
+          }
+          const usedWorms = new Set();
+          let completed = 0;
+          for (const pipe of this.board.pipes) {
+            const worm = this.board.worms.find((candidate) => {
+              if (usedWorms.has(candidate.id)) return false;
+              if (candidate.length !== pipe.requiredLength) return false;
+              if (candidate.color !== pipe.color) return false;
+              return BoardUtils.pathsEqual(candidate.cells, pipe.path);
+            });
+            if (!worm) continue;
+            pipe.completed = true;
+            pipe.connectedWormId = worm.id;
+            worm.completed = true;
+            usedWorms.add(worm.id);
+            completed++;
+          }
+          const previous = this.board.completedCount || 0;
+          this.board.completedCount = completed;
+          if (completed > previous) {
+            const fresh = this.board.pipes.filter((pipe) => pipe.completed && !previousCompletedPipeIds.has(pipe.id));
+            for (const pipe of fresh) {
+              this.emitParticles(pipe.path, pipe.color);
+              this.addPlacementBurst(pipe);
+            }
+            this.toast("Worm placed.", "success");
+          }
+          if (!skipVictory && completed === this.board.worms.length && !this.board.won) {
+            this.board.won = true;
+            this.board.victoryPending = CONFIG.ANIM.victoryDelay;
+            this.board.victoryFlash = 1;
+            this.emitVictoryField();
+            this.toast("Perfect placement.", "success");
+          }
+          this.updateUI();
+        }
+        addPlacementBurst(pipe) {
+          const palette = CONFIG.COLORS[pipe.color] || CONFIG.COLORS.yellow;
+          const cells = [pipe.a, pipe.b, pipe.path[Math.floor(pipe.path.length / 2)]];
+          for (const cell of cells) {
+            this.bursts.push({
+              cell: { ...cell },
+              color: palette.fill,
+              life: 0.55,
+              maxLife: 0.55
+            });
+          }
+        }
+        emitVictoryField() {
+          if (!this.board) return;
+          for (const pipe of this.board.pipes) this.emitParticles(pipe.path, pipe.color, 2.4);
+        }
+        emitParticles(path, colorKey, power = 1) {
+          const palette = CONFIG.COLORS[colorKey] || CONFIG.COLORS.yellow;
+          for (const cell of path) {
+            const p = this.renderer.cellCenter(cell);
+            for (let i = 0; i < Math.round(3 * power); i++) {
+              this.particles.push({
+                x: p.x,
+                y: p.y,
+                vx: (Math.random() - 0.5) * 70 * power,
+                vy: (Math.random() - 0.5) * 70 * power,
+                size: 2 + Math.random() * 3,
+                life: 0.45 + Math.random() * 0.35,
+                maxLife: 0.8,
+                color: palette.fill
+              });
+            }
+          }
+        }
+        toast(text, tone = "info") {
+          this.toasts.unshift({ text, tone, life: CONFIG.ANIM.toastDuration });
+          this.toasts = this.toasts.slice(0, 4);
+          this.renderToasts();
+        }
+        renderToasts() {
+          this.refs.toastStack.innerHTML = this.toasts.map((toast) => (
+            `<div class="toast ${toast.tone === "warn" ? "warn" : toast.tone === "success" ? "success" : ""}">${this.escape(toast.text)}</div>`
+          )).join("");
+        }
+        updateUI() {
+          const board = this.board;
+          this.refs.menuUnlocked.textContent = String(Save.data.unlockedLevel);
+          this.refs.hudMode.textContent = this.state.mode === "campaign" ? "Campaign" : this.state.mode === "sandbox" ? "Sandbox" : "Menu";
+          this.refs.hudLevel.textContent = this.state.mode === "campaign" ? String(this.state.level) : this.state.mode === "sandbox" ? "Free" : "-";
+          this.refs.hudPlaced.textContent = board ? `${board.completedCount || 0} / ${board.worms.length}` : "0 / 0";
+          this.refs.hudMoves.textContent = board ? String(board.moves || 0) : "0";
+          this.refs.targetBadge.textContent = board ? `${board.completedCount || 0} / ${board.pipes.length}` : "0 / 0";
+          this.refs.wormBadge.textContent = board ? `${board.worms.length} worms` : "0 worms";
+          this.refs.hintLine.textContent = board
+            ? (this.state.mode === "campaign" ? Campaign.hint(this.state.level) : "Sandbox: tune settings, generate, then test the board immediately.")
+            : "Choose Campaign or Sandbox from the menu.";
+          this.renderLists();
+          this.renderSelection();
+        }
+        renderLists() {
+          if (!this.board) {
+            this.refs.targetList.innerHTML = "";
+            this.refs.wormList.innerHTML = "";
+            return;
+          }
+          this.refs.targetList.innerHTML = this.board.pipes.map((pipe, index) => {
+            const palette = CONFIG.COLORS[pipe.color] || CONFIG.COLORS.yellow;
+            return `<div class="targetItem ${pipe.completed ? "done" : ""}">
+              <div class="targetTop"><span><i class="colorDot" style="background:${palette.fill}"></i>Target ${index + 1}</span><span class="tag">${pipe.requiredLength} cells</span></div>
+              <div class="muted">${pipe.completed ? "Completed" : "Needs matching worm"}</div>
+            </div>`;
+          }).join("");
+          this.refs.wormList.innerHTML = this.board.worms.map((worm, index) => {
+            const palette = CONFIG.COLORS[worm.color] || CONFIG.COLORS.yellow;
+            const selected = this.state.selection?.id === worm.id ? " Selected" : "";
+            return `<div class="wormItem ${worm.completed ? "done" : ""}">
+              <div class="wormTop"><span><i class="colorDot" style="background:${palette.fill}"></i>Worm ${index + 1}${selected}</span><span class="tag">${worm.length} cells</span></div>
+              <div class="muted">${worm.completed ? "Locked on target" : "Free to move"}</div>
+            </div>`;
+          }).join("");
+        }
+        renderSelection() {
+          const worm = this.getSelectedWorm();
+          if (!worm) {
+            this.refs.selectionMeta.textContent = "No worm selected";
+            this.refs.selectedBox.innerHTML = `<p class="muted">Tap a worm, then drag an end or use the arrows.</p>`;
+            return;
+          }
+          const palette = CONFIG.COLORS[worm.color] || CONFIG.COLORS.yellow;
+          this.refs.selectionMeta.textContent = `${worm.completed ? "Completed" : "Selected"} ${worm.color} worm, ${this.state.selectedEnd} active`;
+          this.refs.selectedBox.innerHTML = `
+            <div class="wormTop"><span><i class="colorDot" style="background:${palette.fill}"></i>${worm.color}</span><span class="tag">${worm.length} cells</span></div>
+            <p class="muted">${worm.completed ? "This worm is fixed on its target." : `Move from the ${this.state.selectedEnd}.`}</p>
+          `;
+          this.refs.tailButton.classList.toggle("accent", this.state.selectedEnd === "tail");
+          this.refs.headButton.classList.toggle("accent", this.state.selectedEnd === "head");
+        }
+        escape(value) {
+          return String(value).replace(/[&<>"']/g, (char) => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+          })[char]);
+        }
+      }
+
+      Save.load();
+      window.WormPlacePuzzle = new Game();
+    })();
+  </script>
+</body>
+</html>

@@ -814,7 +814,7 @@
     }
 
     renderPathDebug(ctx) {
-      if (!this.game.designer.showPathDebug && !this.game.state.debugOpen) return;
+      if (!this.game.designer.showPathDebug) return;
       const nav = this.game.state.navigation;
       if (!nav || !nav.pathsBySpawn) return;
       const showNodes = this.game.designer.showPathNodes;
@@ -890,6 +890,9 @@
         const haloAlpha = mergeReady.has(worm.id) ? 0.58 : worm.flash > 0 ? 0.4 : 0.16;
         const haloColor = mergeReady.has(worm.id) ? "rgba(244,178,79,.8)" : worm.flash > 0 ? "rgba(255,120,120,.8)" : "rgba(255,255,255,.6)";
         const center = this.cellCenter(worm.centerX - 0.5, worm.centerY - 0.5);
+        const iconIndex = type.role === "tower" && worm.towerCell
+          ? worm.cells.findIndex((cell) => cell.x === worm.towerCell.x && cell.y === worm.towerCell.y)
+          : Math.floor((cells.length - 1) * 0.5);
         ctx.save();
         ctx.translate(center.x, center.y);
         ctx.scale(scale, scale);
@@ -918,7 +921,6 @@
           const rectY = cellCenter.y - half;
           const isTail = i === 0;
           const isHead = i === cells.length - 1;
-          const isMiddleBadge = i === Math.floor((cells.length - 1) * 0.5);
           const isActiveHandle = (activeEnd === "tail" && isTail) || (activeEnd === "head" && isHead);
           ctx.globalAlpha = haloAlpha;
           ctx.strokeStyle = haloColor;
@@ -942,16 +944,13 @@
             ctx.arc(cellCenter.x, cellCenter.y, segment * 0.44, 0, TWO_PI);
             ctx.stroke();
           }
-          ctx.fillStyle = "rgba(18,34,56,.92)";
-          ctx.font = `${Math.max(11, this.metrics.cell * 0.28)}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",Trebuchet MS`;
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          let glyph = "";
-          if (isHead) glyph = activeEnd === "head" ? "🫳" : "👀";
-          else if (isTail) glyph = activeEnd === "tail" ? "🫳" : "➿";
-          else if (isMiddleBadge) glyph = type.icon;
-          else glyph = "·";
-          ctx.fillText(glyph, cellCenter.x, cellCenter.y + 1);
+          if (i === iconIndex) {
+            ctx.fillStyle = "rgba(18,34,56,.92)";
+            ctx.font = `${Math.max(13, this.metrics.cell * 0.34)}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",Trebuchet MS`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(type.icon, cellCenter.x, cellCenter.y + 1);
+          }
         }
         if (type.role === "tower" && worm.towerCell) {
           const towerCenter = this.cellCenter(worm.towerCell.x, worm.towerCell.y);
@@ -964,29 +963,7 @@
           ctx.beginPath();
           ctx.arc(towerCenter.x, towerCenter.y, Math.max(5, this.metrics.cell * 0.13), 0, TWO_PI);
           ctx.stroke();
-          ctx.fillStyle = "rgba(18,34,56,.94)";
-          ctx.font = `${Math.max(11, this.metrics.cell * 0.24)}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",Trebuchet MS`;
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText(type.icon, towerCenter.x, towerCenter.y + 1);
         }
-        if (activeEnd && this.game.input.pointerBoard) {
-          const handleCell = activeEnd === "head" ? cells[cells.length - 1] : cells[0];
-          const handle = this.cellCenter(handleCell.x, handleCell.y);
-          const pointer = this.worldToScreen(this.game.input.pointerBoard.x + 0.5, this.game.input.pointerBoard.y + 0.5);
-          ctx.strokeStyle = `${type.dark}aa`;
-          ctx.lineWidth = 2;
-          ctx.setLineDash([5, 5]);
-          ctx.beginPath();
-          ctx.moveTo(handle.x, handle.y);
-          ctx.lineTo(pointer.x, pointer.y);
-          ctx.stroke();
-          ctx.setLineDash([]);
-        }
-        ctx.fillStyle = "rgba(18,34,56,.88)";
-        ctx.font = `700 ${Math.max(8, this.metrics.cell * 0.16)}px Trebuchet MS`;
-        ctx.textAlign = "left";
-        ctx.fillText(`${type.icon} ${type.short} ${worm.size}`, this.metrics.boardX + worm.x * this.metrics.cell + 6, this.metrics.boardY + (worm.maxY + 1) * this.metrics.cell + Math.max(8, this.metrics.cell * 0.08));
         ctx.restore();
       }
     }
@@ -1002,24 +979,23 @@
       const center = this.cellCenter(worm.towerCell.x, worm.towerCell.y);
       const radius = stats.range * this.metrics.cell;
       ctx.save();
-      ctx.fillStyle = `${type.color}1a`;
-      ctx.strokeStyle = `${type.dark}cc`;
-      ctx.lineWidth = 2;
+      ctx.fillStyle = `${type.color}26`;
+      ctx.strokeStyle = `${type.dark}ee`;
+      ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.arc(center.x, center.y, radius, 0, TWO_PI);
       ctx.fill();
       ctx.stroke();
       ctx.setLineDash([6, 5]);
-      ctx.strokeStyle = `${type.color}88`;
+      ctx.strokeStyle = `${type.color}dd`;
       ctx.beginPath();
       ctx.arc(center.x, center.y, radius, 0, TWO_PI);
       ctx.stroke();
       ctx.setLineDash([]);
-      ctx.fillStyle = "rgba(22,49,79,.92)";
-      ctx.font = `700 ${Math.max(9, this.metrics.cell * 0.16)}px Trebuchet MS`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "bottom";
-      ctx.fillText(`${type.label} range ${stats.range.toFixed(1)}`, center.x, center.y - radius - 8);
+      ctx.fillStyle = `${type.dark}ee`;
+      ctx.beginPath();
+      ctx.arc(center.x, center.y, Math.max(5, this.metrics.cell * 0.16), 0, TWO_PI);
+      ctx.fill();
       ctx.restore();
     }
 
@@ -1256,6 +1232,11 @@
         startedAt: performance.now(),
         holdShown: false
       };
+      const type = CONFIG.WORM_TYPES[worm.type];
+      if (type && type.role === "tower") {
+        this.game.showRangePreview(worm.id);
+        this.press.holdShown = true;
+      }
       this.pointerBoard = this.game.renderer.screenToBoardPosition(event.clientX, event.clientY, true) || { x: cell.x, y: cell.y };
       this.stepCooldown = 0;
     }
@@ -2155,35 +2136,48 @@
     applyDesignerInputs(regenerate) {
       try {
         const next = deepClone(this.designer);
-        const nextEnemyStats = JSON.parse(this.refs.dbgEnemyBaseStats.value);
-        const nextWormTypes = JSON.parse(this.refs.dbgWormTypeStats.value);
-        next.totalFieldWidth = Number(this.refs.dbgTotalFieldWidth.value) || next.totalFieldWidth;
-        next.totalFieldHeight = Number(this.refs.dbgTotalFieldHeight.value) || next.totalFieldHeight;
-        next.initialPoolSize = Number(this.refs.dbgInitialPoolSize.value) || next.initialPoolSize;
-        next.refreshCostStart = Number(this.refs.dbgRefreshCostStart.value) || next.refreshCostStart;
-        next.initialWormCount = Number(this.refs.dbgInitialWormCount.value) || next.initialWormCount;
+        const readNumber = (ref, fallback) => {
+          const value = Number(ref.value);
+          return Number.isFinite(value) ? value : fallback;
+        };
+        const readJson = (ref, fallback) => {
+          try {
+            const parsed = JSON.parse(ref.value || "null");
+            return parsed == null ? fallback : parsed;
+          } catch (error) {
+            return fallback;
+          }
+        };
+        const nextEnemyStats = readJson(this.refs.dbgEnemyBaseStats, CONFIG.ENEMY_TYPES);
+        const nextWormTypes = readJson(this.refs.dbgWormTypeStats, CONFIG.WORM_TYPES);
+        next.totalFieldWidth = readNumber(this.refs.dbgTotalFieldWidth, next.totalFieldWidth);
+        next.totalFieldHeight = readNumber(this.refs.dbgTotalFieldHeight, next.totalFieldHeight);
+        next.initialPoolSize = readNumber(this.refs.dbgInitialPoolSize, next.initialPoolSize);
+        next.refreshCostStart = readNumber(this.refs.dbgRefreshCostStart, next.refreshCostStart);
+        next.initialWormCount = readNumber(this.refs.dbgInitialWormCount, next.initialWormCount);
         next.wormMoveMode = this.refs.dbgWormMoveMode.value.trim() || next.wormMoveMode;
         next.mergeRules = this.refs.dbgMergeRules.value.trim() || next.mergeRules;
         next.allowedWormTypes = parseStringList(this.refs.dbgAllowedWormTypes.value).filter((id) => CONFIG.WORM_TYPES[id] || nextWormTypes[id]);
         next.allowedWormSizes = parseNumberList(this.refs.dbgAllowedWormSizes.value).filter((value) => value >= 2 && value <= 4);
-        next.refreshCostCurve = JSON.parse(this.refs.dbgRefreshCostCurve.value);
-        next.bonusTileStartCount = Number(this.refs.dbgBonusStart.value) || next.bonusTileStartCount;
-        next.bonusTileGrowthPerWave = Number(this.refs.dbgBonusGrowth.value) || next.bonusTileGrowthPerWave;
+        const refreshCurve = readJson(this.refs.dbgRefreshCostCurve, next.refreshCostCurve);
+        next.refreshCostCurve = Array.isArray(refreshCurve) ? refreshCurve : next.refreshCostCurve;
+        next.bonusTileStartCount = readNumber(this.refs.dbgBonusStart, next.bonusTileStartCount);
+        next.bonusTileGrowthPerWave = readNumber(this.refs.dbgBonusGrowth, next.bonusTileGrowthPerWave);
         next.allowedBonusTypes = parseStringList(this.refs.dbgAllowedBonusTypes.value).filter((id) => CONFIG.THEME.bonusTypes[id]);
-        next.bonusValues = JSON.parse(this.refs.dbgBonusValues.value);
-        next.enemyHpMultiplier = Number(this.refs.dbgEnemyHpMultiplier.value) || next.enemyHpMultiplier;
-        next.enemySpeedMultiplier = Number(this.refs.dbgEnemySpeedMultiplier.value) || next.enemySpeedMultiplier;
-        next.enemySpawnRateMultiplier = Number(this.refs.dbgEnemySpawnRateMultiplier.value) || next.enemySpawnRateMultiplier;
-        next.towerDamageMultiplier = Number(this.refs.dbgTowerDamageMultiplier.value) || next.towerDamageMultiplier;
-        next.towerRangeMultiplier = Number(this.refs.dbgTowerRangeMultiplier.value) || next.towerRangeMultiplier;
-        next.towerAttackSpeedMultiplier = Number(this.refs.dbgTowerAttackSpeedMultiplier.value) || next.towerAttackSpeedMultiplier;
-        next.waveDurationStart = Number(this.refs.dbgWaveDurationStart.value) || next.waveDurationStart;
-        next.waveDurationPerWave = Number(this.refs.dbgWaveDurationPerWave.value) || next.waveDurationPerWave;
-        next.waveDurationCap = Number(this.refs.dbgWaveDurationCap.value) || next.waveDurationCap;
-        next.battleSpeed = Number(this.refs.dbgBattleSpeed.value) || next.battleSpeed;
+        next.bonusValues = readJson(this.refs.dbgBonusValues, next.bonusValues);
+        next.enemyHpMultiplier = readNumber(this.refs.dbgEnemyHpMultiplier, next.enemyHpMultiplier);
+        next.enemySpeedMultiplier = readNumber(this.refs.dbgEnemySpeedMultiplier, next.enemySpeedMultiplier);
+        next.enemySpawnRateMultiplier = readNumber(this.refs.dbgEnemySpawnRateMultiplier, next.enemySpawnRateMultiplier);
+        next.towerDamageMultiplier = readNumber(this.refs.dbgTowerDamageMultiplier, next.towerDamageMultiplier);
+        next.towerRangeMultiplier = readNumber(this.refs.dbgTowerRangeMultiplier, next.towerRangeMultiplier);
+        next.towerAttackSpeedMultiplier = readNumber(this.refs.dbgTowerAttackSpeedMultiplier, next.towerAttackSpeedMultiplier);
+        next.waveDurationStart = readNumber(this.refs.dbgWaveDurationStart, next.waveDurationStart);
+        next.waveDurationPerWave = readNumber(this.refs.dbgWaveDurationPerWave, next.waveDurationPerWave);
+        next.waveDurationCap = readNumber(this.refs.dbgWaveDurationCap, next.waveDurationCap);
+        next.battleSpeed = readNumber(this.refs.dbgBattleSpeed, next.battleSpeed);
         next.seed = this.refs.dbgSeed.value.trim() || next.seed;
-        next.baseCoreHp = Number(this.refs.dbgCoreHp.value) || next.baseCoreHp;
-        next.maxActiveEnemies = Number(this.refs.dbgMaxActiveEnemies.value) || next.maxActiveEnemies;
+        next.baseCoreHp = readNumber(this.refs.dbgCoreHp, next.baseCoreHp);
+        next.maxActiveEnemies = readNumber(this.refs.dbgMaxActiveEnemies, next.maxActiveEnemies);
         next.showPathDebug = this.refs.dbgShowPathDebug.checked;
         next.showPathNodes = this.refs.dbgShowPathNodes.checked;
         Object.assign(CONFIG.ENEMY_TYPES, nextEnemyStats);

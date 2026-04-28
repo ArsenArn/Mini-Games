@@ -1482,6 +1482,13 @@
           <button class="typeButton" type="button" data-edit-mode="select">Select + nudge</button>
           <button class="typeButton" type="button" data-edit-mode="wall">Toggle walls</button>
         </div>
+        <label class="field">
+          <span>Pipe mode</span>
+          <select data-setting="boardMode">
+            <option value="classic">Floor sockets</option>
+            <option value="wall_sockets">Wall sockets</option>
+          </select>
+        </label>
         <div id="editorSelectionLabel" class="editorSelection">Selected: nothing.</div>
         <div class="nudgeGrid">
           <div></div>
@@ -1745,8 +1752,10 @@
           volume: 0.12
         },
         FUTURE_MODES: {
-          classic: { id: "classic", label: "Classic" }
+          classic: { id: "classic", label: "Classic" },
+          wallSockets: { id: "wall_sockets", label: "Wall sockets" }
         },
+        DEFAULT_MODE: "classic",
         DEFAULT_DESIGNER: {
           followProgression: true,
           seed: "warm-link",
@@ -1778,6 +1787,7 @@
           spawnColor: "yellow",
           pipeSpawnLength: 2,
           pipeSpawnColor: "",
+          boardMode: "classic",
           editMode: "play"
         }
       };
@@ -2135,6 +2145,15 @@
           return list;
         }
 
+        static wallSocketAnchors(width, height, x, y) {
+          const list = BoardUtils.neighbors(width, height, x, y);
+          if (x === 0) list.push({ x: -1, y, edge: "left" });
+          if (x === width - 1) list.push({ x: width, y, edge: "right" });
+          if (y === 0) list.push({ x, y: -1, edge: "top" });
+          if (y === height - 1) list.push({ x, y: height, edge: "bottom" });
+          return list;
+        }
+
         static translateCells(cells, dx, dy) {
           return cells.map((cell) => ({ x: cell.x + dx, y: cell.y + dy }));
         }
@@ -2203,12 +2222,21 @@
           this.game = game;
         }
 
+        getBoardMode() {
+          const mode = this.game.designer.boardMode || CONFIG.DEFAULT_MODE;
+          return Object.values(CONFIG.FUTURE_MODES).some((entry) => entry.id === mode)
+            ? mode
+            : CONFIG.DEFAULT_MODE;
+        }
+
         buildLevel(level, rules, seedText) {
           const baseSeed = `${seedText}|L${level}|${rules.fieldWidth}x${rules.fieldHeight}|${rules.startWormCount}`;
+          const mode = this.getBoardMode();
           for (let attempt = 0; attempt < 80; attempt++) {
             const rng = new RNG(`${baseSeed}|A${attempt}`);
             const walls = this.buildWalls(rules, rng);
             const board = {
+              mode,
               width: rules.fieldWidth,
               height: rules.fieldHeight,
               walls,
@@ -2221,7 +2249,7 @@
             if (created < Math.max(2, Math.min(pipeTarget, 3))) continue;
             return {
               version: 1,
-              mode: CONFIG.FUTURE_MODES.classic.id,
+              mode,
               level,
               seed: `${baseSeed}|A${attempt}`,
               rules: Helpers.deepClone(rules),
@@ -2241,7 +2269,9 @@
         }
 
         buildFallback(level, rules, seedText) {
+          const mode = this.getBoardMode();
           const board = {
+            mode,
             width: rules.fieldWidth,
             height: rules.fieldHeight,
             walls: [],
@@ -2256,7 +2286,7 @@
           this.game.generatePipeBatchForBoard(board, rules, 4, new RNG(`${seedText}|fallback`), true);
           return {
             version: 1,
-            mode: CONFIG.FUTURE_MODES.classic.id,
+            mode,
             level,
             seed: `${seedText}|fallback`,
             rules: Helpers.deepClone(rules),
@@ -2860,7 +2890,9 @@
           this.setText("currencyValue", game.save.data.currency || 0);
           this.setText("soundButton", game.audio.enabled ? "Sound On" : "Sound Off");
           this.setText("soundButtonDesktop", game.audio.enabled ? "Sound On" : "Sound Off");
-          this.setText("modeBadge", CONFIG.FUTURE_MODES.classic.label);
+          const mode = game.board?.mode || CONFIG.DEFAULT_MODE;
+          const modeConfig = Object.values(CONFIG.FUTURE_MODES).find((entry) => entry.id === mode) || CONFIG.FUTURE_MODES.classic;
+          this.setText("modeBadge", modeConfig.label);
           this.renderQuests(board);
           this.renderWormSummary(board);
           this.renderToasts();
@@ -3127,6 +3159,57 @@
           };
         }
 
+        socketCenter(socket) {
+          const board = this.game.board;
+          if (!board || BoardUtils.isInside(board.width, board.height, socket.x, socket.y)) {
+            return this.cellCenter(socket.x, socket.y);
+          }
+          const { boardX, boardY, boardW, boardH, cell } = this.metrics;
+          if (socket.x < 0) return { x: boardX, y: boardY + (socket.y + 0.5) * cell };
+          if (socket.x >= board.width) return { x: boardX + boardW, y: boardY + (socket.y + 0.5) * cell };
+          if (socket.y < 0) return { x: boardX + (socket.x + 0.5) * cell, y: boardY };
+          return { x: boardX + (socket.x + 0.5) * cell, y: boardY + boardH };
+        }
+
+        renderWallSocketBase(ctx, socket) {
+          const board = this.game.board;
+          const theme = CONFIG.THEME_TOKENS;
+          if (!board || BoardUtils.isInside(board.width, board.height, socket.x, socket.y)) {
+            const rect = this.cellRect(socket.x, socket.y);
+            ctx.fillStyle = theme.wallFill;
+            ctx.shadowColor = theme.wallShadow;
+            ctx.shadowBlur = 12;
+            this.roundRect(ctx, rect.x + rect.size * 0.08, rect.y + rect.size * 0.1, rect.size * 0.84, rect.size * 0.8, rect.size * 0.18);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = theme.wallLine;
+            this.roundRect(ctx, rect.x + rect.size * 0.18, rect.y + rect.size * 0.21, rect.size * 0.64, rect.size * 0.13, rect.size * 0.07);
+            ctx.fill();
+            this.roundRect(ctx, rect.x + rect.size * 0.18, rect.y + rect.size * 0.62, rect.size * 0.64, rect.size * 0.13, rect.size * 0.07);
+            ctx.fill();
+            return;
+          }
+
+          const center = this.socketCenter(socket);
+          const size = this.metrics.cell;
+          const vertical = socket.x < 0 || socket.x >= board.width;
+          const w = vertical ? size * 0.34 : size * 0.78;
+          const h = vertical ? size * 0.78 : size * 0.34;
+          ctx.fillStyle = theme.wallFill;
+          ctx.shadowColor = theme.wallShadow;
+          ctx.shadowBlur = 12;
+          this.roundRect(ctx, center.x - w * 0.5, center.y - h * 0.5, w, h, size * 0.12);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = theme.wallLine;
+          if (vertical) {
+            this.roundRect(ctx, center.x - w * 0.12, center.y - h * 0.34, w * 0.24, h * 0.68, size * 0.04);
+          } else {
+            this.roundRect(ctx, center.x - w * 0.34, center.y - h * 0.12, w * 0.68, h * 0.24, size * 0.04);
+          }
+          ctx.fill();
+        }
+
         roundRect(ctx, x, y, w, h, r) {
           const radius = Math.min(r, w * 0.5, h * 0.5);
           ctx.beginPath();
@@ -3239,7 +3322,8 @@
           const board = this.game.board;
           const time = this.game.animations.time;
           for (const pipe of board.pipes) {
-            if (!pipe.ghostPath || pipe.ghostPath.length < 2) continue;
+            const renderPath = this.game.getPipeRenderPath(pipe);
+            if (!renderPath || renderPath.length < 2) continue;
             const matchSelected = this.game.selectedWormCouldMatch(pipe);
             const guideColorKey = this.game.getPipeGuideColor(pipe);
             const guideColor = guideColorKey ? CONFIG.COLORS[guideColorKey] : null;
@@ -3262,8 +3346,8 @@
               ctx.shadowBlur = this.metrics.cell * 0.35;
             }
             ctx.beginPath();
-            pipe.ghostPath.forEach((cell, index) => {
-              const center = this.cellCenter(cell.x, cell.y);
+            renderPath.forEach((cell, index) => {
+              const center = this.socketCenter(cell);
               if (index === 0) ctx.moveTo(center.x, center.y);
               else ctx.lineTo(center.x, center.y);
             });
@@ -3274,8 +3358,8 @@
               ctx.strokeStyle = guideColor.fill;
               ctx.lineWidth = this.metrics.cell * 0.1;
               ctx.beginPath();
-              pipe.ghostPath.forEach((cell, index) => {
-                const center = this.cellCenter(cell.x, cell.y);
+              renderPath.forEach((cell, index) => {
+                const center = this.socketCenter(cell);
                 if (index === 0) ctx.moveTo(center.x, center.y);
                 else ctx.lineTo(center.x, center.y);
               });
@@ -3289,6 +3373,7 @@
           const board = this.game.board;
           const time = this.game.animations.time;
           const invalidId = this.game.state.invalidPipeFeedback?.pipeId;
+          const wallSockets = this.game.isWallSocketMode();
           for (const pipe of board.pipes) {
             const connected = !!pipe.connectedWormId;
             const highlight = this.game.selectedWormCouldMatch(pipe);
@@ -3298,12 +3383,15 @@
               x: (pipe.a.x + pipe.b.x) * 0.5,
               y: (pipe.a.y + pipe.b.y) * 0.5
             };
-            const bubble = this.cellCenter(mid.x, mid.y);
+            const bubble = this.socketCenter(mid);
             const pulse = 0.88 + Math.sin(time * (connected ? 4.4 : 2.6) + pipe.pulseSeed) * 0.08;
             for (const socket of sockets) {
-              const center = this.cellCenter(socket.x, socket.y);
+              const center = this.socketCenter(socket);
               const baseRadius = this.metrics.cell * 0.24 * pulse;
               ctx.save();
+              if (wallSockets) {
+                this.renderWallSocketBase(ctx, socket);
+              }
               ctx.fillStyle = pipe.color ? CONFIG.COLORS[pipe.color].pipe : CONFIG.THEME_TOKENS.socketNeutral;
               ctx.shadowColor = pipe.color ? CONFIG.COLORS[pipe.color].glow : CONFIG.THEME_TOKENS.socketShadow;
               ctx.shadowBlur = connected ? 18 : 10;
@@ -3969,6 +4057,7 @@
           };
           this.state.level = definition.level;
           this.board = {
+            mode: definition.mode || CONFIG.FUTURE_MODES.classic.id,
             width: definition.board.width,
             height: definition.board.height,
             walls: (definition.board.walls || []).map((cell) => ({ x: cell.x, y: cell.y })),
@@ -4023,6 +4112,7 @@
             requiredLength: pipe.requiredLength || pipe.ghostPath?.length || 2,
             color: pipe.color || "",
             ghostPath: pipe.ghostPath ? pipe.ghostPath.map((cell) => ({ x: cell.x, y: cell.y })) : [pipe.a, pipe.b],
+            socketPath: pipe.socketPath ? pipe.socketPath.map((cell) => ({ x: cell.x, y: cell.y })) : null,
             pulseSeed: pipe.pulseSeed ?? Math.random() * 100,
             connectedWormId: null
           };
@@ -4031,7 +4121,7 @@
         buildExportState() {
           return {
             version: 1,
-            mode: CONFIG.FUTURE_MODES.classic.id,
+            mode: this.board?.mode || CONFIG.DEFAULT_MODE,
             level: this.state.level,
             seed: this.board?.seed || this.currentSeedBase,
             rules: Helpers.deepClone({
@@ -4055,6 +4145,7 @@
                 requiredLength: pipe.requiredLength,
                 color: pipe.color,
                 ghostPath: pipe.ghostPath.map((cell) => ({ x: cell.x, y: cell.y })),
+                socketPath: pipe.socketPath ? pipe.socketPath.map((cell) => ({ x: cell.x, y: cell.y })) : null,
                 pulseSeed: pipe.pulseSeed
               })) : []
             },
@@ -4084,6 +4175,9 @@
             this.state.level = level;
             this.designer.followProgression = false;
             this.designer.seed = parsed.seed || this.designer.seed;
+            this.designer.boardMode = Object.values(CONFIG.FUTURE_MODES).some((entry) => entry.id === parsed.mode)
+              ? parsed.mode
+              : this.designer.boardMode || CONFIG.DEFAULT_MODE;
             if (parsed.rules) {
               Object.assign(this.designer, {
                 fieldWidth: parsed.rules.fieldWidth ?? this.designer.fieldWidth,
@@ -4170,6 +4264,15 @@
 
         getPipeById(id) {
           return this.board?.pipes.find((pipe) => pipe.id === id) || null;
+        }
+
+        isWallSocketMode(board = this.board) {
+          return (board?.mode || CONFIG.DEFAULT_MODE) === CONFIG.FUTURE_MODES.wallSockets.id;
+        }
+
+        getPipeRenderPath(pipe) {
+          if (!pipe) return [];
+          return this.isWallSocketMode() && pipe.socketPath?.length ? pipe.socketPath : pipe.ghostPath;
         }
 
         selectedWormCouldMatch(pipe) {
@@ -4317,7 +4420,14 @@
         }
 
         buildWallSet() {
-          return new Set((this.board?.walls || []).map((cell) => Helpers.cellKey(cell.x, cell.y)));
+          const set = new Set((this.board?.walls || []).map((cell) => Helpers.cellKey(cell.x, cell.y)));
+          if (this.isWallSocketMode()) {
+            for (const pipe of this.board?.pipes || []) {
+              set.add(Helpers.cellKey(pipe.a.x, pipe.a.y));
+              set.add(Helpers.cellKey(pipe.b.x, pipe.b.y));
+            }
+          }
+          return set;
         }
 
         buildWormCellSet(excludeIds = new Set()) {
@@ -4368,7 +4478,9 @@
             const pipe = this.getPipeById(selection.id);
             if (!pipe) return;
             const blocked = new Set([...this.buildWallSet(), ...this.buildWormCellSet(), ...this.buildPipeEndpointSet(new Set([pipe.id]))]);
-            const translated = [pipe.a, pipe.b, ...(pipe.ghostPath || [])].map((cell) => ({ x: cell.x + delta.x, y: cell.y + delta.y }));
+            blocked.delete(Helpers.cellKey(pipe.a.x, pipe.a.y));
+            blocked.delete(Helpers.cellKey(pipe.b.x, pipe.b.y));
+            const translated = (pipe.socketPath || [pipe.a, pipe.b, ...(pipe.ghostPath || [])]).map((cell) => ({ x: cell.x + delta.x, y: cell.y + delta.y }));
             for (const cell of translated) {
               if (!BoardUtils.isInside(this.board.width, this.board.height, cell.x, cell.y)) return;
               if (blocked.has(Helpers.cellKey(cell.x, cell.y))) return;
@@ -4378,6 +4490,7 @@
             pipe.b.x += delta.x;
             pipe.b.y += delta.y;
             pipe.ghostPath = pipe.ghostPath.map((cell) => ({ x: cell.x + delta.x, y: cell.y + delta.y }));
+            if (pipe.socketPath) pipe.socketPath = pipe.socketPath.map((cell) => ({ x: cell.x + delta.x, y: cell.y + delta.y }));
           } else if (selection.kind === "wall") {
             const current = Helpers.fromCellKey(selection.key);
             const next = { x: current.x + delta.x, y: current.y + delta.y };
@@ -4496,6 +4609,16 @@
           if (pipe.color && pipe.color !== worm.color) return false;
           const tail = worm.cells[0];
           const head = worm.cells[worm.cells.length - 1];
+          if (this.isWallSocketMode()) {
+            const path = pipe.ghostPath || [];
+            if (path.length !== worm.cells.length) return false;
+            const forward = path.every((cell, index) => worm.cells[index].x === cell.x && worm.cells[index].y === cell.y);
+            const reverse = path.every((cell, index) => {
+              const wormCell = worm.cells[worm.cells.length - 1 - index];
+              return wormCell.x === cell.x && wormCell.y === cell.y;
+            });
+            return forward || reverse;
+          }
           const headTail = (
             (tail.x === pipe.a.x && tail.y === pipe.a.y && head.x === pipe.b.x && head.y === pipe.b.y) ||
             (tail.x === pipe.b.x && tail.y === pipe.b.y && head.x === pipe.a.x && head.y === pipe.a.y)
@@ -4749,13 +4872,13 @@
           const desired = Math.max(1, requestedCount);
           const specs = this.buildPipeSpecs(board, rules, Math.max(desired * 2, desired + 4), rng);
           let created = 0;
-          const reserved = new Set(board.pipes.flatMap((pipe) => (pipe.ghostPath || [pipe.a, pipe.b]).map((cell) => Helpers.cellKey(cell.x, cell.y))));
+          const reserved = new Set(board.pipes.flatMap((pipe) => (pipe.socketPath || pipe.ghostPath || [pipe.a, pipe.b]).map((cell) => Helpers.cellKey(cell.x, cell.y))));
           for (const spec of specs) {
             if (created >= desired) break;
             const pipe = this.findPipePlacement(board, spec, rng, reserved);
             if (!pipe) continue;
             board.pipes.push(pipe);
-            for (const cell of pipe.ghostPath) reserved.add(Helpers.cellKey(cell.x, cell.y));
+            for (const cell of (pipe.socketPath || pipe.ghostPath)) reserved.add(Helpers.cellKey(cell.x, cell.y));
             created++;
           }
           let fallbackGuard = CONFIG.PIPE.generationAttempts;
@@ -4801,6 +4924,7 @@
         }
 
         findPipePlacement(board, spec, rng, reserved) {
+          if (this.isWallSocketMode(board)) return this.findWallSocketPipePlacement(board, spec, rng, reserved);
           const blocked = new Set([
             ...board.walls.map((cell) => Helpers.cellKey(cell.x, cell.y)),
             ...board.worms.flatMap((worm) => worm.cells.map((cell) => Helpers.cellKey(cell.x, cell.y))),
@@ -4825,6 +4949,51 @@
             pulseSeed: rng.range(0, 100),
             connectedWormId: null
           };
+        }
+
+        findWallSocketPipePlacement(board, spec, rng, reserved) {
+          const blocked = new Set([
+            ...board.walls.map((cell) => Helpers.cellKey(cell.x, cell.y)),
+            ...board.worms.flatMap((worm) => worm.cells.map((cell) => Helpers.cellKey(cell.x, cell.y))),
+            ...board.pipes.flatMap((pipe) => (pipe.socketPath || pipe.ghostPath || [pipe.a, pipe.b]).map((cell) => Helpers.cellKey(cell.x, cell.y))),
+            ...reserved
+          ]);
+          const wallBlocked = (x, y) => blocked.has(Helpers.cellKey(x, y));
+          for (let attempt = 0; attempt < CONFIG.PIPE.generationAttempts; attempt++) {
+            const path = BoardUtils.findRandomPathOfLength({
+              width: board.width,
+              height: board.height,
+              length: spec.length,
+              isBlocked: wallBlocked,
+              rng,
+              limitStarts: 16
+            });
+            if (!path) return null;
+            const pathSet = new Set(path.map((cell) => Helpers.cellKey(cell.x, cell.y)));
+            const startWalls = BoardUtils.wallSocketAnchors(board.width, board.height, path[0].x, path[0].y)
+              .filter((cell) => !pathSet.has(Helpers.cellKey(cell.x, cell.y)) && !wallBlocked(cell.x, cell.y));
+            const endWalls = BoardUtils.wallSocketAnchors(board.width, board.height, path[path.length - 1].x, path[path.length - 1].y)
+              .filter((cell) => !pathSet.has(Helpers.cellKey(cell.x, cell.y)) && !wallBlocked(cell.x, cell.y));
+            rng.shuffle(startWalls);
+            rng.shuffle(endWalls);
+            for (const a of startWalls) {
+              for (const b of endWalls) {
+                if (a.x === b.x && a.y === b.y) continue;
+                return {
+                  id: Helpers.randomId("pipe"),
+                  a: { ...a },
+                  b: { ...b },
+                  requiredLength: spec.length,
+                  color: spec.color || "",
+                  ghostPath: path.map((cell) => ({ ...cell })),
+                  socketPath: [{ ...a }, ...path.map((cell) => ({ ...cell })), { ...b }],
+                  pulseSeed: rng.range(0, 100),
+                  connectedWormId: null
+                };
+              }
+            }
+          }
+          return null;
         }
 
         spawnWorm(length, color, commit = true) {

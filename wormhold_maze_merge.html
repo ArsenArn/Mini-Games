@@ -559,82 +559,82 @@
       <aside id="debugDrawer" class="debugDrawer">
         <div class="drawerHeader">
           <div>
-            <div class="eyebrow">Designer Panel</div>
-            <h3>Balance + State Tools</h3>
+            <div class="eyebrow">Debug Panel</div>
+            <h3>Readable Tuning</h3>
           </div>
           <div class="controlRow">
-            <button id="applyDebugButton" class="smallButton good" type="button">Apply + Regenerate</button>
+            <button id="applyDebugButton" class="smallButton good" type="button">Apply + rebuild arena</button>
             <button id="closeDebugButton" class="smallButton" type="button">Close</button>
           </div>
         </div>
         <div class="drawerBody">
             <div class="drawerSection">
-              <div class="drawerSectionTitle">Layout + Merge</div>
+              <div class="drawerSectionTitle">Board and Worms</div>
               <div class="debugGrid">
-                <div class="field"><label for="dbgTotalFieldWidth">totalFieldWidth</label><input id="dbgTotalFieldWidth" type="number" min="8" max="16"></div>
-                <div class="field"><label for="dbgTotalFieldHeight">totalFieldHeight</label><input id="dbgTotalFieldHeight" type="number" min="8" max="16"></div>
-                <div class="field"><label for="dbgInitialPoolSize">initialPoolSize</label><input id="dbgInitialPoolSize" type="number" min="1" max="6"></div>
-                <div class="field"><label for="dbgRefreshCostStart">refreshCostStart</label><input id="dbgRefreshCostStart" type="number" min="1" max="20"></div>
-                <div class="field"><label for="dbgInitialWormCount">initialWormCount</label><input id="dbgInitialWormCount" type="number" min="0" max="10"></div>
-                <div class="field"><label for="dbgWormMoveMode">wormMoveMode</label><input id="dbgWormMoveMode" type="text"></div>
-                <div class="field"><label for="dbgMergeRules">mergeRules</label><input id="dbgMergeRules" type="text"></div>
-                <div class="field"><label for="dbgAllowedWormTypes">allowedWormTypes</label><input id="dbgAllowedWormTypes" type="text"></div>
-                <div class="field"><label for="dbgAllowedWormSizes">allowedWormSizes</label><input id="dbgAllowedWormSizes" type="text"></div>
-                <div class="field"><label for="dbgSeed">seed</label><input id="dbgSeed" type="text"></div>
+                <div class="field"><label for="dbgTotalFieldWidth">Board width</label><input id="dbgTotalFieldWidth" type="number" min="8" max="16"></div>
+                <div class="field"><label for="dbgTotalFieldHeight">Board height</label><input id="dbgTotalFieldHeight" type="number" min="8" max="16"></div>
+                <div class="field"><label for="dbgInitialPoolSize">Pool cards</label><input id="dbgInitialPoolSize" type="number" min="1" max="6"></div>
+                <div class="field"><label for="dbgRefreshCostStart">Refresh cost</label><input id="dbgRefreshCostStart" type="number" min="1" max="20"></div>
+                <div class="field"><label for="dbgInitialWormCount">Starting worms</label><input id="dbgInitialWormCount" type="number" min="0" max="10"></div>
+                <div class="field"><label for="dbgWormMoveMode">Movement mode</label><select id="dbgWormMoveMode"><option value="slither">Slither by ends</option><option value="dragPlace">Drag whole worm</option></select></div>
+                <div class="field"><label for="dbgMergeRules">Merge rule</label><input id="dbgMergeRules" type="text"></div>
+                <div class="field"><label for="dbgAllowedWormTypes">Worm types</label><input id="dbgAllowedWormTypes" type="text"></div>
+                <div class="field"><label for="dbgAllowedWormSizes">Worm sizes</label><input id="dbgAllowedWormSizes" type="text"></div>
+                <div class="field"><label for="dbgSeed">Level seed</label><input id="dbgSeed" type="text"></div>
               </div>
-              <div class="field"><label for="dbgRefreshCostCurve">refreshCostCurve</label><textarea id="dbgRefreshCostCurve"></textarea></div>
+              <div class="field"><label for="dbgRefreshCostCurve">Refresh price curve</label><textarea id="dbgRefreshCostCurve"></textarea></div>
             </div>
 
             <div class="drawerSection">
               <div class="drawerSectionTitle">Bonus Cells</div>
               <div class="debugGrid">
-                <div class="field"><label for="dbgBonusStart">bonusTileStartCount</label><input id="dbgBonusStart" type="number" min="0" max="12"></div>
-                <div class="field"><label for="dbgBonusGrowth">bonusTileGrowthPerWave</label><input id="dbgBonusGrowth" type="number" min="0" max="4"></div>
-                <div class="field"><label for="dbgAllowedBonusTypes">allowedBonusTypes</label><input id="dbgAllowedBonusTypes" type="text"></div>
-                <div class="field"><label for="dbgBattleSpeed">battleSpeed</label><input id="dbgBattleSpeed" type="number" min="1" max="4" step="1"></div>
+                <div class="field"><label for="dbgBonusStart">Starting bonus tiles</label><input id="dbgBonusStart" type="number" min="0" max="12"></div>
+                <div class="field"><label for="dbgBonusGrowth">Bonus growth per wave</label><input id="dbgBonusGrowth" type="number" min="0" max="4"></div>
+                <div class="field"><label for="dbgAllowedBonusTypes">Bonus types</label><input id="dbgAllowedBonusTypes" type="text"></div>
+                <div class="field"><label for="dbgBattleSpeed">Fast-forward speed</label><input id="dbgBattleSpeed" type="number" min="1" max="4" step="1"></div>
               </div>
-              <div class="field"><label for="dbgBonusValues">bonusValues</label><textarea id="dbgBonusValues"></textarea></div>
+              <div class="field"><label for="dbgBonusValues">Bonus strength values</label><textarea id="dbgBonusValues"></textarea></div>
             </div>
 
             <div class="drawerSection">
-              <div class="drawerSectionTitle">Path + Combat</div>
+              <div class="drawerSectionTitle">Path and Combat</div>
               <div class="debugGrid">
-                <div class="field"><label for="dbgEnemyHpMultiplier">enemyHpMultiplier</label><input id="dbgEnemyHpMultiplier" type="number" min=".3" max="4" step=".05"></div>
-                <div class="field"><label for="dbgEnemySpeedMultiplier">enemySpeedMultiplier</label><input id="dbgEnemySpeedMultiplier" type="number" min=".3" max="3" step=".05"></div>
-                <div class="field"><label for="dbgEnemySpawnRateMultiplier">enemySpawnRateMultiplier</label><input id="dbgEnemySpawnRateMultiplier" type="number" min=".3" max="4" step=".05"></div>
-                <div class="field"><label for="dbgTowerDamageMultiplier">towerDamageMultiplier</label><input id="dbgTowerDamageMultiplier" type="number" min=".3" max="4" step=".05"></div>
-                <div class="field"><label for="dbgTowerRangeMultiplier">towerRangeMultiplier</label><input id="dbgTowerRangeMultiplier" type="number" min=".3" max="3" step=".05"></div>
-                <div class="field"><label for="dbgTowerAttackSpeedMultiplier">towerAttackSpeedMultiplier</label><input id="dbgTowerAttackSpeedMultiplier" type="number" min=".3" max="4" step=".05"></div>
-                <div class="field"><label for="dbgWaveDurationStart">waveDurationStart</label><input id="dbgWaveDurationStart" type="number" min="10" max="45"></div>
-                <div class="field"><label for="dbgWaveDurationPerWave">waveDurationPerWave</label><input id="dbgWaveDurationPerWave" type="number" min="1" max="15"></div>
-                <div class="field"><label for="dbgWaveDurationCap">waveDurationCap</label><input id="dbgWaveDurationCap" type="number" min="15" max="60"></div>
-                <div class="field"><label for="dbgCoreHp">baseCoreHp</label><input id="dbgCoreHp" type="number" min="5" max="80"></div>
-                <div class="field"><label for="dbgMaxActiveEnemies">maxActiveEnemies</label><input id="dbgMaxActiveEnemies" type="number" min="20" max="140"></div>
-                <div class="field"><label for="dbgShowPathDebug">showPathDebug</label><div class="field inline"><input id="dbgShowPathDebug" type="checkbox"><span>Draw cached A* routes</span></div></div>
-                <div class="field"><label for="dbgShowPathNodes">showPathNodes</label><div class="field inline"><input id="dbgShowPathNodes" type="checkbox"><span>Show path nodes</span></div></div>
+                <div class="field"><label for="dbgEnemyHpMultiplier">Enemy HP multiplier</label><input id="dbgEnemyHpMultiplier" type="number" min=".3" max="4" step=".05"></div>
+                <div class="field"><label for="dbgEnemySpeedMultiplier">Enemy speed multiplier</label><input id="dbgEnemySpeedMultiplier" type="number" min=".3" max="3" step=".05"></div>
+                <div class="field"><label for="dbgEnemySpawnRateMultiplier">Enemy spawn rate</label><input id="dbgEnemySpawnRateMultiplier" type="number" min=".3" max="4" step=".05"></div>
+                <div class="field"><label for="dbgTowerDamageMultiplier">Tower damage multiplier</label><input id="dbgTowerDamageMultiplier" type="number" min=".3" max="4" step=".05"></div>
+                <div class="field"><label for="dbgTowerRangeMultiplier">Tower range multiplier</label><input id="dbgTowerRangeMultiplier" type="number" min=".3" max="3" step=".05"></div>
+                <div class="field"><label for="dbgTowerAttackSpeedMultiplier">Tower attack speed</label><input id="dbgTowerAttackSpeedMultiplier" type="number" min=".3" max="4" step=".05"></div>
+                <div class="field"><label for="dbgWaveDurationStart">First wave seconds</label><input id="dbgWaveDurationStart" type="number" min="10" max="45"></div>
+                <div class="field"><label for="dbgWaveDurationPerWave">Extra seconds per wave</label><input id="dbgWaveDurationPerWave" type="number" min="1" max="15"></div>
+                <div class="field"><label for="dbgWaveDurationCap">Max wave seconds</label><input id="dbgWaveDurationCap" type="number" min="15" max="60"></div>
+                <div class="field"><label for="dbgCoreHp">Core HP</label><input id="dbgCoreHp" type="number" min="5" max="80"></div>
+                <div class="field"><label for="dbgMaxActiveEnemies">Active enemy cap</label><input id="dbgMaxActiveEnemies" type="number" min="20" max="140"></div>
+                <div class="field"><label for="dbgShowPathDebug">Path preview</label><div class="field inline"><input id="dbgShowPathDebug" type="checkbox"><span>Draw A* routes</span></div></div>
+                <div class="field"><label for="dbgShowPathNodes">Path nodes</label><div class="field inline"><input id="dbgShowPathNodes" type="checkbox"><span>Show route nodes</span></div></div>
               </div>
-              <div class="field"><label>pathValidation</label><div id="dbgPathStatus" class="poolHint">Open</div></div>
+              <div class="field"><label>Path validation state</label><div id="dbgPathStatus" class="poolHint">Open</div></div>
             </div>
 
-            <div class="drawerSection">
-              <div class="drawerSectionTitle">Raw Stat JSON</div>
+            <details class="drawerSection">
+              <summary class="drawerSectionTitle">Advanced JSON (optional)</summary>
               <div class="debugGrid">
-                <div class="field"><label for="dbgWormTypeStats">wormTypeStats</label><textarea id="dbgWormTypeStats"></textarea></div>
-                <div class="field"><label for="dbgEnemyBaseStats">enemyBaseStats</label><textarea id="dbgEnemyBaseStats"></textarea></div>
+                <div class="field"><label for="dbgWormTypeStats">Worm type stats JSON</label><textarea id="dbgWormTypeStats"></textarea></div>
+                <div class="field"><label for="dbgEnemyBaseStats">Enemy stats JSON</label><textarea id="dbgEnemyBaseStats"></textarea></div>
               </div>
-            </div>
+            </details>
 
             <div class="drawerSection">
               <div class="drawerSectionTitle">Actions</div>
               <div class="actionGrid">
-                <button id="dbgRegenerateButton" class="actionButton" type="button">Regenerate Level</button>
-                <button id="dbgAddCrystalsButton" class="actionButton" type="button">Add 20 Crystals</button>
-                <button id="dbgSpawnPoolButton" class="actionButton" type="button">Spawn Worm In Pool</button>
-                <button id="dbgSpawnFieldButton" class="actionButton" type="button">Spawn Random On Field</button>
+                <button id="dbgRegenerateButton" class="actionButton" type="button">Regenerate arena</button>
+                <button id="dbgAddCrystalsButton" class="actionButton" type="button">Add 20 crystals</button>
+                <button id="dbgSpawnPoolButton" class="actionButton" type="button">Add worm to pool</button>
+                <button id="dbgSpawnFieldButton" class="actionButton" type="button">Place random worm</button>
                 <button id="dbgForceMergeButton" class="actionButton" type="button">Force Merge</button>
                 <button id="dbgStartBattleButton" class="actionButton good" type="button">Spawn Wave</button>
-                <button id="dbgKillEnemiesButton" class="actionButton danger" type="button">Kill All Enemies</button>
-                <button id="dbgFastForwardButton" class="actionButton warn" type="button">Fast Forward</button>
+                <button id="dbgKillEnemiesButton" class="actionButton danger" type="button">Kill enemies</button>
+                <button id="dbgFastForwardButton" class="actionButton warn" type="button">Toggle fast-forward</button>
               </div>
             </div>
 
