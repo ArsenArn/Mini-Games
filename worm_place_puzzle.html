@@ -389,6 +389,9 @@
     }
     @media (max-width:720px){
       .app{padding:10px;gap:10px}
+      .centerCol{order:1;min-height:calc(100vh - 20px)}
+      .leftCol{order:2}
+      .rightCol{order:3}
       .hudCard,.boardFooter,.menuGrid,.menuStats,.resultStats,.formGrid,.rightCol{grid-template-columns:1fr}
       .pillRack{grid-template-columns:repeat(2,minmax(0,1fr))}
       .buttonRack{grid-template-columns:repeat(3,minmax(0,1fr));min-width:0}
