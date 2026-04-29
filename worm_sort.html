@@ -1,0 +1,1725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Worm Sort</title>
+  <style>
+    :root{
+      --bg-a:#f8fbff;
+      --bg-b:#fff7ea;
+      --text:#18314f;
+      --muted:#637b97;
+      --panel:rgba(255,255,255,.82);
+      --panel-strong:rgba(255,255,255,.96);
+      --stroke:rgba(24,49,79,.09);
+      --shadow:0 18px 42px rgba(24,49,79,.13);
+      --accent:#2465a7;
+      --accent-soft:#edf5ff;
+      --success:#35b978;
+      --danger:#ff6875;
+      --neutral:#dfe8f3;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{margin:0;min-height:100%;font-family:"Trebuchet MS","Avenir Next","Segoe UI",sans-serif;color:var(--text)}
+    body{
+      min-height:100vh;
+      display:flex;
+      justify-content:center;
+      background:
+        radial-gradient(circle at 15% 8%,rgba(95,185,255,.2),transparent 32%),
+        radial-gradient(circle at 82% 18%,rgba(255,202,88,.2),transparent 28%),
+        radial-gradient(circle at 70% 88%,rgba(72,207,146,.14),transparent 30%),
+        linear-gradient(180deg,var(--bg-a),var(--bg-b));
+    }
+    button,input,select,textarea{font:inherit}
+    button{border:0}
+    h1,h2,h3,p{margin:0}
+    .app{
+      width:min(100vw,1480px);
+      height:100vh;
+      padding:16px;
+      display:grid;
+      grid-template-columns:minmax(230px,300px) minmax(0,1fr) minmax(250px,330px);
+      gap:14px;
+      overflow:hidden;
+    }
+    .panel{
+      background:linear-gradient(180deg,var(--panel-strong),var(--panel));
+      border:1px solid var(--stroke);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(12px);
+    }
+    .leftCol,.rightCol{
+      min-height:0;
+      overflow:auto;
+      display:grid;
+      align-content:start;
+      gap:14px;
+      padding-right:2px;
+    }
+    .centerCol{
+      min-height:0;
+      display:grid;
+      grid-template-rows:auto minmax(0,1fr) auto;
+      gap:14px;
+    }
+    .titleCard,.statusCard,.selectedCard,.controlsCard,.tipsCard,.designerCard,.hudCard{
+      padding:14px;
+      display:grid;
+      gap:10px;
+      align-content:start;
+    }
+    .eyebrow{
+      font-size:11px;
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      color:var(--muted);
+    }
+    h1{font-size:clamp(28px,3.2vw,40px);line-height:.95}
+    h2{font-size:20px;line-height:1}
+    h3{font-size:15px;line-height:1.15}
+    .muted{color:var(--muted);line-height:1.45;font-size:13px}
+    .hudCard{
+      grid-template-columns:minmax(0,1fr) auto;
+      align-items:center;
+    }
+    .pillRack{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:10px;
+    }
+    .pill{
+      min-height:62px;
+      padding:10px;
+      border-radius:16px;
+      background:rgba(255,255,255,.76);
+      border:1px solid rgba(24,49,79,.06);
+      display:grid;
+      gap:5px;
+      align-content:center;
+      text-align:center;
+      box-shadow:0 12px 24px rgba(24,49,79,.06);
+    }
+    .pill span{
+      font-size:10px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      color:var(--muted);
+      font-weight:700;
+    }
+    .pill strong{font-size:18px;line-height:1}
+    .buttonRack,.screenButtons,.buttonRow{display:flex;gap:8px;flex-wrap:wrap}
+    .buttonRack{justify-content:flex-end;min-width:132px}
+    .actionButton{
+      min-height:42px;
+      padding:10px 12px;
+      border-radius:14px;
+      cursor:pointer;
+      font-weight:700;
+      color:var(--text);
+      background:linear-gradient(180deg,#fff,#eef4ff);
+      box-shadow:0 10px 20px rgba(24,49,79,.1);
+      transition:transform .16s ease,box-shadow .16s ease,opacity .16s ease;
+    }
+    .actionButton:hover{transform:translateY(-1px);box-shadow:0 16px 28px rgba(24,49,79,.13)}
+    .actionButton:active{transform:translateY(1px) scale(.985)}
+    .actionButton.accent{color:#fff;background:linear-gradient(180deg,#3685c8,#2465a7);box-shadow:0 16px 32px rgba(36,101,167,.24)}
+    .actionButton.success{color:#fff;background:linear-gradient(180deg,#4bcb8d,#259a63);box-shadow:0 16px 32px rgba(35,153,101,.22)}
+    .actionButton.secondary{background:linear-gradient(180deg,#fff,#f4f8ff)}
+    .actionButton.ghost{background:rgba(255,255,255,.74);border:1px solid rgba(24,49,79,.08);box-shadow:none}
+    .actionButton.small{min-height:36px;padding:8px 10px;font-size:13px}
+    .actionButton:disabled{cursor:not-allowed;opacity:.46;transform:none;box-shadow:none}
+    .canvasWrap{
+      position:relative;
+      min-height:0;
+      overflow:hidden;
+      border-radius:24px;
+      background:
+        radial-gradient(circle at top left,rgba(255,238,206,.85),transparent 34%),
+        radial-gradient(circle at bottom right,rgba(90,135,255,.1),transparent 34%),
+        linear-gradient(180deg,#fffef9,#f4fbff);
+      border:1px solid rgba(24,49,79,.08);
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.45),var(--shadow);
+    }
+    canvas{width:100%;height:100%;display:block;touch-action:none}
+    .boardFooter{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      gap:10px;
+      align-items:stretch;
+    }
+    .hintLine,.selectionMeta{
+      min-height:48px;
+      padding:11px 13px;
+      border-radius:16px;
+      background:rgba(238,245,255,.76);
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.45;
+      display:flex;
+      align-items:center;
+    }
+    .selectionMeta{color:var(--text);font-weight:700}
+    .list,.toastStack{display:grid;gap:9px}
+    .item,.toast{
+      padding:11px 12px;
+      border-radius:16px;
+      background:rgba(238,245,255,.76);
+      border:1px solid rgba(24,49,79,.05);
+      display:grid;
+      gap:5px;
+      box-shadow:0 10px 20px rgba(24,49,79,.05);
+      font-size:13px;
+    }
+    .item.done{background:rgba(78,203,144,.17);border-color:rgba(78,203,144,.24)}
+    .item.warn{background:rgba(255,104,117,.12);border-color:rgba(255,104,117,.2)}
+    .itemTop{display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:700}
+    .tag{
+      padding:5px 8px;
+      border-radius:999px;
+      background:rgba(255,255,255,.78);
+      color:var(--accent);
+      font-size:11px;
+      font-weight:700;
+      white-space:nowrap;
+    }
+    .swatches{display:flex;gap:4px;flex-wrap:wrap}
+    .swatch{width:15px;height:15px;border-radius:5px;box-shadow:0 3px 7px rgba(24,49,79,.15);border:1px solid rgba(255,255,255,.75)}
+    .selectedBox{
+      min-height:108px;
+      padding:12px;
+      border-radius:16px;
+      background:rgba(255,255,255,.76);
+      display:grid;
+      gap:8px;
+      align-content:center;
+    }
+    .selectedActions{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:8px;
+    }
+    .dpad{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:9px;
+    }
+    .dpad .actionButton{min-height:56px}
+    .dpadSpacer{visibility:hidden}
+    .screen{
+      position:fixed;
+      inset:0;
+      z-index:30;
+      padding:18px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:rgba(226,237,249,.72);
+      backdrop-filter:blur(10px);
+    }
+    .screen.hidden{display:none}
+    .screenCard{
+      width:min(720px,100%);
+      padding:24px;
+      border-radius:28px;
+      background:rgba(255,255,255,.94);
+      border:1px solid rgba(24,49,79,.08);
+      box-shadow:0 30px 80px rgba(24,49,79,.22);
+      display:grid;
+      gap:18px;
+    }
+    .menuGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .menuChoice{
+      min-height:150px;
+      padding:16px;
+      border-radius:20px;
+      background:linear-gradient(180deg,#f7fbff,#fff8ec);
+      border:1px solid rgba(24,49,79,.07);
+      display:grid;
+      gap:10px;
+      align-content:space-between;
+    }
+    .designerCard.hidden{display:none}
+    .formGrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+    label{display:grid;gap:4px;font-size:12px;font-weight:700;color:var(--muted)}
+    input,select,textarea{
+      width:100%;
+      border:1px solid rgba(24,49,79,.12);
+      border-radius:12px;
+      background:rgba(255,255,255,.88);
+      color:var(--text);
+      padding:8px 9px;
+      min-height:36px;
+    }
+    textarea{min-height:120px;resize:vertical;font-size:12px;font-family:Consolas,monospace}
+    .toast.warn{background:rgba(255,104,117,.15);border-color:rgba(255,104,117,.2)}
+    .toast.success{background:rgba(78,203,144,.17);border-color:rgba(78,203,144,.24)}
+    @media (max-width:980px){
+      .app{height:auto;min-height:100vh;overflow:auto;grid-template-columns:1fr;padding:10px}
+      .leftCol,.rightCol{overflow:visible}
+      .centerCol{min-height:72vh}
+      .canvasWrap{min-height:62vh}
+      .menuGrid{grid-template-columns:1fr}
+    }
+    @media (max-width:620px){
+      .pillRack{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .hudCard,.boardFooter{grid-template-columns:1fr}
+      .buttonRack{justify-content:stretch}
+      .buttonRack .actionButton{flex:1}
+      .formGrid{grid-template-columns:1fr}
+      .screen{padding:10px}
+      .screenCard{padding:18px;border-radius:24px}
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <aside class="leftCol">
+      <section class="panel titleCard">
+        <div class="eyebrow">Prototype</div>
+        <h1>Worm Sort</h1>
+        <p class="muted">Use the field as a buffer, carry blocks with neutral worms, and gather each color into one container.</p>
+      </section>
+      <section class="panel statusCard">
+        <div class="itemTop"><h2>Containers</h2><span id="containerBadge" class="tag">0</span></div>
+        <div id="containerList" class="list"></div>
+      </section>
+      <section class="panel statusCard">
+        <div class="itemTop"><h2>Debug Info</h2><span id="validityBadge" class="tag">Ready</span></div>
+        <div id="debugStats" class="list"></div>
+      </section>
+    </aside>
+
+    <section class="centerCol">
+      <section class="panel hudCard">
+        <div class="pillRack">
+          <div class="pill"><span>Level</span><strong id="hudLevel">-</strong></div>
+          <div class="pill"><span>Moves</span><strong id="hudMoves">0</strong></div>
+          <div class="pill"><span>Blocks Sorted</span><strong id="hudSorted">0 / 0</strong></div>
+          <div class="pill"><span>Worms</span><strong id="hudWorms">0</strong></div>
+        </div>
+        <div class="buttonRack">
+          <button id="restartButton" class="actionButton secondary small" type="button">Restart</button>
+          <button id="menuButton" class="actionButton secondary small" type="button">Menu</button>
+          <button id="debugButton" class="actionButton accent small" type="button">Debug</button>
+        </div>
+      </section>
+      <section class="canvasWrap">
+        <canvas id="gameCanvas" aria-label="Worm Sort board"></canvas>
+      </section>
+      <section class="boardFooter">
+        <div id="hintLine" class="hintLine">Choose Campaign or Sandbox from the menu.</div>
+        <div id="selectionMeta" class="selectionMeta">No worm selected</div>
+      </section>
+    </section>
+
+    <aside class="rightCol">
+      <section class="panel selectedCard">
+        <div class="itemTop"><h2>Selected Worm</h2><span id="wormBadge" class="tag">0 worms</span></div>
+        <div id="selectedBox" class="selectedBox"></div>
+        <div class="selectedActions">
+          <button id="tailButton" class="actionButton secondary small" type="button">Tail</button>
+          <button id="headButton" class="actionButton accent small" type="button">Head</button>
+        </div>
+      </section>
+      <section class="panel controlsCard">
+        <div class="itemTop"><h2>Move</h2><span class="tag">WASD</span></div>
+        <div class="dpad">
+          <span class="dpadSpacer"></span>
+          <button class="actionButton" data-dir="up" type="button">Up</button>
+          <span class="dpadSpacer"></span>
+          <button class="actionButton" data-dir="left" type="button">Left</button>
+          <button class="actionButton" data-dir="down" type="button">Down</button>
+          <button class="actionButton" data-dir="right" type="button">Right</button>
+        </div>
+      </section>
+      <section id="designerPanel" class="panel designerCard hidden">
+        <div class="itemTop"><h2>Designer</h2><span class="tag">Sandbox</span></div>
+        <div class="formGrid">
+          <label>Field width<input id="fieldWidthInput" type="number" min="5" max="18"></label>
+          <label>Field height<input id="fieldHeightInput" type="number" min="5" max="28"></label>
+          <label>Worm count<input id="wormCountInput" type="number" min="1" max="4"></label>
+          <label>Worm length min<input id="wormLengthMinInput" type="number" min="2" max="8"></label>
+          <label>Worm length max<input id="wormLengthMaxInput" type="number" min="2" max="8"></label>
+          <label>Container count<input id="containerCountInput" type="number" min="2" max="5"></label>
+          <label>Color count<input id="colorCountInput" type="number" readonly></label>
+          <label>Container capacity<input id="containerCapacityInput" type="number" min="10" max="20"></label>
+          <label>Total blocks count<input id="totalBlocksInput" type="number" min="20" max="50" readonly></label>
+          <label>Min group size<input id="minGroupInput" type="number" min="1" max="8"></label>
+          <label>Max group size<input id="maxGroupInput" type="number" min="1" max="10"></label>
+          <label>Seed<input id="seedInput" type="number"></label>
+          <label>Difficulty preset<select id="presetInput"><option>easy</option><option>normal</option><option>hard</option></select></label>
+        </div>
+        <div class="buttonRow">
+          <button id="generateButton" class="actionButton accent small" type="button">Generate</button>
+          <button id="designerRestartButton" class="actionButton secondary small" type="button">Restart</button>
+          <button id="exportButton" class="actionButton secondary small" type="button">Export JSON</button>
+          <button id="importButton" class="actionButton secondary small" type="button">Import JSON</button>
+        </div>
+        <textarea id="jsonBox" spellcheck="false" placeholder="Exported or imported level JSON"></textarea>
+      </section>
+      <section class="panel tipsCard">
+        <div class="itemTop"><h2>Messages</h2><span class="tag">Live</span></div>
+        <div id="toastStack" class="toastStack"></div>
+      </section>
+    </aside>
+  </main>
+
+  <div id="menuScreen" class="screen">
+    <div class="screenCard">
+      <div>
+        <div class="eyebrow">Worm Sort</div>
+        <h1>Choose Mode</h1>
+      </div>
+      <div class="menuGrid">
+        <div class="menuChoice">
+          <div>
+            <h3>Campaign</h3>
+            <p class="muted">100 levels with saved progress and a steady sorting curve.</p>
+          </div>
+          <button id="campaignButton" class="actionButton accent" type="button">Campaign</button>
+        </div>
+        <div class="menuChoice">
+          <div>
+            <h3>Sandbox</h3>
+            <p class="muted">Tune the board, generate levels, and move JSON in or out.</p>
+          </div>
+          <button id="sandboxButton" class="actionButton secondary" type="button">Sandbox</button>
+        </div>
+      </div>
+      <p class="muted">Unlocked campaign level: <strong id="menuUnlocked">1</strong></p>
+    </div>
+  </div>
+
+  <div id="victoryScreen" class="screen hidden">
+    <div class="screenCard">
+      <div>
+        <div class="eyebrow">Level Complete</div>
+        <h1>Level Complete</h1>
+      </div>
+      <div class="pillRack">
+        <div class="pill"><span>Moves</span><strong id="victoryMoves">0</strong></div>
+        <div class="pill"><span>Blocks Sorted</span><strong id="victorySorted">0 / 0</strong></div>
+      </div>
+      <div class="screenButtons">
+        <button id="nextButton" class="actionButton success" type="button">Next Level</button>
+        <button id="victoryRestartButton" class="actionButton secondary" type="button">Restart</button>
+        <button id="victoryMenuButton" class="actionButton secondary" type="button">Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      // CONFIG
+      const CONFIG = {
+        SAVE_KEY: "worm_sort_save_v1",
+        MAX_CAMPAIGN_LEVEL: 100,
+        START_BLOCKS_PER_CONTAINER: 10,
+        COLORS: {
+          red: "#ff5f6d",
+          blue: "#4594ff",
+          green: "#35c982",
+          yellow: "#f5c84b",
+          purple: "#9b6cff",
+          orange: "#ff9b42",
+          cyan: "#36c6d7",
+          pink: "#ff78b7"
+        },
+        COLOR_ORDER: ["red", "blue", "green", "yellow", "purple", "orange", "cyan", "pink"],
+        ANIM: {
+          flash: 0.34,
+          toast: 2.7,
+          stepCooldown: 0.11,
+          victoryDelay: 0.55
+        },
+        INPUT: {
+          dragThreshold: 18,
+          pointerStepInterval: 0.085,
+          keyboardStepInterval: 0.105,
+          pointerBias: 0.02
+        }
+      };
+      const DIRS = {
+        up: { x: 0, y: -1 },
+        down: { x: 0, y: 1 },
+        left: { x: -1, y: 0 },
+        right: { x: 1, y: 0 }
+      };
+
+      // Save
+      const Save = {
+        data: { unlockedLevel: 1 },
+        load() {
+          try {
+            const raw = localStorage.getItem(CONFIG.SAVE_KEY);
+            if (raw) this.data = { ...this.data, ...JSON.parse(raw) };
+          } catch (error) {
+            this.data = { unlockedLevel: 1 };
+          }
+        },
+        write() {
+          localStorage.setItem(CONFIG.SAVE_KEY, JSON.stringify(this.data));
+        },
+        unlock(level) {
+          this.data.unlockedLevel = Math.max(this.data.unlockedLevel || 1, Math.min(CONFIG.MAX_CAMPAIGN_LEVEL, level));
+          this.write();
+        }
+      };
+
+      // RNG
+      class RNG {
+        constructor(seed) {
+          this.seed = (Number(seed) || 1) >>> 0;
+        }
+        next() {
+          this.seed = (1664525 * this.seed + 1013904223) >>> 0;
+          return this.seed / 4294967296;
+        }
+        int(min, max) {
+          return Math.floor(this.next() * (max - min + 1)) + min;
+        }
+        pick(list) {
+          return list[this.int(0, list.length - 1)];
+        }
+        shuffle(list) {
+          const out = list.slice();
+          for (let i = out.length - 1; i > 0; i--) {
+            const j = this.int(0, i);
+            [out[i], out[j]] = [out[j], out[i]];
+          }
+          return out;
+        }
+      }
+
+      const Helpers = {
+        clamp(value, min, max) {
+          return Math.max(min, Math.min(max, Number(value) || min));
+        },
+        key(x, y) {
+          return `${x},${y}`;
+        },
+        same(a, b) {
+          return a && b && a.x === b.x && a.y === b.y;
+        },
+        dist(ax, ay, bx, by) {
+          return Math.hypot(ax - bx, ay - by);
+        },
+        manhattan(a, b) {
+          return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+        },
+        clone(value) {
+          return JSON.parse(JSON.stringify(value));
+        },
+        groupText(blocks) {
+          if (!blocks.length) return "empty";
+          const groups = [];
+          for (const color of blocks) {
+            const last = groups[groups.length - 1];
+            if (last && last.color === color) last.count++;
+            else groups.push({ color, count: 1 });
+          }
+          return groups.map((group) => `${group.count} ${group.color}`).join(", ");
+        }
+      };
+
+      // BoardUtils
+      const BoardUtils = {
+        inside(board, x, y) {
+          return x >= 0 && y >= 0 && x < board.width && y < board.height;
+        },
+        loadKeys(board) {
+          return new Set(board.containers.map((container) => Helpers.key(container.loadCell.x, container.loadCell.y)));
+        },
+        wormCellMap(board, ignore) {
+          const map = new Map();
+          for (const worm of board.worms) {
+            worm.cells.forEach((cell, index) => {
+              if (ignore && ignore.wormId === worm.id && ignore.index === index) return;
+              map.set(Helpers.key(cell.x, cell.y), { worm, index });
+            });
+          }
+          return map;
+        },
+        fieldBlockAt(board, cell) {
+          return board.fieldBlocks.find((block) => block.x === cell.x && block.y === cell.y) || null;
+        },
+        removeFieldBlock(board, block) {
+          const index = board.fieldBlocks.indexOf(block);
+          if (index >= 0) board.fieldBlocks.splice(index, 1);
+        },
+        countCarried(board) {
+          return board.worms.reduce((sum, worm) => sum + worm.carriedBlocks.filter(Boolean).length, 0);
+        },
+        totalInContainers(board) {
+          return board.containers.reduce((sum, container) => sum + container.blocks.length, 0);
+        },
+        countByColor(board) {
+          const counts = Object.fromEntries(board.colors.map((color) => [color, 0]));
+          for (const container of board.containers) for (const color of container.blocks) counts[color] = (counts[color] || 0) + 1;
+          for (const block of board.fieldBlocks) counts[block.color] = (counts[block.color] || 0) + 1;
+          for (const worm of board.worms) for (const color of worm.carriedBlocks) if (color) counts[color] = (counts[color] || 0) + 1;
+          return counts;
+        },
+        sortedInfo(board) {
+          if (!board) return { sorted: 0, total: 0 };
+          const total = board.totalBlocks || (BoardUtils.totalInContainers(board) + board.fieldBlocks.length + BoardUtils.countCarried(board));
+          let sorted = 0;
+          const seen = new Set();
+          for (const container of board.containers) {
+            if (!container.blocks.length) continue;
+            const color = container.blocks[0];
+            const single = container.blocks.every((block) => block === color);
+            if (single && !seen.has(color)) {
+              sorted += container.blocks.length;
+              seen.add(color);
+            }
+          }
+          return { sorted, total };
+        },
+        validate(board, requireStart) {
+          const issues = [];
+          if (!board || board.width < 5 || board.height < 5) issues.push("field too small");
+          if (!board || board.worms.length > 4) issues.push("too many worms");
+          if (!board || board.colors.length !== board.containers.length) issues.push("colors must equal containers");
+          if (requireStart && board.containers.some((container) => !container.blocks.length)) issues.push("empty start container");
+          if (requireStart && board.containers.some((container) => container.blocks.length !== CONFIG.START_BLOCKS_PER_CONTAINER)) issues.push("start containers must have 10 blocks");
+          if (requireStart && board.containers.some((container) => new Set(container.blocks).size < 2)) issues.push("start containers must be mixed");
+          if (board && board.containerCapacity < CONFIG.START_BLOCKS_PER_CONTAINER) issues.push("container capacity must be at least 10");
+          if (board) {
+            const loadKeys = BoardUtils.loadKeys(board);
+            const wormMap = BoardUtils.wormCellMap(board);
+            for (const container of board.containers) {
+              if (!BoardUtils.inside(board, container.loadCell.x, container.loadCell.y)) issues.push("bad loading point");
+              if (wormMap.has(Helpers.key(container.loadCell.x, container.loadCell.y))) issues.push("loading point occupied at start");
+              const freeNear = Containers.findDropCells(board, container, container.blocks.length ? 1 : 0).length;
+              if (freeNear < 1) issues.push("no first move");
+            }
+            for (const block of board.fieldBlocks) {
+              if (!BoardUtils.inside(board, block.x, block.y)) issues.push("field block outside");
+              if (wormMap.has(Helpers.key(block.x, block.y))) issues.push("field block on worm");
+              if (loadKeys.has(Helpers.key(block.x, block.y))) issues.push("field block on loading point");
+            }
+            const counts = BoardUtils.countByColor(board);
+            for (const color of board.colors) {
+              if ((counts[color] || 0) > board.containerCapacity) issues.push(`${color} exceeds one container`);
+              if ((counts[color] || 0) !== CONFIG.START_BLOCKS_PER_CONTAINER) issues.push(`${color} must have 10 blocks`);
+            }
+            if (Object.values(counts).reduce((sum, value) => sum + value, 0) > board.containerCapacity * board.containers.length) issues.push("container capacity too low");
+          }
+          return { ok: issues.length === 0, issues };
+        },
+        isComplete(board) {
+          if (!board || board.colors.length !== board.containers.length) return false;
+          if (board.fieldBlocks.length > 0 || BoardUtils.countCarried(board) > 0) return false;
+          const colorHome = new Map();
+          for (const container of board.containers) {
+            if (container.blocks.length > board.containerCapacity) return false;
+            if (!container.blocks.length) return false;
+            const color = container.blocks[0];
+            if (!container.blocks.every((block) => block === color)) return false;
+            if (!board.colors.includes(color) || colorHome.has(color)) return false;
+            colorHome.set(color, container.id);
+          }
+          return colorHome.size === board.colors.length;
+        }
+      };
+
+      // Containers
+      const Containers = {
+        firstGroup(container) {
+          if (!container.blocks.length) return [];
+          const color = container.blocks[0];
+          const group = [];
+          for (const block of container.blocks) {
+            if (block !== color) break;
+            group.push(block);
+          }
+          return group;
+        },
+        findDropCells(board, container, limit) {
+          const loadKeys = BoardUtils.loadKeys(board);
+          const occupied = BoardUtils.wormCellMap(board);
+          for (const block of board.fieldBlocks) occupied.set(Helpers.key(block.x, block.y), block);
+          const queue = [{ ...container.loadCell, dist: 0 }];
+          const seen = new Set([Helpers.key(container.loadCell.x, container.loadCell.y)]);
+          const cells = [];
+          while (queue.length && cells.length < limit) {
+            const current = queue.shift();
+            for (const delta of Object.values(DIRS)) {
+              const next = { x: current.x + delta.x, y: current.y + delta.y, dist: current.dist + 1 };
+              const key = Helpers.key(next.x, next.y);
+              if (seen.has(key) || !BoardUtils.inside(board, next.x, next.y)) continue;
+              seen.add(key);
+              if (!loadKeys.has(key) && !occupied.has(key)) cells.push({ x: next.x, y: next.y });
+              queue.push(next);
+            }
+          }
+          return cells;
+        },
+        eject(board, container) {
+          const group = Containers.firstGroup(container);
+          if (!group.length) {
+            container.flash = CONFIG.ANIM.flash;
+            return { moved: 0, color: null };
+          }
+          const cells = Containers.findDropCells(board, container, group.length);
+          if (!cells.length) {
+            container.flash = CONFIG.ANIM.flash;
+            return { moved: 0, color: group[0] };
+          }
+          const moved = Math.min(cells.length, group.length);
+          for (let i = 0; i < moved; i++) board.fieldBlocks.push({ x: cells[i].x, y: cells[i].y, color: group[i], pop: 1 });
+          container.blocks.splice(0, moved);
+          return { moved, color: group[0] };
+        },
+        canReceiveFromWorm(board, container, worm) {
+          if (container.blocks.length >= board.containerCapacity) return false;
+          const loadIndex = worm.cells.findIndex((cell) => Helpers.same(cell, container.loadCell));
+          if (loadIndex < 0) return false;
+          const accepted = container.blocks.length ? container.blocks[0] : worm.carriedBlocks[loadIndex];
+          if (!accepted) return false;
+          return worm.carriedBlocks.some((color) => color === accepted);
+        },
+        unload(board, container, worm) {
+          if (container.blocks.length >= board.containerCapacity) return { moved: 0, color: null };
+          const loadIndex = worm.cells.findIndex((cell) => Helpers.same(cell, container.loadCell));
+          if (loadIndex < 0) return { moved: 0, color: null };
+          const accepted = container.blocks.length ? container.blocks[0] : worm.carriedBlocks[loadIndex];
+          if (!accepted) return { moved: 0, color: null };
+          let room = board.containerCapacity - container.blocks.length;
+          let moved = 0;
+          for (let i = 0; i < worm.carriedBlocks.length && room > 0; i++) {
+            if (worm.carriedBlocks[i] !== accepted) continue;
+            worm.carriedBlocks[i] = null;
+            moved++;
+            room--;
+          }
+          if (moved > 0) {
+            container.blocks = Array(moved).fill(accepted).concat(container.blocks);
+            container.pulse = 1;
+          }
+          return { moved, color: accepted };
+        }
+      };
+
+      // Worms
+      const Worms = {
+        isFull(worm) {
+          return worm.carriedBlocks.every(Boolean);
+        },
+        firstFree(worm) {
+          return worm.carriedBlocks.findIndex((color) => !color);
+        },
+        canStep(board, worm, end, next) {
+          if (!BoardUtils.inside(board, next.x, next.y)) return { ok: false, reason: "edge" };
+          const ignore = { wormId: worm.id, index: end === "head" ? 0 : worm.cells.length - 1 };
+          const occupied = BoardUtils.wormCellMap(board, ignore);
+          if (occupied.has(Helpers.key(next.x, next.y))) return { ok: false, reason: "worm" };
+          const fieldBlock = BoardUtils.fieldBlockAt(board, next);
+          if (fieldBlock && Worms.isFull(worm)) return { ok: false, reason: "full" };
+          return { ok: true, fieldBlock };
+        },
+        step(board, worm, end, direction) {
+          const delta = DIRS[direction];
+          if (!delta) return { ok: false, reason: "bad direction" };
+          const index = end === "tail" ? 0 : worm.cells.length - 1;
+          const pivot = worm.cells[index];
+          const next = { x: pivot.x + delta.x, y: pivot.y + delta.y };
+          const check = Worms.canStep(board, worm, end, next);
+          if (!check.ok) return check;
+          const fieldBlock = check.fieldBlock;
+
+          worm.prevCells = worm.cells.map((cell) => ({ ...cell }));
+          worm.moveT = 0;
+          if (end === "head") worm.cells = worm.cells.slice(1).concat([next]);
+          else worm.cells = [next].concat(worm.cells.slice(0, -1));
+          if (fieldBlock) {
+            const slot = Worms.firstFree(worm);
+            if (slot >= 0) {
+              worm.carriedBlocks[slot] = fieldBlock.color;
+              BoardUtils.removeFieldBlock(board, fieldBlock);
+            }
+          }
+          board.moves++;
+          return { ok: true, picked: fieldBlock ? fieldBlock.color : null };
+        }
+      };
+
+      // Blocks
+      const Blocks = {
+        color(color) {
+          return CONFIG.COLORS[color] || "#dfe8f3";
+        },
+        allColors(count) {
+          return CONFIG.COLOR_ORDER.slice(0, count);
+        }
+      };
+
+      // Campaign
+      const Campaign = {
+        settings(level) {
+          const l = Helpers.clamp(level, 1, CONFIG.MAX_CAMPAIGN_LEVEL);
+          if (l <= 5) return { width: 5 + (l > 3 ? 1 : 0), height: 5 + (l > 4 ? 1 : 0), wormCount: l === 1 ? 1 : 2, wormLengthMin: 3, wormLengthMax: l < 3 ? 3 : 4, containerCount: 2, containerCapacity: 10, totalBlocks: 20, minGroup: 2, maxGroup: 4, seed: 800 + l, preset: "easy" };
+          if (l <= 15) return { width: 7, height: 6, wormCount: 2, wormLengthMin: 3, wormLengthMax: 4, containerCount: 3, containerCapacity: 10, totalBlocks: 30, minGroup: 2, maxGroup: 4, seed: 800 + l, preset: "easy" };
+          if (l <= 35) return { width: 8, height: 7, wormCount: l < 24 ? 2 : 3, wormLengthMin: 3, wormLengthMax: 5, containerCount: l < 24 ? 3 : 4, containerCapacity: 10, totalBlocks: l < 24 ? 30 : 40, minGroup: 2, maxGroup: 5, seed: 800 + l, preset: "normal" };
+          if (l <= 60) return { width: 9, height: 8, wormCount: 3, wormLengthMin: 3, wormLengthMax: 5, containerCount: 4, containerCapacity: 10, totalBlocks: 40, minGroup: 2, maxGroup: 5, seed: 800 + l, preset: "normal" };
+          return { width: 10 + (l > 82 ? 1 : 0), height: 9 + (l > 82 ? 1 : 0), wormCount: l > 78 ? 4 : 3, wormLengthMin: 3, wormLengthMax: 5, containerCount: l > 76 ? 5 : 4, containerCapacity: 10, totalBlocks: l > 76 ? 50 : 40, minGroup: 2, maxGroup: 5, seed: 800 + l, preset: "hard" };
+        },
+        hint(level) {
+          const hints = {
+            1: "Tap a container to release one color group. Move the worm onto blocks to pick them up.",
+            2: "A worm can carry as many blocks as it has segments.",
+            3: "Move any worm segment onto a loading point to drop matching blocks into that container.",
+            4: "A container accepts its first color, or any color if it became empty.",
+            5: "Goal: gather each color into its own container."
+          };
+          return hints[level] || "Sort every color into a single container. The field is your only buffer.";
+        }
+      };
+
+      // LevelGenerator
+      const LevelGenerator = {
+        normalize(input, mode) {
+          const containerCount = Helpers.clamp(input.containerCount, 2, 5);
+          const capacity = Helpers.clamp(input.containerCapacity, CONFIG.START_BLOCKS_PER_CONTAINER, 20);
+          const minGroup = Helpers.clamp(input.minGroup || input.minGroupSize, 1, 8);
+          const maxGroup = Helpers.clamp(input.maxGroup || input.maxGroupSize, minGroup, 10);
+          const totalBlocks = containerCount * CONFIG.START_BLOCKS_PER_CONTAINER;
+          return {
+            width: Helpers.clamp(input.width, 5, 18),
+            height: Helpers.clamp(input.height, 5, 28),
+            wormCount: Helpers.clamp(input.wormCount, 1, 4),
+            wormLengthMin: Helpers.clamp(input.wormLengthMin, 2, 8),
+            wormLengthMax: Helpers.clamp(Math.max(input.wormLengthMax || 3, input.wormLengthMin || 2), 2, 8),
+            containerCount,
+            colorCount: containerCount,
+            containerCapacity: capacity,
+            totalBlocks,
+            minGroup,
+            maxGroup,
+            seed: Number(input.seed) || Math.floor(Date.now() % 1000000),
+            preset: input.preset || (mode === "campaign" ? "normal" : "easy")
+          };
+        },
+        build(level, mode, input) {
+          const settings = LevelGenerator.normalize(input, mode);
+          if (mode === "campaign" && level === 1) return LevelGenerator.firstLevel(settings);
+          for (let attempt = 0; attempt < 80; attempt++) {
+            const board = LevelGenerator.tryBuild(level, mode, { ...settings, seed: settings.seed + attempt * 97 });
+            if (BoardUtils.validate(board, true).ok) return board;
+          }
+          return LevelGenerator.firstLevel({ ...settings, width: Math.max(5, settings.width), height: Math.max(5, settings.height) });
+        },
+        firstLevel(settings) {
+          const board = {
+            version: 1,
+            mode: "campaign",
+            level: 1,
+            width: Math.max(5, settings.width || 5),
+            height: Math.max(5, settings.height || 5),
+            containerCapacity: 10,
+            colors: ["red", "blue"],
+            containers: [
+              { id: "container_1", side: "top", slotIndex: 0, loadCell: { x: 1, y: 0 }, blocks: ["red", "red", "red", "blue", "blue", "red", "red", "blue", "blue", "blue"] },
+              { id: "container_2", side: "bottom", slotIndex: 1, loadCell: { x: 3, y: 4 }, blocks: ["blue", "blue", "blue", "red", "red", "blue", "blue", "red", "red", "red"] }
+            ],
+            worms: [
+              { id: "worm_1", length: 4, cells: [{ x: 1, y: 2 }, { x: 2, y: 2 }, { x: 3, y: 2 }, { x: 4, y: 2 }], carriedBlocks: [null, null, null, null] }
+            ],
+            fieldBlocks: [],
+            moves: 0,
+            totalBlocks: 20,
+            won: false
+          };
+          return LevelGenerator.prepare(board);
+        },
+        tryBuild(level, mode, settings) {
+          const rng = new RNG(settings.seed + level * 131);
+          const colors = Blocks.allColors(settings.containerCount);
+          const containers = LevelGenerator.makeContainers(settings, colors, rng);
+          const worms = LevelGenerator.makeWorms(settings, containers, rng);
+          const board = {
+            version: 1,
+            mode,
+            level,
+            width: settings.width,
+            height: settings.height,
+            containerCapacity: settings.containerCapacity,
+            colors,
+            containers,
+            worms,
+            fieldBlocks: [],
+            moves: 0,
+            totalBlocks: containers.reduce((sum, container) => sum + container.blocks.length, 0),
+            won: false
+          };
+          return LevelGenerator.prepare(board);
+        },
+        makeContainers(settings, colors, rng) {
+          const slots = [];
+          const topCount = Math.ceil(settings.containerCount / 2);
+          const bottomCount = settings.containerCount - topCount;
+          for (let i = 0; i < topCount; i++) slots.push({ side: "top", slotIndex: i, x: Math.round((i + 1) * (settings.width - 1) / (topCount + 1)), y: 0 });
+          for (let i = 0; i < bottomCount; i++) slots.push({ side: "bottom", slotIndex: i, x: Math.round((i + 1) * (settings.width - 1) / (bottomCount + 1)), y: settings.height - 1 });
+          const groupCount = settings.preset === "easy" ? 3 : rng.int(3, 5);
+          const groupSizes = LevelGenerator.partitionTen(groupCount, settings.minGroup, settings.maxGroup, rng);
+          const buckets = Array.from({ length: settings.containerCount }, (_, containerIndex) => {
+            const blocks = [];
+            for (let groupIndex = 0; groupIndex < groupSizes.length; groupIndex++) {
+              const color = colors[(containerIndex + groupIndex) % colors.length];
+              blocks.push(...Array(groupSizes[groupIndex]).fill(color));
+            }
+            return blocks;
+          });
+          return slots.map((slot, index) => ({
+            id: `container_${index + 1}`,
+            side: slot.side,
+            slotIndex: slot.slotIndex,
+            loadCell: { x: slot.x, y: slot.y },
+            blocks: buckets[index]
+          }));
+        },
+        partitionTen(groupCount, minGroup, maxGroup, rng) {
+          const total = CONFIG.START_BLOCKS_PER_CONTAINER;
+          const min = Math.max(1, Math.min(minGroup, total));
+          const max = Math.max(min, Math.min(maxGroup, total));
+          const safeCount = Helpers.clamp(groupCount, 2, Math.min(5, total));
+          for (let attempt = 0; attempt < 160; attempt++) {
+            let remaining = total;
+            const sizes = [];
+            for (let i = 0; i < safeCount; i++) {
+              const slotsLeft = safeCount - i - 1;
+              const low = Math.max(min, remaining - slotsLeft * max);
+              const high = Math.min(max, remaining - slotsLeft * min);
+              if (low > high) break;
+              const value = i === safeCount - 1 ? remaining : rng.int(low, high);
+              sizes.push(value);
+              remaining -= value;
+            }
+            if (sizes.length === safeCount && remaining === 0) return sizes;
+          }
+          if (safeCount === 2) return [5, 5];
+          if (safeCount === 3) return [3, 3, 4];
+          if (safeCount === 4) return [2, 3, 2, 3];
+          return [2, 2, 2, 2, 2];
+        },
+        makeWorms(settings, containers, rng) {
+          const loadKeys = new Set(containers.map((container) => Helpers.key(container.loadCell.x, container.loadCell.y)));
+          const occupied = new Set(loadKeys);
+          const worms = [];
+          for (let i = 0; i < settings.wormCount; i++) {
+            const length = rng.int(settings.wormLengthMin, settings.wormLengthMax);
+            let placed = LevelGenerator.growWormPath(settings, occupied, length, rng);
+            if (!placed) placed = LevelGenerator.scanWormPath(settings, occupied, length, rng);
+            if (!placed) placed = [{ x: 0, y: Math.min(settings.height - 1, 1 + i) }];
+            placed.forEach((cell) => occupied.add(Helpers.key(cell.x, cell.y)));
+            worms.push({ id: `worm_${i + 1}`, length, cells: placed, carriedBlocks: Array(length).fill(null) });
+          }
+          return worms;
+        },
+        growWormPath(settings, occupied, length, rng) {
+          for (let attempt = 0; attempt < 240; attempt++) {
+            const start = { x: rng.int(0, settings.width - 1), y: rng.int(0, settings.height - 1) };
+            if (occupied.has(Helpers.key(start.x, start.y))) continue;
+            const path = [start];
+            const local = new Set([Helpers.key(start.x, start.y)]);
+            while (path.length < length) {
+              const current = path[path.length - 1];
+              const dirs = rng.shuffle(Object.values(DIRS));
+              const next = dirs.map((delta) => ({ x: current.x + delta.x, y: current.y + delta.y }))
+                .find((cell) => cell.x >= 0 && cell.y >= 0 && cell.x < settings.width && cell.y < settings.height && !occupied.has(Helpers.key(cell.x, cell.y)) && !local.has(Helpers.key(cell.x, cell.y)));
+              if (!next) break;
+              path.push(next);
+              local.add(Helpers.key(next.x, next.y));
+            }
+            if (path.length === length) return path;
+          }
+          return null;
+        },
+        scanWormPath(settings, occupied, length, rng) {
+          const starts = rng.shuffle(Array.from({ length: settings.width * settings.height }, (_, index) => ({ x: index % settings.width, y: Math.floor(index / settings.width) })));
+          const search = (path, local) => {
+            if (path.length === length) return path;
+            const current = path[path.length - 1];
+            for (const delta of rng.shuffle(Object.values(DIRS))) {
+              const next = { x: current.x + delta.x, y: current.y + delta.y };
+              const key = Helpers.key(next.x, next.y);
+              if (next.x < 0 || next.y < 0 || next.x >= settings.width || next.y >= settings.height || occupied.has(key) || local.has(key)) continue;
+              const result = search(path.concat([next]), new Set([...local, key]));
+              if (result) return result;
+            }
+            return null;
+          };
+          for (const start of starts) {
+            const key = Helpers.key(start.x, start.y);
+            if (occupied.has(key)) continue;
+            const result = search([start], new Set([key]));
+            if (result) return result;
+          }
+          return null;
+        },
+        prepare(board) {
+          for (const worm of board.worms) {
+            worm.length = worm.cells.length;
+            worm.carriedBlocks = (worm.carriedBlocks || []).slice(0, worm.length);
+            while (worm.carriedBlocks.length < worm.length) worm.carriedBlocks.push(null);
+            worm.flash = 0;
+            worm.moveT = 1;
+          }
+          for (const container of board.containers) {
+            container.flash = 0;
+            container.pulse = 0;
+          }
+          board.colors = board.colors.slice(0, board.containers.length);
+          board.totalBlocks = board.totalBlocks || BoardUtils.totalInContainers(board) + board.fieldBlocks.length + BoardUtils.countCarried(board);
+          return board;
+        }
+      };
+
+      // Renderer
+      class Renderer {
+        constructor(canvas, game) {
+          this.canvas = canvas;
+          this.ctx = canvas.getContext("2d");
+          this.game = game;
+          this.dpr = 1;
+          this.layout = { cell: 40, boardX: 0, boardY: 0, top: 0, bottom: 0, containerRects: new Map() };
+          window.addEventListener("resize", () => this.resize());
+          this.resize();
+        }
+        resize() {
+          const rect = this.canvas.getBoundingClientRect();
+          this.dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+          this.canvas.width = Math.max(1, Math.floor(rect.width * this.dpr));
+          this.canvas.height = Math.max(1, Math.floor(rect.height * this.dpr));
+          this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+          this.computeLayout();
+        }
+        computeLayout() {
+          const board = this.game.board || { width: 6, height: 6 };
+          const rect = this.canvas.getBoundingClientRect();
+          const containerCount = board.containers?.length || 2;
+          const topCount = Math.ceil(containerCount / 2);
+          const bottomCount = containerCount - topCount;
+          const maxSideCount = Math.max(1, topCount, bottomCount);
+          const containerW = Math.max(54, Math.min(96, (rect.width - 28) / maxSideCount - 8));
+          const containerH = Math.max(38, Math.min(56, containerW * 0.58));
+          const gap = 10;
+          const top = topCount ? containerH + gap + 18 : 18;
+          const bottom = bottomCount ? containerH + gap + 18 : 18;
+          const cell = Math.max(18, Math.min((rect.width - 32) / board.width, (rect.height - top - bottom - 24) / board.height));
+          const boardW = board.width * cell;
+          const boardH = board.height * cell;
+          this.layout = {
+            cell,
+            boardX: (rect.width - boardW) / 2,
+            boardY: top + Math.max(0, (rect.height - top - bottom - boardH) / 2),
+            top,
+            bottom,
+            containerW,
+            containerH,
+            containerGap: gap,
+            containerRects: new Map()
+          };
+        }
+        cellRect(cell) {
+          const l = this.layout;
+          return { x: l.boardX + cell.x * l.cell, y: l.boardY + cell.y * l.cell, w: l.cell, h: l.cell };
+        }
+        cellCenter(cell) {
+          const rect = this.cellRect(cell);
+          return { x: rect.x + rect.w / 2, y: rect.y + rect.h / 2 };
+        }
+        screenToCell(clientX, clientY) {
+          const rect = this.canvas.getBoundingClientRect();
+          const x = clientX - rect.left;
+          const y = clientY - rect.top;
+          const cx = Math.floor((x - this.layout.boardX) / this.layout.cell);
+          const cy = Math.floor((y - this.layout.boardY) / this.layout.cell);
+          return { x: cx, y: cy };
+        }
+        hitContainer(clientX, clientY) {
+          const rect = this.canvas.getBoundingClientRect();
+          const x = clientX - rect.left;
+          const y = clientY - rect.top;
+          for (const [id, box] of this.layout.containerRects.entries()) {
+            if (x >= box.x && y >= box.y && x <= box.x + box.w && y <= box.y + box.h) return id;
+          }
+          return null;
+        }
+        draw() {
+          this.computeLayout();
+          const ctx = this.ctx;
+          const rect = this.canvas.getBoundingClientRect();
+          ctx.clearRect(0, 0, rect.width, rect.height);
+          if (!this.game.board) return;
+          this.drawBoard();
+          this.drawContainers();
+          this.drawBlocks();
+          this.drawWorms();
+        }
+        drawBoard() {
+          const ctx = this.ctx;
+          const board = this.game.board;
+          const l = this.layout;
+          ctx.save();
+          ctx.fillStyle = "rgba(255,255,255,.6)";
+          this.roundRect(l.boardX - 8, l.boardY - 8, board.width * l.cell + 16, board.height * l.cell + 16, 18);
+          ctx.fill();
+          for (let y = 0; y < board.height; y++) {
+            for (let x = 0; x < board.width; x++) {
+              const r = this.cellRect({ x, y });
+              ctx.fillStyle = (x + y) % 2 ? "rgba(237,245,255,.72)" : "rgba(255,255,255,.82)";
+              this.roundRect(r.x + 2, r.y + 2, r.w - 4, r.h - 4, Math.min(10, r.w * .22));
+              ctx.fill();
+            }
+          }
+          for (const container of board.containers) {
+            const r = this.cellRect(container.loadCell);
+            const can = board.worms.some((worm) => Containers.canReceiveFromWorm(board, container, worm));
+            ctx.fillStyle = can ? "rgba(53,185,120,.25)" : "rgba(36,101,167,.16)";
+            ctx.strokeStyle = can ? "rgba(53,185,120,.9)" : "rgba(36,101,167,.42)";
+            ctx.lineWidth = 2;
+            this.roundRect(r.x + 7, r.y + 7, r.w - 14, r.h - 14, 9);
+            ctx.fill();
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+        drawContainers() {
+          const ctx = this.ctx;
+          const board = this.game.board;
+          const l = this.layout;
+          l.containerRects.clear();
+          for (const container of board.containers) {
+            const center = this.cellCenter(container.loadCell);
+            const w = Math.max(48, Math.min(l.containerW, l.cell * 1.65));
+            const h = Math.max(34, Math.min(l.containerH, l.cell * 1.02));
+            const canvasRect = this.canvas.getBoundingClientRect();
+            const x = Math.max(8, Math.min(center.x - w / 2, canvasRect.width - w - 8));
+            const topY = Math.max(8, l.boardY - h - l.containerGap);
+            const bottomY = Math.min(canvasRect.height - h - 8, l.boardY + board.height * l.cell + l.containerGap);
+            const y = container.side === "top" ? topY : bottomY;
+            l.containerRects.set(container.id, { x, y, w, h });
+            const danger = container.flash > 0;
+            ctx.save();
+            ctx.fillStyle = danger ? "rgba(255,104,117,.22)" : "rgba(255,255,255,.88)";
+            ctx.strokeStyle = danger ? "rgba(255,104,117,.9)" : "rgba(24,49,79,.15)";
+            ctx.lineWidth = 2;
+            this.roundRect(x, y, w, h, 16);
+            ctx.fill();
+            ctx.stroke();
+            const blocks = container.blocks.slice(0, 10);
+            const pad = 8;
+            const bw = Math.max(8, (w - pad * 2) / Math.max(10, board.containerCapacity));
+            for (let i = 0; i < blocks.length; i++) {
+              ctx.fillStyle = Blocks.color(blocks[i]);
+              const bx = x + pad + i * bw;
+              const bh = h - pad * 2;
+              this.roundRect(bx + 1, y + pad, Math.max(4, bw - 2), bh, 5);
+              ctx.fill();
+            }
+            ctx.fillStyle = "rgba(24,49,79,.76)";
+            ctx.font = "700 11px Trebuchet MS";
+            ctx.textAlign = "center";
+            ctx.fillText(String(container.blocks.length), x + w / 2, y + h + (container.side === "top" ? -7 : 13));
+            const lp = this.cellCenter(container.loadCell);
+            ctx.strokeStyle = "rgba(36,101,167,.38)";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x + w / 2, container.side === "top" ? y + h : y);
+            ctx.lineTo(lp.x, lp.y);
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
+        drawBlocks() {
+          const ctx = this.ctx;
+          const board = this.game.board;
+          for (const block of board.fieldBlocks) {
+            const r = this.cellRect(block);
+            const pad = Math.max(5, r.w * .18);
+            ctx.save();
+            ctx.fillStyle = Blocks.color(block.color);
+            ctx.shadowColor = "rgba(24,49,79,.18)";
+            ctx.shadowBlur = 9;
+            ctx.shadowOffsetY = 5;
+            this.roundRect(r.x + pad, r.y + pad, r.w - pad * 2, r.h - pad * 2, 8);
+            ctx.fill();
+            ctx.restore();
+          }
+        }
+        drawWorms() {
+          const ctx = this.ctx;
+          const board = this.game.board;
+          for (const worm of board.worms) {
+            const selected = this.game.state.selection?.id === worm.id;
+            const centers = worm.cells.map((cell) => this.cellCenter(cell));
+            ctx.save();
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.strokeStyle = worm.flash > 0 ? "rgba(255,104,117,.9)" : selected ? "rgba(36,101,167,.9)" : "rgba(160,176,195,.85)";
+            ctx.lineWidth = this.layout.cell * .52;
+            ctx.beginPath();
+            centers.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
+            ctx.stroke();
+            ctx.strokeStyle = "rgba(255,255,255,.58)";
+            ctx.lineWidth = this.layout.cell * .34;
+            ctx.beginPath();
+            centers.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
+            ctx.stroke();
+            for (let i = 0; i < centers.length; i++) {
+              const p = centers[i];
+              ctx.fillStyle = worm.flash > 0 ? "#ffccd1" : "#eef3f9";
+              ctx.strokeStyle = selected ? "rgba(36,101,167,.55)" : "rgba(24,49,79,.08)";
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, this.layout.cell * .32, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.stroke();
+              if (worm.carriedBlocks[i]) {
+                ctx.fillStyle = Blocks.color(worm.carriedBlocks[i]);
+                this.roundRect(p.x - this.layout.cell * .16, p.y - this.layout.cell * .16, this.layout.cell * .32, this.layout.cell * .32, 6);
+                ctx.fill();
+              }
+            }
+            const head = centers[centers.length - 1];
+            ctx.fillStyle = "rgba(24,49,79,.55)";
+            ctx.beginPath();
+            ctx.arc(head.x - this.layout.cell * .09, head.y - this.layout.cell * .05, Math.max(2, this.layout.cell * .035), 0, Math.PI * 2);
+            ctx.arc(head.x + this.layout.cell * .09, head.y - this.layout.cell * .05, Math.max(2, this.layout.cell * .035), 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+        }
+        roundRect(x, y, w, h, r) {
+          const ctx = this.ctx;
+          const radius = Math.min(r, w / 2, h / 2);
+          ctx.beginPath();
+          ctx.moveTo(x + radius, y);
+          ctx.lineTo(x + w - radius, y);
+          ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+          ctx.lineTo(x + w, y + h - radius);
+          ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+          ctx.lineTo(x + radius, y + h);
+          ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+          ctx.lineTo(x, y + radius);
+          ctx.quadraticCurveTo(x, y, x + radius, y);
+        }
+      }
+
+      // UI, Input, DebugTools
+      class Game {
+        constructor() {
+          this.refs = {};
+          for (const id of ["gameCanvas","menuScreen","victoryScreen","campaignButton","sandboxButton","menuUnlocked","hudLevel","hudMoves","hudSorted","hudWorms","restartButton","menuButton","debugButton","hintLine","selectionMeta","containerList","containerBadge","validityBadge","debugStats","selectedBox","wormBadge","tailButton","headButton","designerPanel","fieldWidthInput","fieldHeightInput","wormCountInput","wormLengthMinInput","wormLengthMaxInput","containerCountInput","colorCountInput","containerCapacityInput","totalBlocksInput","minGroupInput","maxGroupInput","seedInput","presetInput","generateButton","designerRestartButton","exportButton","importButton","jsonBox","toastStack","nextButton","victoryRestartButton","victoryMenuButton","victoryMoves","victorySorted"]) {
+            this.refs[id] = document.getElementById(id);
+          }
+          this.board = null;
+          this.initialBoard = null;
+          this.state = {
+            mode: "menu",
+            level: 1,
+            selection: null,
+            selectedEnd: "head",
+            screen: "menu",
+            keyDirection: null,
+            keyCooldown: 0,
+            pointer: null,
+            pointerBoard: null,
+            dragging: false,
+            dragDistance: 0,
+            pointerStepCooldown: 0,
+            designerOpen: false
+          };
+          this.toasts = [];
+          this.sandboxSettings = LevelGenerator.normalize({ width: 7, height: 7, wormCount: 2, wormLengthMin: 3, wormLengthMax: 4, containerCount: 3, containerCapacity: 10, totalBlocks: 30, minGroup: 2, maxGroup: 4, seed: 12345, preset: "normal" }, "sandbox");
+          this.renderer = new Renderer(this.refs.gameCanvas, this);
+          this.bind();
+          this.fillDesigner(this.sandboxSettings);
+          this.updateUI();
+          requestAnimationFrame((time) => this.loop(time));
+        }
+        bind() {
+          this.refs.campaignButton.addEventListener("click", () => this.startCampaign(Save.data.unlockedLevel || 1));
+          this.refs.sandboxButton.addEventListener("click", () => this.startSandbox());
+          this.refs.restartButton.addEventListener("click", () => this.restart());
+          this.refs.menuButton.addEventListener("click", () => this.showMenu());
+          this.refs.debugButton.addEventListener("click", () => this.toggleDesigner());
+          this.refs.generateButton.addEventListener("click", () => this.generateSandbox());
+          this.refs.designerRestartButton.addEventListener("click", () => this.restart());
+          this.refs.exportButton.addEventListener("click", () => this.exportJSON());
+          this.refs.importButton.addEventListener("click", () => this.importJSON());
+          this.refs.nextButton.addEventListener("click", () => this.nextLevel());
+          this.refs.victoryRestartButton.addEventListener("click", () => this.restart());
+          this.refs.victoryMenuButton.addEventListener("click", () => this.showMenu());
+          this.refs.tailButton.addEventListener("click", () => this.setEnd("tail"));
+          this.refs.headButton.addEventListener("click", () => this.setEnd("head"));
+          document.querySelectorAll("[data-dir]").forEach((button) => button.addEventListener("click", () => this.stepSelected(button.dataset.dir)));
+          this.refs.containerCountInput.addEventListener("input", () => {
+            this.refs.colorCountInput.value = this.refs.containerCountInput.value;
+            this.refs.totalBlocksInput.value = Number(this.refs.containerCountInput.value || 0) * CONFIG.START_BLOCKS_PER_CONTAINER;
+          });
+          this.refs.gameCanvas.addEventListener("pointerdown", (event) => this.onPointerDown(event));
+          this.refs.gameCanvas.addEventListener("pointermove", (event) => this.onPointerMove(event));
+          this.refs.gameCanvas.addEventListener("pointerup", (event) => this.onPointerUp(event));
+          this.refs.gameCanvas.addEventListener("pointercancel", (event) => this.onPointerUp(event));
+          this.refs.gameCanvas.addEventListener("pointerleave", (event) => this.onPointerUp(event));
+          window.addEventListener("keydown", (event) => this.onKeyDown(event));
+          window.addEventListener("keyup", (event) => this.onKeyUp(event));
+        }
+        loop(time) {
+          const dt = Math.min(0.05, (time - (this.lastTime || time)) / 1000);
+          this.lastTime = time;
+          this.tick(dt);
+          this.renderer.draw();
+          requestAnimationFrame((next) => this.loop(next));
+        }
+        tick(dt) {
+          if (this.board) {
+            for (const worm of this.board.worms) {
+              worm.flash = Math.max(0, (worm.flash || 0) - dt);
+              worm.moveT = Math.min(1, (worm.moveT || 1) + dt * 9);
+            }
+            for (const container of this.board.containers) {
+              container.flash = Math.max(0, (container.flash || 0) - dt);
+              container.pulse = Math.max(0, (container.pulse || 0) - dt * 3);
+            }
+            if (this.board.victoryPending) {
+              this.board.victoryPending -= dt;
+              if (this.board.victoryPending <= 0 && this.state.screen === "gameplay") this.showVictory();
+            }
+          }
+          for (const toast of this.toasts) toast.life -= dt;
+          const before = this.toasts.length;
+          this.toasts = this.toasts.filter((toast) => toast.life > 0);
+          if (before !== this.toasts.length) this.renderToasts();
+          this.updatePointerDrag(dt);
+          if (this.state.keyDirection && this.state.keyCooldown <= 0 && this.state.screen === "gameplay") {
+            const moved = this.stepSelected(this.state.keyDirection, { suppressSelectionToast: true, silentBlocked: true });
+            this.state.keyCooldown = moved ? CONFIG.INPUT.keyboardStepInterval : CONFIG.INPUT.keyboardStepInterval * 0.7;
+          }
+          this.state.keyCooldown = Math.max(0, this.state.keyCooldown - dt);
+        }
+        startCampaign(level) {
+          const safeLevel = Helpers.clamp(level, 1, CONFIG.MAX_CAMPAIGN_LEVEL);
+          this.board = LevelGenerator.build(safeLevel, "campaign", Campaign.settings(safeLevel));
+          this.initialBoard = Helpers.clone(this.board);
+          this.state = { ...this.state, mode: "campaign", level: safeLevel, screen: "gameplay", selection: { id: this.board.worms[0].id }, selectedEnd: "head" };
+          this.refs.menuScreen.classList.add("hidden");
+          this.refs.victoryScreen.classList.add("hidden");
+          this.toast(Campaign.hint(safeLevel), "success");
+          this.updateUI();
+        }
+        startSandbox() {
+          this.generateSandbox();
+          this.state.mode = "sandbox";
+          this.state.level = 0;
+          this.refs.menuScreen.classList.add("hidden");
+          this.refs.victoryScreen.classList.add("hidden");
+          this.toast("Sandbox level generated.", "success");
+          this.updateUI();
+        }
+        generateSandbox() {
+          this.sandboxSettings = this.readDesigner();
+          this.board = LevelGenerator.build(0, "sandbox", this.sandboxSettings);
+          this.initialBoard = Helpers.clone(this.board);
+          this.state = { ...this.state, mode: "sandbox", level: 0, screen: "gameplay", selection: { id: this.board.worms[0].id }, selectedEnd: "head" };
+          this.refs.menuScreen.classList.add("hidden");
+          this.refs.victoryScreen.classList.add("hidden");
+          this.updateUI();
+        }
+        restart() {
+          if (!this.initialBoard) return;
+          this.board = LevelGenerator.prepare(Helpers.clone(this.initialBoard));
+          this.board.won = false;
+          this.state.screen = "gameplay";
+          this.refs.victoryScreen.classList.add("hidden");
+          this.state.selection = this.board.worms[0] ? { id: this.board.worms[0].id } : null;
+          this.toast("Restarted.", "success");
+          this.updateUI();
+        }
+        nextLevel() {
+          if (this.state.mode !== "campaign") {
+            this.startSandbox();
+            return;
+          }
+          this.startCampaign(Math.min(CONFIG.MAX_CAMPAIGN_LEVEL, this.state.level + 1));
+        }
+        showMenu() {
+          this.state.screen = "menu";
+          this.refs.menuScreen.classList.remove("hidden");
+          this.refs.victoryScreen.classList.add("hidden");
+          this.updateUI();
+        }
+        showVictory() {
+          this.state.screen = "victory";
+          const info = BoardUtils.sortedInfo(this.board);
+          this.refs.victoryMoves.textContent = String(this.board.moves || 0);
+          this.refs.victorySorted.textContent = `${info.sorted} / ${info.total}`;
+          this.refs.nextButton.disabled = this.state.mode === "campaign" && this.state.level >= CONFIG.MAX_CAMPAIGN_LEVEL;
+          if (this.state.mode === "campaign") Save.unlock(Math.min(CONFIG.MAX_CAMPAIGN_LEVEL, this.state.level + 1));
+          this.refs.victoryScreen.classList.remove("hidden");
+          this.updateUI();
+        }
+        onPointerDown(event) {
+          if (!this.board || this.state.screen !== "gameplay") return;
+          event.preventDefault();
+          const containerId = this.renderer.hitContainer(event.clientX, event.clientY);
+          if (containerId) {
+            const container = this.board.containers.find((item) => item.id === containerId);
+            if (container) this.tapContainer(container);
+            return;
+          }
+          const cell = this.updatePointerBoard(event);
+          if (!BoardUtils.inside(this.board, cell.x, cell.y)) return;
+          const hit = this.findWormCell(cell);
+          if (hit) {
+            const selectionBefore = this.state.selection?.id || null;
+            this.state.selection = { id: hit.worm.id };
+            this.state.selectedEnd = this.pickEndForCell(hit.worm, cell);
+            this.state.pointer = {
+              id: event.pointerId,
+              startX: event.clientX,
+              startY: event.clientY,
+              hitId: hit.worm.id,
+              cell,
+              selectionBefore
+            };
+            this.state.dragging = false;
+            this.state.dragDistance = 0;
+            this.state.pointerStepCooldown = 0;
+            try { this.refs.gameCanvas.setPointerCapture(event.pointerId); } catch (error) {}
+            this.updateUI();
+            return;
+          }
+          const worm = this.getSelectedWorm();
+          if (!worm) return;
+          const head = worm.cells[worm.cells.length - 1];
+          const tail = worm.cells[0];
+          for (const [dir, delta] of Object.entries(DIRS)) {
+            if (this.state.selectedEnd === "head" && head.x + delta.x === cell.x && head.y + delta.y === cell.y) this.stepSelected(dir);
+            if (this.state.selectedEnd === "tail" && tail.x + delta.x === cell.x && tail.y + delta.y === cell.y) this.stepSelected(dir);
+          }
+        }
+        onPointerMove(event) {
+          if (!this.state.pointer || this.state.pointer.id !== event.pointerId || !this.board || this.state.screen !== "gameplay") return;
+          event.preventDefault();
+          this.updatePointerBoard(event);
+          this.state.dragDistance = Math.abs(event.clientX - this.state.pointer.startX) + Math.abs(event.clientY - this.state.pointer.startY);
+          if (this.state.dragDistance > CONFIG.INPUT.dragThreshold) this.state.dragging = true;
+        }
+        onPointerUp(event) {
+          if (!this.state.pointer || this.state.pointer.id !== event.pointerId) return;
+          event.preventDefault();
+          const pointer = this.state.pointer;
+          try { this.refs.gameCanvas.releasePointerCapture(event.pointerId); } catch (error) {}
+          const wasDragging = this.state.dragging;
+          this.state.pointer = null;
+          this.state.pointerBoard = null;
+          this.state.dragging = false;
+          this.state.dragDistance = 0;
+          this.state.pointerStepCooldown = 0;
+          if (!wasDragging && this.board && this.state.screen === "gameplay") {
+            const worm = this.board.worms.find((candidate) => candidate.id === pointer.hitId);
+            if (worm) {
+              if (pointer.selectionBefore === worm.id) this.state.selectedEnd = this.state.selectedEnd === "head" ? "tail" : "head";
+              else this.state.selection = { id: worm.id };
+              this.updateUI();
+            }
+          }
+        }
+        onKeyDown(event) {
+          if (this.state.screen !== "gameplay") return;
+          const key = event.key.toLowerCase();
+          const map = { arrowup: "up", w: "up", arrowdown: "down", s: "down", arrowleft: "left", a: "left", arrowright: "right", d: "right" };
+          if (map[key]) {
+            event.preventDefault();
+            if (event.repeat && this.state.keyDirection === map[key]) return;
+            this.state.keyDirection = map[key];
+            this.state.keyCooldown = 0;
+            this.stepSelected(map[key], { suppressSelectionToast: true, silentBlocked: true });
+          } else if (event.key === "Tab") {
+            event.preventDefault();
+            this.cycleWorm();
+          } else if (key === "q" || key === "e") {
+            this.setEnd(this.state.selectedEnd === "head" ? "tail" : "head");
+          } else if (key === "g") {
+            this.toggleDesigner();
+          }
+        }
+        onKeyUp(event) {
+          const key = event.key.toLowerCase();
+          const map = { arrowup: "up", w: "up", arrowdown: "down", s: "down", arrowleft: "left", a: "left", arrowright: "right", d: "right" };
+          if (map[key] && this.state.keyDirection === map[key]) this.state.keyDirection = null;
+        }
+        tapContainer(container) {
+          const result = Containers.eject(this.board, container);
+          if (result.moved) {
+            this.board.moves++;
+            this.toast(`Released ${result.moved} ${result.color} block${result.moved === 1 ? "" : "s"}.`, "success");
+          } else {
+            this.toast("No room beside that container.", "warn");
+          }
+          this.afterAction();
+        }
+        updatePointerBoard(event) {
+          const cell = this.renderer.screenToCell(event.clientX, event.clientY);
+          this.state.pointerBoard = BoardUtils.inside(this.board, cell.x, cell.y)
+            ? { x: cell.x + 0.5, y: cell.y + 0.5 }
+            : null;
+          return cell;
+        }
+        getDesiredPointerStep() {
+          if (!this.state.dragging || !this.state.pointerBoard || this.state.dragDistance <= CONFIG.INPUT.dragThreshold) return null;
+          if (!this.board || this.state.screen !== "gameplay") return null;
+          const worm = this.getSelectedWorm();
+          if (!worm) return null;
+          const activeEnd = this.state.selectedEnd;
+          const current = activeEnd === "head" ? worm.cells[worm.cells.length - 1] : worm.cells[0];
+          let bestDirection = null;
+          let bestDistance = Helpers.dist(this.state.pointerBoard.x, this.state.pointerBoard.y, current.x + 0.5, current.y + 0.5);
+          for (const [direction, delta] of Object.entries(DIRS)) {
+            const nextCell = { x: current.x + delta.x, y: current.y + delta.y };
+            const test = Worms.canStep(this.board, worm, activeEnd, nextCell);
+            if (!test.ok) continue;
+            const distance = Helpers.dist(this.state.pointerBoard.x, this.state.pointerBoard.y, nextCell.x + 0.5, nextCell.y + 0.5);
+            if (distance < bestDistance - CONFIG.INPUT.pointerBias) {
+              bestDistance = distance;
+              bestDirection = direction;
+            }
+          }
+          return bestDirection;
+        }
+        updatePointerDrag(dt) {
+          this.state.pointerStepCooldown = Math.max(0, this.state.pointerStepCooldown - dt);
+          const direction = this.getDesiredPointerStep();
+          if (!direction || this.state.pointerStepCooldown > 0) return;
+          const moved = this.stepSelected(direction, { suppressSelectionToast: true, silentBlocked: true });
+          this.state.pointerStepCooldown = moved ? CONFIG.INPUT.pointerStepInterval : CONFIG.INPUT.pointerStepInterval * 0.6;
+        }
+        stepSelected(direction, options = {}) {
+          if (typeof options === "boolean") options = { suppressSelectionToast: options, silentBlocked: options };
+          const worm = this.getSelectedWorm();
+          if (!worm) {
+            if (!options.suppressSelectionToast) this.toast("Select a worm first.", "warn");
+            return false;
+          }
+          const result = Worms.step(this.board, worm, this.state.selectedEnd, direction);
+          if (!result.ok) {
+            worm.flash = CONFIG.ANIM.flash;
+            if (!options.silentBlocked) this.toast(result.reason === "full" ? "Full worm cannot pass through a block." : "Cannot move there.", "warn");
+            return false;
+          }
+          if (result.picked) this.toast(`Picked up ${result.picked}.`, "success");
+          this.tryAutoUnload(worm);
+          this.afterAction();
+          return true;
+        }
+        tryAutoUnload(worm) {
+          for (const container of this.board.containers) {
+            if (!worm.cells.some((cell) => Helpers.same(cell, container.loadCell))) continue;
+            const result = Containers.unload(this.board, container, worm);
+            if (result.moved) this.toast(`Loaded ${result.moved} ${result.color}.`, "success");
+          }
+        }
+        afterAction() {
+          if (BoardUtils.isComplete(this.board) && !this.board.won) {
+            this.board.won = true;
+            this.board.victoryPending = CONFIG.ANIM.victoryDelay;
+            this.toast("All colors sorted.", "success");
+          }
+          this.updateUI();
+        }
+        findWormCell(cell) {
+          for (const worm of this.board.worms) {
+            const index = worm.cells.findIndex((part) => Helpers.same(part, cell));
+            if (index >= 0) return { worm, index };
+          }
+          return null;
+        }
+        pickEndForCell(worm, cell) {
+          const tail = worm.cells[0];
+          const head = worm.cells[worm.cells.length - 1];
+          return Helpers.manhattan(tail, cell) <= Helpers.manhattan(head, cell) ? "tail" : "head";
+        }
+        getSelectedWorm() {
+          return this.board?.worms.find((worm) => worm.id === this.state.selection?.id) || null;
+        }
+        setEnd(end) {
+          this.state.selectedEnd = end;
+          this.updateUI();
+        }
+        cycleWorm() {
+          if (!this.board?.worms.length) return;
+          const index = this.board.worms.findIndex((worm) => worm.id === this.state.selection?.id);
+          const next = this.board.worms[(index + 1 + this.board.worms.length) % this.board.worms.length];
+          this.state.selection = { id: next.id };
+          this.state.selectedEnd = "head";
+          this.updateUI();
+        }
+        fillDesigner(settings) {
+          this.refs.fieldWidthInput.value = settings.width;
+          this.refs.fieldHeightInput.value = settings.height;
+          this.refs.wormCountInput.value = settings.wormCount;
+          this.refs.wormLengthMinInput.value = settings.wormLengthMin;
+          this.refs.wormLengthMaxInput.value = settings.wormLengthMax;
+          this.refs.containerCountInput.value = settings.containerCount;
+          this.refs.colorCountInput.value = settings.containerCount;
+          this.refs.containerCapacityInput.value = settings.containerCapacity;
+          this.refs.totalBlocksInput.value = settings.totalBlocks;
+          this.refs.minGroupInput.value = settings.minGroup;
+          this.refs.maxGroupInput.value = settings.maxGroup;
+          this.refs.seedInput.value = settings.seed;
+          this.refs.presetInput.value = settings.preset;
+        }
+        readDesigner() {
+          return LevelGenerator.normalize({
+            width: this.refs.fieldWidthInput.value,
+            height: this.refs.fieldHeightInput.value,
+            wormCount: this.refs.wormCountInput.value,
+            wormLengthMin: this.refs.wormLengthMinInput.value,
+            wormLengthMax: this.refs.wormLengthMaxInput.value,
+            containerCount: this.refs.containerCountInput.value,
+            containerCapacity: this.refs.containerCapacityInput.value,
+            totalBlocks: this.refs.totalBlocksInput.value,
+            minGroup: this.refs.minGroupInput.value,
+            maxGroup: this.refs.maxGroupInput.value,
+            seed: this.refs.seedInput.value,
+            preset: this.refs.presetInput.value
+          }, "sandbox");
+        }
+        toggleDesigner() {
+          this.state.designerOpen = !this.state.designerOpen;
+          this.refs.designerPanel.classList.toggle("hidden", !this.state.designerOpen);
+        }
+        exportJSON() {
+          if (!this.board) return;
+          const clean = Helpers.clone(this.board);
+          for (const container of clean.containers) delete container.flash;
+          for (const worm of clean.worms) {
+            delete worm.flash;
+            delete worm.moveT;
+            delete worm.prevCells;
+          }
+          this.refs.jsonBox.value = JSON.stringify({ type: "worm_sort_level", level: clean }, null, 2);
+          this.toast("JSON exported.", "success");
+        }
+        importJSON() {
+          try {
+            const parsed = JSON.parse(this.refs.jsonBox.value);
+            const level = parsed.level || parsed;
+            if (!level || !Array.isArray(level.containers) || !Array.isArray(level.worms)) throw new Error("Missing level data");
+            const prepared = LevelGenerator.prepare(level);
+            const validity = BoardUtils.validate(prepared, true);
+            if (!validity.ok) throw new Error(validity.issues[0]);
+            this.board = prepared;
+            this.initialBoard = Helpers.clone(prepared);
+            this.state.mode = prepared.mode || "sandbox";
+            this.state.level = prepared.level || 0;
+            this.state.screen = "gameplay";
+            this.state.selection = prepared.worms[0] ? { id: prepared.worms[0].id } : null;
+            this.refs.menuScreen.classList.add("hidden");
+            this.refs.victoryScreen.classList.add("hidden");
+            this.toast("JSON imported.", "success");
+            this.updateUI();
+          } catch (error) {
+            this.toast(`Import failed: ${error.message}`, "warn");
+          }
+        }
+        updateUI() {
+          const board = this.board;
+          this.refs.menuUnlocked.textContent = String(Save.data.unlockedLevel || 1);
+          this.refs.hudLevel.textContent = board ? (this.state.mode === "campaign" ? String(this.state.level) : "Free") : "-";
+          this.refs.hudMoves.textContent = board ? String(board.moves || 0) : "0";
+          const info = BoardUtils.sortedInfo(board);
+          this.refs.hudSorted.textContent = `${info.sorted} / ${info.total}`;
+          this.refs.hudWorms.textContent = board ? String(board.worms.length) : "0";
+          this.refs.hintLine.textContent = board ? (this.state.mode === "campaign" ? Campaign.hint(this.state.level) : "Sandbox: tune settings, generate, then test the board immediately.") : "Choose Campaign or Sandbox from the menu.";
+          this.renderContainers();
+          this.renderSelection();
+          this.renderStats();
+          this.renderToasts();
+        }
+        renderContainers() {
+          if (!this.board) {
+            this.refs.containerBadge.textContent = "0";
+            this.refs.containerList.innerHTML = "";
+            return;
+          }
+          this.refs.containerBadge.textContent = `${this.board.containers.length}`;
+          this.refs.containerList.innerHTML = this.board.containers.map((container, index) => {
+            const single = container.blocks.length && container.blocks.every((block) => block === container.blocks[0]);
+            return `<div class="item ${single ? "done" : ""}">
+              <div class="itemTop"><span>Container ${index + 1}</span><span class="tag">${container.blocks.length} / ${this.board.containerCapacity}</span></div>
+              <div class="swatches">${container.blocks.map((color) => `<span class="swatch" style="background:${Blocks.color(color)}"></span>`).join("")}</div>
+              <div class="muted">${this.escape(Helpers.groupText(container.blocks))}</div>
+              <div class="muted">Loading point: ${container.loadCell.x}, ${container.loadCell.y}</div>
+            </div>`;
+          }).join("");
+        }
+        renderSelection() {
+          const worm = this.getSelectedWorm();
+          this.refs.wormBadge.textContent = this.board ? `${this.board.worms.length} worms` : "0 worms";
+          this.refs.tailButton.classList.toggle("accent", this.state.selectedEnd === "tail");
+          this.refs.headButton.classList.toggle("accent", this.state.selectedEnd === "head");
+          if (!worm) {
+            this.refs.selectionMeta.textContent = "No worm selected";
+            this.refs.selectedBox.innerHTML = `<p class="muted">Tap a worm, then move it with buttons, WASD, or arrow keys.</p>`;
+            return;
+          }
+          const carried = worm.carriedBlocks.filter(Boolean).length;
+          this.refs.selectionMeta.textContent = `Selected ${worm.id.replace("_", " ")} from ${this.state.selectedEnd}`;
+          this.refs.selectedBox.innerHTML = `
+            <div class="itemTop"><span>${worm.length} segments</span><span class="tag">${carried} / ${worm.length}</span></div>
+            <div class="swatches">${worm.carriedBlocks.map((color) => `<span class="swatch" style="background:${color ? Blocks.color(color) : "#dfe8f3"}"></span>`).join("")}</div>
+            <p class="muted">${carried ? "Carrying blocks. Step onto a matching loading point to unload." : "Empty. Step onto blocks to pick them up."}</p>
+          `;
+        }
+        renderStats() {
+          if (!this.board) {
+            this.refs.validityBadge.textContent = "Ready";
+            this.refs.debugStats.innerHTML = "";
+            return;
+          }
+          const validity = BoardUtils.validate(this.board, false);
+          this.refs.validityBadge.textContent = this.board.colors.length === this.board.containers.length ? "colors == containers" : "check setup";
+          this.refs.debugStats.innerHTML = `
+            <div class="item ${validity.ok ? "done" : "warn"}">
+              <div class="itemTop"><span>Level validity</span><span class="tag">${validity.ok ? "OK" : "Check"}</span></div>
+              <div class="muted">${validity.ok ? "Colors match containers and loading points are usable." : this.escape(validity.issues.join(", "))}</div>
+            </div>
+            <div class="item">
+              <div class="itemTop"><span>Field blocks</span><span class="tag">${this.board.fieldBlocks.length}</span></div>
+              <div class="muted">Loose blocks currently on the grid.</div>
+            </div>
+            <div class="item">
+              <div class="itemTop"><span>Blocks inside worms</span><span class="tag">${BoardUtils.countCarried(this.board)}</span></div>
+              <div class="muted">Capacity equals segment count.</div>
+            </div>
+          `;
+        }
+        renderToasts() {
+          this.refs.toastStack.innerHTML = this.toasts.map((toast) => `<div class="toast ${toast.tone === "warn" ? "warn" : toast.tone === "success" ? "success" : ""}">${this.escape(toast.text)}</div>`).join("");
+        }
+        toast(text, tone = "info") {
+          this.toasts.unshift({ text, tone, life: CONFIG.ANIM.toast });
+          this.toasts = this.toasts.slice(0, 4);
+          this.renderToasts();
+        }
+        escape(value) {
+          return String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+        }
+      }
+
+      Save.load();
+      window.WormSort = new Game();
+    })();
+  </script>
+</body>
+</html>

@@ -102,6 +102,13 @@
         radial-gradient(circle at 78% 74%, rgba(90,135,255,.18), transparent 24%),
         linear-gradient(180deg,#fff9ef,#eef7ff);
     }
+    .preview.wormSort{
+      background:
+        linear-gradient(90deg,rgba(20,48,84,.06) 0 1px,transparent 1px),
+        linear-gradient(180deg,rgba(20,48,84,.06) 0 1px,transparent 1px),
+        linear-gradient(180deg,#f8fbff,#fff7ea);
+      background-size:30px 30px,30px 30px,100% 100%;
+    }
     .preview.fortress{
       background:
         radial-gradient(circle at 22% 22%, rgba(255,186,94,.28), transparent 20%),
@@ -202,6 +209,41 @@
     .wormSeg.blue{background:#5a87ff}
     .wormSeg.red{background:#ff6c79}
     .wormSeg.green{background:#4ecb90}
+    .sortContainer,.sortBlock,.sortWorm,.sortLoad{
+      position:absolute;
+    }
+    .sortContainer{
+      width:70px;
+      height:34px;
+      border-radius:14px;
+      background:rgba(255,255,255,.86);
+      border:1px solid rgba(20,48,84,.1);
+      box-shadow:0 10px 20px rgba(24,49,79,.08);
+      display:flex;
+      align-items:stretch;
+      gap:3px;
+      padding:7px;
+    }
+    .sortBlock{
+      width:16px;
+      height:16px;
+      border-radius:5px;
+      box-shadow:0 7px 14px rgba(24,49,79,.12);
+    }
+    .sortLoad{
+      width:20px;
+      height:20px;
+      border-radius:8px;
+      background:rgba(36,101,167,.14);
+      border:2px solid rgba(36,101,167,.34);
+    }
+    .sortWorm{
+      height:24px;
+      border-radius:999px;
+      background:#dfe8f3;
+      border:2px solid rgba(36,101,167,.2);
+      box-shadow:0 12px 20px rgba(24,49,79,.1);
+    }
     .fortressTile,.fortressUnit,.fortressBolt,.fortressSegment,.fortressBadge{
       position:absolute;
     }
@@ -381,6 +423,14 @@
         preview: "worm"
       },
       {
+        id: "worm_sort",
+        title: "Worm Sort",
+        file: "worm_sort.html",
+        tag: "Sort Puzzle",
+        description: "Standalone sorting prototype with neutral worms, color blocks, outside containers, campaign progression, sandbox tools, and JSON levels.",
+        preview: "wormSort"
+      },
+      {
         id: "worm_fortress",
         title: "Wormhold Merge",
         file: "worm_fortress_merge.html",
@@ -434,6 +484,28 @@
           <div class="wormSeg red" style="left:194px;top:44px"></div>
           <div class="wormSeg green" style="left:176px;top:112px"></div>
           <div class="wormSeg green" style="left:202px;top:112px"></div>
+        `;
+        return;
+      }
+      if (type === "wormSort") {
+        previewEl.innerHTML = `
+          <div class="sortContainer" style="left:22px;top:18px">
+            <div class="sortBlock" style="background:#ff5f6d"></div>
+            <div class="sortBlock" style="background:#ff5f6d"></div>
+            <div class="sortBlock" style="background:#4594ff"></div>
+          </div>
+          <div class="sortContainer" style="left:168px;top:118px">
+            <div class="sortBlock" style="background:#4594ff"></div>
+            <div class="sortBlock" style="background:#35c982"></div>
+            <div class="sortBlock" style="background:#35c982"></div>
+          </div>
+          <div class="sortLoad" style="left:52px;top:62px"></div>
+          <div class="sortLoad" style="left:194px;top:92px"></div>
+          <div class="sortWorm" style="left:62px;top:96px;width:98px"></div>
+          <div class="sortBlock" style="left:82px;top:100px;background:#ff5f6d"></div>
+          <div class="sortBlock" style="left:112px;top:100px;background:#4594ff"></div>
+          <div class="sortBlock" style="left:44px;top:126px;background:#f5c84b"></div>
+          <div class="sortBlock" style="left:174px;top:56px;background:#35c982"></div>
         `;
         return;
       }
