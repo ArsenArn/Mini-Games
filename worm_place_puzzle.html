@@ -484,7 +484,7 @@
 
       <section class="panel tipsCard">
         <h2>Signals</h2>
-        <p class="muted">Completed worms glow and lock. Wrong color or length can touch a socket, but it will not count.</p>
+        <p class="muted">Completed worms glow on target but can still be moved. Wrong color or length can touch a socket, but it will not count.</p>
         <div id="toastStack" class="toastStack"></div>
       </section>
     </aside>
@@ -895,7 +895,7 @@
           if (level === 2) return "Now there are multiple worms. Tap a worm or press Tab to switch.";
           if (level === 3) return "Colors matter: each worm belongs on the matching colored line.";
           if (level === 4) return "Length matters: the worm body must cover every cell of the line.";
-          if (level === 5) return "Completed worms glow and lock, so finish clear placements first.";
+          if (level === 5) return "Completed worms glow on target. You can still move them if you need to rearrange.";
           return "Place every worm on its matching pipe path.";
         }
       };
@@ -1737,7 +1737,7 @@
           if (!this.state.dragging || !this.state.pointerBoard || this.state.dragDistance <= CONFIG.INPUT.dragThreshold) return null;
           if (!this.board || this.state.screen !== "gameplay") return null;
           const worm = this.getSelectedWorm();
-          if (!worm || worm.completed) return null;
+          if (!worm) return null;
           const activeEnd = this.state.selectedEnd;
           const current = activeEnd === "head" ? worm.cells[worm.cells.length - 1] : worm.cells[0];
           let bestDirection = null;
@@ -1870,14 +1870,9 @@
         }
         stepSelected(direction, options = {}) {
           if (!this.board || this.state.screen !== "gameplay") return false;
-          if (this.board.won) return false;
           const worm = this.getSelectedWorm();
           if (!worm) {
             if (!options.suppressSelectionToast) this.toast("Select a worm first.", "warn");
-            return false;
-          }
-          if (worm.completed) {
-            if (!options.silentBlocked) this.toast("Completed worms are locked.", "warn");
             return false;
           }
           const delta = DIRS[direction];
@@ -1936,6 +1931,11 @@
           }
           const previous = this.board.completedCount || 0;
           this.board.completedCount = completed;
+          if (completed < this.board.worms.length) {
+            this.board.won = false;
+            this.board.victoryPending = 0;
+            this.board.victoryFlash = 0;
+          }
           if (completed > previous) {
             const fresh = this.board.pipes.filter((pipe) => pipe.completed && !previousCompletedPipeIds.has(pipe.id));
             for (const pipe of fresh) {
@@ -2030,7 +2030,7 @@
             const selected = this.state.selection?.id === worm.id ? " Selected" : "";
             return `<div class="wormItem ${worm.completed ? "done" : ""}">
               <div class="wormTop"><span><i class="colorDot" style="background:${palette.fill}"></i>Worm ${index + 1}${selected}</span><span class="tag">${worm.length} cells</span></div>
-              <div class="muted">${worm.completed ? "Locked on target" : "Free to move"}</div>
+              <div class="muted">${worm.completed ? "On target" : "Free to move"}</div>
             </div>`;
           }).join("");
         }
@@ -2045,7 +2045,7 @@
           this.refs.selectionMeta.textContent = `${worm.completed ? "Completed" : "Selected"} ${worm.color} worm, ${this.state.selectedEnd} active`;
           this.refs.selectedBox.innerHTML = `
             <div class="wormTop"><span><i class="colorDot" style="background:${palette.fill}"></i>${worm.color}</span><span class="tag">${worm.length} cells</span></div>
-            <p class="muted">${worm.completed ? "This worm is fixed on its target." : `Move from the ${this.state.selectedEnd}.`}</p>
+            <p class="muted">${worm.completed ? `On target. Move from the ${this.state.selectedEnd} if needed.` : `Move from the ${this.state.selectedEnd}.`}</p>
           `;
           this.refs.tailButton.classList.toggle("accent", this.state.selectedEnd === "tail");
           this.refs.headButton.classList.toggle("accent", this.state.selectedEnd === "head");
