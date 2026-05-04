@@ -1,0 +1,162 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Worm Sort</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app">
+    <aside class="leftCol">
+      <section class="panel titleCard">
+        <div class="eyebrow">Prototype</div>
+        <h1>Worm Sort</h1>
+        <p class="muted">Use the field as a buffer, carry blocks with neutral worms, and gather each color into one container.</p>
+      </section>
+      <section class="panel statusCard">
+        <div class="itemTop"><h2>Containers</h2><span id="containerBadge" class="tag">0</span></div>
+        <div id="containerList" class="list"></div>
+      </section>
+      <section class="panel statusCard">
+        <div class="itemTop"><h2>Debug Info</h2><span id="validityBadge" class="tag">Ready</span></div>
+        <div id="debugStats" class="list"></div>
+      </section>
+    </aside>
+
+    <section class="centerCol">
+      <section class="panel hudCard">
+        <div class="pillRack">
+          <div class="pill"><span>Level</span><strong id="hudLevel">-</strong></div>
+          <div class="pill"><span>Moves</span><strong id="hudMoves">0</strong></div>
+          <div class="pill"><span>Blocks Sorted</span><strong id="hudSorted">0 / 0</strong></div>
+          <div class="pill"><span>Worms</span><strong id="hudWorms">0</strong></div>
+        </div>
+        <div class="buttonRack">
+          <button id="restartButton" class="actionButton secondary small" type="button">Restart</button>
+          <button id="menuButton" class="actionButton secondary small" type="button">Menu</button>
+          <button id="debugButton" class="actionButton accent small" type="button">Debug</button>
+        </div>
+      </section>
+      <section class="canvasWrap">
+        <canvas id="gameCanvas" aria-label="Worm Sort board"></canvas>
+      </section>
+      <section class="boardFooter">
+        <div id="hintLine" class="hintLine">Choose Campaign or Sandbox from the menu.</div>
+        <div id="selectionMeta" class="selectionMeta">No worm selected</div>
+      </section>
+    </section>
+
+    <aside class="rightCol">
+      <section class="panel selectedCard">
+        <div class="itemTop"><h2>Selected Worm</h2><span id="wormBadge" class="tag">0 worms</span></div>
+        <div id="selectedBox" class="selectedBox"></div>
+        <div class="selectedActions">
+          <button id="tailButton" class="actionButton secondary small" type="button">Tail</button>
+          <button id="headButton" class="actionButton accent small" type="button">Head</button>
+        </div>
+      </section>
+      <section class="panel controlsCard">
+        <div class="itemTop"><h2>Move</h2><span class="tag">WASD</span></div>
+        <div class="dpad">
+          <span class="dpadSpacer"></span>
+          <button class="actionButton" data-dir="up" type="button">Up</button>
+          <span class="dpadSpacer"></span>
+          <button class="actionButton" data-dir="left" type="button">Left</button>
+          <button class="actionButton" data-dir="down" type="button">Down</button>
+          <button class="actionButton" data-dir="right" type="button">Right</button>
+        </div>
+      </section>
+      <section id="designerPanel" class="panel designerCard hidden">
+        <div class="itemTop"><h2>Designer</h2><span class="tag">Sandbox</span></div>
+        <div class="formGrid">
+          <label>Field width<input id="fieldWidthInput" type="number" min="5" max="18"></label>
+          <label>Field height<input id="fieldHeightInput" type="number" min="5" max="28"></label>
+          <label>Cross thickness<input id="crossThicknessInput" type="number" min="1" max="8"></label>
+          <label>Container count<input id="containerCountInput" type="number" min="2" max="8"></label>
+          <label>Container size mode<select id="containerSizeModeInput"><option value="normal">normal only</option><option value="small">small only</option><option value="large">large only</option><option value="mixed">mixed</option></select></label>
+          <label>Color count<input id="colorCountInput" type="number" readonly></label>
+          <label>Small capacity<input id="smallCapacityInput" type="number" value="5" readonly></label>
+          <label>Normal capacity<input id="normalCapacityInput" type="number" value="10" readonly></label>
+          <label>Large capacity<input id="largeCapacityInput" type="number" value="15" readonly></label>
+          <label>Worm count<input id="wormCountInput" type="number" min="1" max="4"></label>
+          <label>Worm length min<input id="wormLengthMinInput" type="number" min="2" max="8"></label>
+          <label>Worm length max<input id="wormLengthMaxInput" type="number" min="2" max="8"></label>
+          <label>Total blocks count<input id="totalBlocksInput" type="number" min="10" max="120" readonly></label>
+          <label>Min group size<input id="minGroupInput" type="number" min="1" max="8"></label>
+          <label>Max group size<input id="maxGroupInput" type="number" min="1" max="10"></label>
+          <label>Palette offset<input id="paletteOffsetInput" type="number" min="0" max="7"></label>
+          <label>Seed<input id="seedInput" type="number"></label>
+          <label>Difficulty preset<select id="presetInput"><option>easy</option><option>normal</option><option>hard</option></select></label>
+          <label>Rules mode<select id="rulesModeInput"><option value="standard">standard</option><option value="growing">growing worm</option></select></label>
+        </div>
+        <div class="buttonRow">
+          <button id="generateButton" class="actionButton accent small" type="button">Generate</button>
+          <button id="designerRestartButton" class="actionButton secondary small" type="button">Restart</button>
+          <button id="exportButton" class="actionButton secondary small" type="button">Export JSON</button>
+          <button id="importButton" class="actionButton secondary small" type="button">Import JSON</button>
+        </div>
+        <textarea id="jsonBox" spellcheck="false" placeholder="Exported or imported level JSON"></textarea>
+      </section>
+      <section class="panel tipsCard">
+        <div class="itemTop"><h2>Messages</h2><span class="tag">Live</span></div>
+        <div id="toastStack" class="toastStack"></div>
+      </section>
+    </aside>
+  </main>
+
+  <div id="menuScreen" class="screen">
+    <div class="screenCard">
+      <div>
+        <div class="eyebrow">Worm Sort</div>
+        <h1>Choose Mode</h1>
+      </div>
+      <div class="menuGrid">
+        <div class="menuChoice">
+          <div>
+            <h3>Campaign</h3>
+            <p class="muted">100 levels with saved progress and a steady sorting curve.</p>
+          </div>
+          <label>Campaign level<input id="campaignLevelInput" type="number" min="1" max="100" value="1"></label>
+          <label>Campaign rules<select id="campaignRulesInput"><option value="standard">standard</option><option value="growing" selected>growing worm</option></select></label>
+          <button id="campaignButton" class="actionButton accent" type="button">Campaign</button>
+        </div>
+        <div class="menuChoice">
+          <div>
+            <h3>Sandbox</h3>
+            <p class="muted">Tune the board, generate levels, and move JSON in or out.</p>
+          </div>
+          <button id="sandboxButton" class="actionButton secondary" type="button">Sandbox</button>
+        </div>
+      </div>
+      <p class="muted">Unlocked campaign level: <strong id="menuUnlocked">1</strong></p>
+    </div>
+  </div>
+
+  <div id="victoryScreen" class="screen hidden">
+    <div class="screenCard">
+      <div>
+        <div class="eyebrow">Level Complete</div>
+        <h1>Level Complete</h1>
+      </div>
+      <div class="pillRack">
+        <div class="pill"><span>Moves</span><strong id="victoryMoves">0</strong></div>
+        <div class="pill"><span>Blocks Sorted</span><strong id="victorySorted">0 / 0</strong></div>
+      </div>
+      <div class="screenButtons">
+        <button id="nextButton" class="actionButton success" type="button">Next Level</button>
+        <button id="victoryRestartButton" class="actionButton secondary" type="button">Restart</button>
+        <button id="victoryMenuButton" class="actionButton secondary" type="button">Menu</button>
+      </div>
+    </div>
+  </div>
+  <script src="src/config.js"></script>
+  <script src="src/save.js"></script>
+  <script src="src/utils.js"></script>
+  <script src="src/rules.js"></script>
+  <script src="src/levels.js"></script>
+  <script src="src/renderer.js"></script>
+  <script src="src/game.js"></script>
+  <script src="src/main.js"></script>
+</body>
+</html>
