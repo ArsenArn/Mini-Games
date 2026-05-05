@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weapon Arena: Roguelite Duel</title>
+<style>
+  :root{
+    --bg:#070a17;
+    --bg2:#11162d;
+    --panel:rgba(15,22,45,.86);
+    --panel2:rgba(23,32,64,.92);
+    --line:rgba(165,190,255,.16);
+    --text:#ecf5ff;
+    --muted:#96a7c5;
+    --cyan:#3ee7ff;
+    --blue:#577dff;
+    --red:#ff5a73;
+    --orange:#ffb347;
+    --green:#58df9b;
+    --purple:#a875ff;
+    --shadow:0 22px 70px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%;font-family:"Trebuchet MS",Verdana,sans-serif;color:var(--text);background:var(--bg)}
+  body{
+    overflow:hidden;
+    background:
+      radial-gradient(circle at 12% 12%,rgba(62,231,255,.18),transparent 28%),
+      radial-gradient(circle at 86% 24%,rgba(168,117,255,.18),transparent 24%),
+      radial-gradient(circle at 60% 105%,rgba(255,179,71,.12),transparent 24%),
+      linear-gradient(180deg,#070a17,#101531 62%,#090b18);
+  }
+  button,input{font:inherit}
+  button{
+    border:0;
+    color:var(--text);
+    cursor:pointer;
+    border-radius:10px;
+    background:linear-gradient(180deg,rgba(87,125,255,.96),rgba(47,75,184,.96));
+    box-shadow:0 12px 28px rgba(33,53,152,.28);
+    transition:transform .14s ease,filter .14s ease,border-color .14s ease;
+  }
+  button:hover{transform:translateY(-1px);filter:brightness(1.08)}
+  button:active{transform:translateY(1px) scale(.99)}
+  button.secondary{background:rgba(255,255,255,.07);border:1px solid var(--line);box-shadow:none}
+  button.danger{background:linear-gradient(180deg,#e35772,#9e2c44)}
+  button.good{background:linear-gradient(180deg,#48d48f,#21935f)}
+  button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+  .screen{position:fixed;inset:0;display:none;overflow:auto;padding:22px}
+  .screen.active{display:block}
+  .shell{width:min(1180px,100%);margin:0 auto;min-height:calc(100vh - 44px);display:grid;gap:18px;align-content:start}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .brand{display:grid;gap:4px}
+  .brand h1{margin:0;font-size:clamp(38px,7vw,72px);line-height:.92;letter-spacing:0}
+  .brand .sub{color:var(--muted);font-size:16px}
+  .panel{
+    background:linear-gradient(180deg,rgba(18,27,56,.9),rgba(11,16,35,.88));
+    border:1px solid var(--line);
+    border-radius:14px;
+    box-shadow:var(--shadow);
+  }
+  .menuGrid{display:grid;grid-template-columns:1.08fr .92fr;gap:18px;align-items:stretch}
+  .modePanel{padding:18px;display:grid;gap:14px}
+  .modeButtons{display:grid;gap:12px}
+  .modeButton{display:grid;gap:4px;text-align:left;padding:18px;border:1px solid transparent}
+  .modeButton.active{border-color:rgba(62,231,255,.55);box-shadow:0 0 0 1px rgba(62,231,255,.18),0 20px 42px rgba(23,80,137,.28)}
+  .modeButton b{font-size:24px}
+  .modeButton span{color:#c9d6ee;line-height:1.45}
+  .menuSide{padding:18px;display:grid;gap:14px;align-content:start}
+  .statTiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .tile{padding:14px;border-radius:10px;background:rgba(255,255,255,.055);border:1px solid var(--line)}
+  .tile .k{color:var(--muted);font-size:12px;text-transform:uppercase}
+  .tile .v{font-size:24px;font-weight:800;margin-top:4px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .row button{padding:12px 16px}
+  .smallText{color:var(--muted);font-size:13px;line-height:1.45}
+  .sectionTitle{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:0 0 12px}
+  .sectionTitle h2{margin:0;font-size:28px}
+  .sectionTitle p{margin:0;color:var(--muted)}
+  .characterLayout{display:grid;grid-template-columns:minmax(280px,1fr) 360px;gap:18px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+  .fighterCard,.upgradeCard,.levelNode,.roadNode{
+    padding:14px;
+    border-radius:12px;
+    background:rgba(255,255,255,.055);
+    border:1px solid var(--line);
+    display:grid;
+    gap:10px;
+  }
+  .fighterCard{cursor:pointer}
+  .fighterCard:hover,.fighterCard.active{border-color:rgba(62,231,255,.65);background:rgba(62,231,255,.075)}
+  .fighterHead{display:flex;align-items:center;gap:10px}
+  .weaponIcon{
+    width:46px;height:46px;border-radius:50%;display:grid;place-items:center;
+    background:radial-gradient(circle at 35% 25%,rgba(255,255,255,.35),rgba(255,255,255,.08));
+    border:2px solid currentColor;font-weight:900;font-size:18px;box-shadow:0 0 18px currentColor;
+  }
+  .fighterName{font-weight:800;font-size:18px}
+  .role{color:var(--muted);font-size:13px}
+  .miniStats{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+  .miniStat{padding:7px 8px;border-radius:8px;background:rgba(0,0,0,.18);font-size:12px;color:#cbd8f3}
+  .miniStat b{display:block;color:#fff;font-size:14px}
+  .detailPanel{padding:18px;position:sticky;top:22px;align-self:start}
+  .detailIcon{width:76px;height:76px;font-size:30px;margin-bottom:12px}
+  .bar{height:9px;border-radius:999px;background:rgba(255,255,255,.09);overflow:hidden}
+  .bar span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--cyan),var(--blue))}
+  .mapGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .roadGrid{display:grid;grid-template-columns:repeat(8,1fr);gap:10px}
+  .roadNode,.levelNode{min-height:118px;position:relative}
+  .roadNode.current,.levelNode.current{border-color:rgba(62,231,255,.7);background:rgba(62,231,255,.08)}
+  .roadNode.done,.levelNode.done{border-color:rgba(88,223,155,.55);background:rgba(88,223,155,.07)}
+  .nodeNum{font-size:12px;color:var(--muted);text-transform:uppercase}
+  .nodeIcon{font-size:32px;font-weight:900}
+  .nodeTitle{font-weight:800}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid var(--line);color:#dce7ff;font-size:12px}
+  .bonusList{display:flex;gap:8px;flex-wrap:wrap}
+  .battleScreen{padding:0;overflow:hidden;background:#070a17}
+  #battleCanvas{position:absolute;inset:0;width:100vw;height:100vh;display:block;background:#080c1b}
+  .hud{position:absolute;inset:14px;pointer-events:none;display:grid;grid-template-rows:auto 1fr auto;gap:12px}
+  .hudTop{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:start}
+  .hpPanel{pointer-events:auto;padding:12px;border-radius:12px;background:rgba(7,10,23,.72);border:1px solid var(--line);backdrop-filter:blur(10px)}
+  .hpPanel.enemy{text-align:right}
+  .hpName{font-weight:800;margin-bottom:7px}
+  .hpBar{height:14px;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden}
+  .hpBar span{display:block;height:100%;background:linear-gradient(90deg,#48df9b,#f3e56c)}
+  .hpPanel.enemy .hpBar span{background:linear-gradient(90deg,#ffb347,#ff5a73)}
+  .centerHud{pointer-events:auto;display:grid;gap:8px;justify-items:center;padding:10px 14px;border-radius:12px;background:rgba(7,10,23,.72);border:1px solid var(--line)}
+  .centerHud .title{font-weight:900}
+  .iconBtn{width:42px;height:38px;padding:0;display:grid;place-items:center;font-weight:900}
+  .hudBottom{display:flex;justify-content:space-between;align-items:end;gap:12px}
+  .bonusTray{pointer-events:auto;max-width:min(600px,70vw);padding:10px;border-radius:12px;background:rgba(7,10,23,.68);border:1px solid var(--line)}
+  .debugToggle{pointer-events:auto}
+  .overlayCard{
+    position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
+    width:min(520px,calc(100vw - 30px));padding:22px;text-align:center;
+    background:linear-gradient(180deg,rgba(18,27,56,.96),rgba(10,14,31,.96));
+    border:1px solid rgba(62,231,255,.28);border-radius:16px;box-shadow:var(--shadow);display:none;z-index:20;
+  }
+  .overlayCard.active{display:grid;gap:14px}
+  .upgradeGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .upgradeCard{text-align:left;cursor:pointer;min-height:190px}
+  .upgradeCard:hover{border-color:rgba(255,179,71,.7);background:rgba(255,179,71,.08)}
+  .rarity{font-size:12px;text-transform:uppercase;color:var(--orange);letter-spacing:.08em}
+  .debugPanel{
+    position:fixed;right:14px;top:72px;width:min(340px,calc(100vw - 28px));z-index:30;display:none;
+    padding:14px;border-radius:12px;background:rgba(8,10,18,.94);border:1px solid rgba(62,231,255,.35);box-shadow:var(--shadow)
+  }
+  .debugPanel.active{display:grid;gap:10px}
+  .debugPanel label{display:grid;gap:5px;color:var(--muted);font-size:12px}
+  .debugPanel input{width:100%}
+  .debugOut{font:12px Consolas,monospace;white-space:pre-wrap;color:#cde6ff;background:rgba(255,255,255,.06);border-radius:8px;padding:8px;max-height:170px;overflow:auto}
+  @media (max-width:820px){
+    body{overflow:auto}
+    .screen{position:relative;min-height:100vh}
+    .menuGrid,.characterLayout{grid-template-columns:1fr}
+    .roadGrid,.mapGrid{grid-template-columns:repeat(2,1fr)}
+    .upgradeGrid{grid-template-columns:1fr}
+    .hudTop{grid-template-columns:1fr;gap:8px}
+    .hpPanel.enemy{text-align:left}
+    .centerHud{justify-items:start}
+  }
+</style>
+</head>
+<body>
+  <section id="mainMenu" class="screen active">
+    <div class="shell">
+      <div class="topbar">
+        <div class="brand">
+          <h1>Weapon Arena</h1>
+          <div class="sub">Roguelite Auto-Battle Arena</div>
+        </div>
+        <a class="pill" href="game_launcher.html">Launcher</a>
+      </div>
+      <div class="menuGrid">
+        <div class="panel modePanel">
+          <div class="sectionTitle">
+            <div>
+              <h2>Choose Mode</h2>
+              <p id="modeDescription">Tournament is an 8-fight roguelite duel bracket.</p>
+            </div>
+          </div>
+          <div class="modeButtons">
+            <button id="modeTournament" class="modeButton active" type="button">
+              <b>Tournament</b>
+              <span>Eight 1v1 auto-duels. Defeated rivals join your run collection, and upgrades stack after each win.</span>
+            </button>
+            <button id="modeCampaign" class="modeButton secondary" type="button">
+              <b>Campaign</b>
+              <span>Ten arena levels against groups of weaker enemies. Build global bonuses and survive mixed waves.</span>
+            </button>
+          </div>
+          <div class="row">
+            <button id="startModeBtn" class="good" type="button">Pick Fighter</button>
+            <button id="collectionBtn" class="secondary" type="button">Collection / Characters</button>
+            <button id="resetProgressBtn" class="danger" type="button">Reset Progress</button>
+          </div>
+        </div>
+        <div class="panel menuSide">
+          <div class="sectionTitle">
+            <div>
+              <h2>Progress</h2>
+              <p>Saved locally in this browser.</p>
+            </div>
+          </div>
+          <div class="statTiles">
+            <div class="tile"><div class="k">Tournament Wins</div><div id="statTournament" class="v">0</div></div>
+            <div class="tile"><div class="k">Campaign Wins</div><div id="statCampaign" class="v">0</div></div>
+            <div class="tile"><div class="k">Completed Runs</div><div id="statRuns" class="v">0</div></div>
+            <div class="tile"><div class="k">Best Campaign</div><div id="statBest" class="v">0</div></div>
+          </div>
+          <p class="smallText">Fights are automatic. Your control comes from choosing fighters, reading matchups, and stacking run-wide upgrades.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="characterSelect" class="screen">
+    <div class="shell">
+      <div class="topbar">
+        <div class="sectionTitle"><div><h2>Select Fighter</h2><p id="selectSubtitle">Choose a starter for the run.</p></div></div>
+        <div class="row"><button class="secondary" data-screen="mainMenu" type="button">Back</button><button id="startRunBtn" class="good" type="button">Start Run</button></div>
+      </div>
+      <div class="characterLayout">
+        <div id="fighterCards" class="cards"></div>
+        <aside id="fighterDetail" class="panel detailPanel"></aside>
+      </div>
+    </div>
+  </section>
+
+  <section id="collectionScreen" class="screen">
+    <div class="shell">
+      <div class="topbar">
+        <div class="sectionTitle"><div><h2>Collection</h2><p>All base fighters and saved mode victories.</p></div></div>
+        <button class="secondary" data-screen="mainMenu" type="button">Back</button>
+      </div>
+      <div id="collectionCards" class="cards"></div>
+    </div>
+  </section>
+
+  <section id="roadmapScreen" class="screen">
+    <div class="shell">
+      <div class="topbar">
+        <div class="sectionTitle"><div><h2>Tournament Roadmap</h2><p>Eight duels. Every defeated enemy joins your run collection.</p></div></div>
+        <div class="row"><button class="secondary" data-screen="mainMenu" type="button">Abort Run</button><button id="roadStartBtn" class="good" type="button">Start Duel</button></div>
+      </div>
+      <div id="roadGrid" class="roadGrid"></div>
+      <div class="panel modePanel">
+        <div id="roadInfo" class="smallText"></div>
+        <div id="roadBonuses" class="bonusList"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="campaignScreen" class="screen">
+    <div class="shell">
+      <div class="topbar">
+        <div class="sectionTitle"><div><h2>Campaign Map</h2><p>Ten levels against small squads. Campaign heals 20% after every win.</p></div></div>
+        <div class="row"><button class="secondary" data-screen="mainMenu" type="button">Abort Run</button><button id="campaignStartBtn" class="good" type="button">Start Level</button></div>
+      </div>
+      <div id="campaignGrid" class="mapGrid"></div>
+      <div class="panel modePanel">
+        <div id="campaignInfo" class="smallText"></div>
+        <div id="campaignBonuses" class="bonusList"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="pickScreen" class="screen">
+    <div class="shell">
+      <div class="topbar">
+        <div class="sectionTitle"><div><h2>Pre-Battle Fighter Pick</h2><p id="pickSubtitle">Choose who fights next.</p></div></div>
+        <div class="row"><button id="pickBackBtn" class="secondary" type="button">Back To Map</button><button id="pickStartBtn" class="good" type="button">Launch Battle</button></div>
+      </div>
+      <div class="characterLayout">
+        <div id="runFighterCards" class="cards"></div>
+        <aside class="panel detailPanel">
+          <div id="nextThreat"></div>
+          <div style="height:12px"></div>
+          <div id="pickBonuses" class="bonusList"></div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <section id="upgradeScreen" class="screen">
+    <div class="shell">
+      <div class="sectionTitle">
+        <div><h2>Choose Upgrade</h2><p id="upgradeSubtitle">Pick one global bonus for this run.</p></div>
+      </div>
+      <div id="upgradeChoices" class="upgradeGrid"></div>
+    </div>
+  </section>
+
+  <section id="endScreen" class="screen">
+    <div class="shell">
+      <div class="panel modePanel" style="max-width:760px;margin:auto;text-align:center">
+        <div id="endTitle" style="font-size:42px;font-weight:900">Run Complete</div>
+        <p id="endText" class="smallText"></p>
+        <div class="row" style="justify-content:center"><button data-screen="mainMenu" class="good" type="button">Main Menu</button><button id="endAgainBtn" class="secondary" type="button">New Run Same Mode</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="battleScreen" class="screen battleScreen">
+    <canvas id="battleCanvas" width="1280" height="720"></canvas>
+    <div class="hud">
+      <div class="hudTop">
+        <div class="hpPanel">
+          <div id="playerHudName" class="hpName">Player</div>
+          <div class="hpBar"><span id="playerHpFill"></span></div>
+          <div id="playerHpText" class="smallText">0/0</div>
+        </div>
+        <div class="centerHud">
+          <div id="battleTitle" class="title">Fight</div>
+          <div class="row"><button id="pauseBtn" class="iconBtn" title="Pause" type="button">II</button><button id="debugBtn" class="iconBtn secondary" title="Debug" type="button">DBG</button></div>
+        </div>
+        <div class="hpPanel enemy">
+          <div id="enemyHudName" class="hpName">Enemy</div>
+          <div class="hpBar"><span id="enemyHpFill"></span></div>
+          <div id="enemyHpText" class="smallText">0/0</div>
+        </div>
+      </div>
+      <div></div>
+      <div class="hudBottom">
+        <div class="bonusTray"><div id="battleBonusTray" class="bonusList"></div></div>
+        <div class="pill">Space: pause | Esc: back/pause | `: debug</div>
+      </div>
+    </div>
+    <div id="pauseOverlay" class="overlayCard">
+      <h2>Paused</h2>
+      <div class="row" style="justify-content:center"><button id="resumeBtn" class="good" type="button">Resume</button><button id="restartBattleBtn" class="secondary" type="button">Restart Battle</button><button id="quitBattleBtn" class="danger" type="button">Quit Run</button></div>
+    </div>
+    <div id="battleResultOverlay" class="overlayCard">
+      <h2 id="battleResultTitle">Victory</h2>
+      <p id="battleResultText" class="smallText"></p>
+    </div>
+    <div id="debugPanel" class="debugPanel">
+      <b>Debug / Balance</b>
+      <div id="debugOut" class="debugOut"></div>
+      <div class="row"><button id="debugWin" class="good" type="button">Instant Win</button><button id="debugLose" class="danger" type="button">Instant Lose</button><button id="debugSlow" class="secondary" type="button">Slow Motion</button></div>
+      <label>Player Damage Multiplier <input id="debugDamageMult" type="range" min="0.4" max="3" step="0.1" value="1"></label>
+      <label>Enemy HP Multiplier <input id="debugEnemyHpMult" type="range" min="0.4" max="3" step="0.1" value="1"></label>
+      <button id="debugRestart" class="secondary" type="button">Restart Battle</button>
+    </div>
+  </section>
+
+<script>
+(() => {
+"use strict";
+
+// ===== Constants =====
+const STORAGE_KEY = "weaponArenaProgressV1";
+const W = 1280;
+const H = 720;
+const ARENA = { left:70, top:70, right:1210, bottom:650 };
+const SLOW_FINAL_SECONDS = 1.25;
+const BASE_BONUSES = {
+  hpMult:1, damageMult:1, attackSpeedMult:1, moveSpeedMult:1, projectileSpeedMult:1,
+  explosionRadiusMult:1, burnDurationMult:1, stunDurationMult:1, healAfterBattlePercent:0,
+  firstHitBonus:0, ricochetDamageMult:1, meleeRangeMult:1, bleedDamageMult:1
+};
+const CAMPAIGN_BASE_HEAL = 0.2;
+const COUNT_MOD = { 2:1, 3:.82, 4:.68, 5:.58 };
+const BALL_STEER = {
+  duelist:.34, shooter:.22, frost:.24, boss:.30,
+  chaser:.95, bomber:.78, tank:.56, swarm:1.18
+};
+const COLORS = {
+  projectile:"#45dfff", melee:"#f3e56c", explosive:"#ff9b42", burn:"#ff653f",
+  slow:"#8edbff", ricochet:"#ad8cff", aura:"#58df9b", fast:"#ff6fa4", heavy:"#c9d4e8"
+};
+
+// ===== Game Data =====
+const FIGHTERS = [
+  { id:"pistol", name:"Pistol", icon:"P", color:"#45dfff", role:"Balanced Shooter", description:"Stable single shots with reliable range.", maxHp:440, moveSpeed:178, damage:38, attackCooldown:.9, projectileSpeed:560, type:"pistol", tags:["projectile"] },
+  { id:"smg", name:"SMG", icon:"M", color:"#7af2ff", role:"Fast Shooter", description:"Low damage but very high fire rate.", maxHp:390, moveSpeed:192, damage:15, attackCooldown:.24, projectileSpeed:520, type:"smg", tags:["projectile","fast"] },
+  { id:"shotgun", name:"Shotgun", icon:"S", color:"#ffb347", role:"Close Burst", description:"Fires five pellets in a cone.", maxHp:470, moveSpeed:164, damage:18, attackCooldown:1.25, projectileSpeed:500, type:"shotgun", tags:["projectile","heavy"] },
+  { id:"sword", name:"Sword", icon:"W", color:"#f3e56c", role:"Melee Bruiser", description:"Wide swings. Every third hit is empowered.", maxHp:560, moveSpeed:170, damage:45, attackCooldown:.78, projectileSpeed:0, type:"sword", tags:["melee"] },
+  { id:"knife", name:"Knife", icon:"K", color:"#ff6fa4", role:"Fast Melee", description:"Quick slashes that apply bleed every few hits.", maxHp:420, moveSpeed:225, damage:24, attackCooldown:.35, projectileSpeed:0, type:"knife", tags:["melee","fast"] },
+  { id:"fireball", name:"Fireball", icon:"F", color:"#ff653f", role:"Burn Mage", description:"Slow fireballs apply burn over time.", maxHp:420, moveSpeed:155, damage:34, attackCooldown:1.05, projectileSpeed:390, type:"fireball", tags:["projectile","burn"] },
+  { id:"snowball", name:"Snowball", icon:"N", color:"#8edbff", role:"Control", description:"Applies slow. Repeated hits stun the target.", maxHp:430, moveSpeed:165, damage:20, attackCooldown:.62, projectileSpeed:470, type:"snowball", tags:["projectile","slow"] },
+  { id:"grenade", name:"Grenade", icon:"G", color:"#ff9b42", role:"Explosive", description:"Delayed blast with area damage.", maxHp:480, moveSpeed:145, damage:58, attackCooldown:1.55, projectileSpeed:330, type:"grenade", tags:["projectile","explosive","heavy"] },
+  { id:"boomerang", name:"Boomerang", icon:"B", color:"#ad8cff", role:"Trick Shot", description:"Returns to the owner and can hit twice.", maxHp:450, moveSpeed:178, damage:42, attackCooldown:1.15, projectileSpeed:520, type:"boomerang", tags:["projectile","ricochet"] },
+  { id:"rocket", name:"Rocket", icon:"R", color:"#ff5a73", role:"Heavy Explosive", description:"Slow homing rocket with splash damage.", maxHp:500, moveSpeed:136, damage:54, attackCooldown:1.9, projectileSpeed:310, type:"rocket", tags:["projectile","explosive","heavy"] },
+  { id:"bow", name:"Bow", icon:"A", color:"#caa16a", role:"Ricochet Shooter", description:"Arrows bounce from arena walls.", maxHp:410, moveSpeed:188, damage:32, attackCooldown:.82, projectileSpeed:650, type:"bow", tags:["projectile","ricochet"] },
+  { id:"drone", name:"Drone", icon:"D", color:"#58df9b", role:"Aura Fighter", description:"Damages nearby enemies with an aura instead of shooting.", maxHp:470, moveSpeed:205, damage:13, attackCooldown:.25, projectileSpeed:0, type:"drone", tags:["aura","fast"] }
+];
+
+const UPGRADES = [
+  { id:"hp15", title:"Reinforced Core", rarity:"common", description:"+15% max HP to all fighters.", apply:b=>b.hpMult*=1.15 },
+  { id:"dmg12", title:"Sharpened Arsenal", rarity:"common", description:"+12% damage to all fighters.", apply:b=>b.damageMult*=1.12 },
+  { id:"atk10", title:"Trigger Rhythm", rarity:"common", description:"+10% attack speed to all fighters.", apply:b=>b.attackSpeedMult*=1.10 },
+  { id:"spd15", title:"Arena Footwork", rarity:"common", description:"+15% movement speed.", apply:b=>b.moveSpeedMult*=1.15 },
+  { id:"proj10", title:"Hot Barrels", rarity:"common", description:"Projectiles fly +10% faster.", apply:b=>b.projectileSpeedMult*=1.10 },
+  { id:"boom15", title:"Blast Bloom", rarity:"rare", description:"Explosions gain +15% radius.", apply:b=>b.explosionRadiusMult*=1.15, tags:["explosive"] },
+  { id:"heal25", title:"Repair Protocol", rarity:"rare", description:"Heal +25% max HP after every battle.", apply:b=>b.healAfterBattlePercent+=.25 },
+  { id:"first50", title:"Opening Gambit", rarity:"rare", description:"First hit in every battle deals +50% damage.", apply:b=>b.firstHitBonus+=.50 },
+  { id:"burn40", title:"Long Fuse Flame", rarity:"rare", description:"Burn lasts +40% longer.", apply:b=>b.burnDurationMult*=1.40, tags:["burn"] },
+  { id:"stun20", title:"Static Impact", rarity:"rare", description:"Stun duration +20%.", apply:b=>b.stunDurationMult*=1.20, tags:["slow"] },
+  { id:"rico20", title:"Bank Shot Math", rarity:"epic", description:"Ricochet weapons deal +20% damage.", apply:b=>b.ricochetDamageMult*=1.20, tags:["ricochet"] },
+  { id:"melee20", title:"Long Grip", rarity:"epic", description:"Melee weapons gain +20% range.", apply:b=>b.meleeRangeMult*=1.20, tags:["melee"] },
+  { id:"bleed30", title:"Razor Edges", rarity:"rare", description:"Bleed deals +30% damage.", apply:b=>b.bleedDamageMult*=1.30, tags:["melee"] },
+  { id:"hpAtk", title:"Titan Tempo", rarity:"epic", description:"+10% HP and +8% attack speed.", apply:b=>{ b.hpMult*=1.10; b.attackSpeedMult*=1.08; } }
+];
+
+const CAMPAIGN_LEVELS = [
+  { count:2, reward:"Upgrade", roles:["shooter","chaser"] },
+  { count:2, reward:"Upgrade", roles:["shooter","frost"] },
+  { count:3, reward:"New Fighter Chance", roles:["chaser","shooter","swarm"] },
+  { count:3, reward:"Upgrade", roles:["tank","shooter","chaser"] },
+  { count:3, reward:"Mini Boss", roles:["boss","shooter","swarm"] },
+  { count:4, reward:"Upgrade", roles:["chaser","shooter","swarm","frost"] },
+  { count:4, reward:"New Fighter Chance", roles:["tank","frost","shooter","bomber"] },
+  { count:5, reward:"Upgrade", roles:["swarm","swarm","shooter","chaser","frost"] },
+  { count:4, reward:"Hard Upgrade", roles:["tank","frost","bomber","shooter"] },
+  { count:5, reward:"Boss", roles:["boss","tank","frost","shooter","swarm"] }
+];
+
+// ===== State =====
+const canvas = document.getElementById("battleCanvas");
+const ctx = canvas.getContext("2d");
+let progress = loadProgress();
+let selectedMode = "tournament";
+let selectedStarter = FIGHTERS[0];
+let selectedRunFighter = null;
+let currentScreen = "mainMenu";
+let raf = 0;
+let lastTime = 0;
+let battle = null;
+let run = null;
+let debug = { open:false, damageMult:1, enemyHpMult:1, forceSlow:false };
+
+// ===== Utilities =====
+const $ = id => document.getElementById(id);
+const clamp = (n,min,max) => Math.max(min,Math.min(max,n));
+const rand = (min,max) => min + Math.random() * (max - min);
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const dist = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
+const fighterById = id => FIGHTERS.find(f => f.id === id) || FIGHTERS[0];
+function showScreen(id){
+  currentScreen = id;
+  document.querySelectorAll(".screen").forEach(s => s.classList.toggle("active", s.id === id));
+  if (id !== "battleScreen") cancelAnimationFrame(raf);
+}
+function saveProgress(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); }
+function loadProgress(){
+  try {
+    const p = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    return {
+      tournamentWins:p.tournamentWins || {},
+      campaignWins:p.campaignWins || {},
+      totalCompletedRuns:p.totalCompletedRuns || 0,
+      discoveredFighters:p.discoveredFighters || FIGHTERS.map(f=>f.id),
+      bestCampaignLevel:p.bestCampaignLevel || 0
+    };
+  } catch(e) {
+    return { tournamentWins:{}, campaignWins:{}, totalCompletedRuns:0, discoveredFighters:FIGHTERS.map(f=>f.id), bestCampaignLevel:0 };
+  }
+}
+function fmtPct(v){ return Math.round((v - 1) * 100) + "%"; }
+function bonusPills(containerId){
+  const el = $(containerId);
+  if (!el || !run) return;
+  const b = run.globalBonuses;
+  const pills = [];
+  if (b.hpMult > 1.001) pills.push("HP " + fmtPct(b.hpMult));
+  if (b.damageMult > 1.001) pills.push("DMG " + fmtPct(b.damageMult));
+  if (b.attackSpeedMult > 1.001) pills.push("AS " + fmtPct(b.attackSpeedMult));
+  if (b.moveSpeedMult > 1.001) pills.push("SPD " + fmtPct(b.moveSpeedMult));
+  if (b.projectileSpeedMult > 1.001) pills.push("PROJ " + fmtPct(b.projectileSpeedMult));
+  if (b.explosionRadiusMult > 1.001) pills.push("BOOM " + fmtPct(b.explosionRadiusMult));
+  if (b.healAfterBattlePercent > 0) pills.push("HEAL " + Math.round(b.healAfterBattlePercent * 100) + "%");
+  if (b.firstHitBonus > 0) pills.push("FIRST +" + Math.round(b.firstHitBonus * 100) + "%");
+  el.innerHTML = pills.length ? pills.map(p=>`<span class="pill">${p}</span>`).join("") : `<span class="pill">No upgrades yet</span>`;
+}
+function setHpFill(fill,text,hp,max){
+  fill.style.width = clamp((hp / max) * 100,0,100) + "%";
+  text.textContent = Math.max(0,Math.ceil(hp)) + " / " + Math.ceil(max);
+}
+
+// ===== Screens =====
+function renderMain(){
+  $("statTournament").textContent = Object.values(progress.tournamentWins).reduce((a,b)=>a+b,0);
+  $("statCampaign").textContent = Object.values(progress.campaignWins).reduce((a,b)=>a+b,0);
+  $("statRuns").textContent = progress.totalCompletedRuns;
+  $("statBest").textContent = progress.bestCampaignLevel;
+}
+function setMode(mode){
+  selectedMode = mode;
+  $("modeTournament").classList.toggle("active", mode === "tournament");
+  $("modeCampaign").classList.toggle("active", mode === "campaign");
+  $("modeTournament").classList.toggle("secondary", mode !== "tournament");
+  $("modeCampaign").classList.toggle("secondary", mode !== "campaign");
+  $("modeDescription").textContent = mode === "tournament"
+    ? "Tournament is an 8-fight roguelite duel bracket."
+    : "Campaign is a 10-level wave path with safer healing and many small enemies.";
+}
+function renderFighterCards(containerId, fighters, activeId, onClick){
+  const wrap = $(containerId);
+  wrap.innerHTML = "";
+  fighters.forEach(f => {
+    const card = document.createElement("div");
+    card.className = "fighterCard" + (f.id === activeId ? " active" : "");
+    card.innerHTML = `
+      <div class="fighterHead">
+        <div class="weaponIcon" style="color:${f.color}">${f.icon}</div>
+        <div><div class="fighterName">${f.name}</div><div class="role">${f.role}</div></div>
+      </div>
+      <div class="miniStats">
+        <div class="miniStat">Damage <b>${f.damage}</b></div>
+        <div class="miniStat">Atk/s <b>${f.type === "drone" ? "Aura" : (1/f.attackCooldown).toFixed(1)}</b></div>
+        <div class="miniStat">HP <b>${f.maxHp}</b></div>
+        <div class="miniStat">Speed <b>${f.moveSpeed}</b></div>
+      </div>
+      <div class="smallText">${f.description}</div>
+    `;
+    card.addEventListener("click", () => onClick(f));
+    wrap.appendChild(card);
+  });
+}
+function renderFighterDetail(f){
+  $("fighterDetail").innerHTML = `
+    <div class="weaponIcon detailIcon" style="color:${f.color}">${f.icon}</div>
+    <h2 style="margin:0">${f.name}</h2>
+    <div class="role">${f.role}</div>
+    <p class="smallText">${f.description}</p>
+    ${statBar("Damage", f.damage, 70)}
+    ${statBar("Attack Speed", f.type === "drone" ? 70 : 1/f.attackCooldown*16, 80)}
+    ${statBar("HP", f.maxHp, 620)}
+    ${statBar("Move Speed", f.moveSpeed, 240)}
+    <div class="bonusList" style="margin-top:12px">${f.tags.map(t=>`<span class="pill">${t}</span>`).join("")}</div>
+    <p class="smallText">Tournament wins: ${progress.tournamentWins[f.id] || 0}<br>Campaign wins: ${progress.campaignWins[f.id] || 0}</p>
+  `;
+}
+function statBar(label,value,max){
+  return `<div style="margin-top:12px"><div class="smallText">${label}</div><div class="bar"><span style="width:${clamp(value/max*100,6,100)}%"></span></div></div>`;
+}
+function openCharacterSelect(){
+  $("selectSubtitle").textContent = selectedMode === "tournament" ? "Choose a starter for an 8-duel tournament." : "Choose a starter for a 10-level campaign.";
+  renderFighterCards("fighterCards", FIGHTERS, selectedStarter.id, f => { selectedStarter = f; openCharacterSelect(); });
+  renderFighterDetail(selectedStarter);
+  showScreen("characterSelect");
+}
+function openCollection(){
+  renderFighterCards("collectionCards", FIGHTERS, "", f => {
+    selectedStarter = f;
+    selectedMode = "tournament";
+    openCharacterSelect();
+  });
+  showScreen("collectionScreen");
+}
+function renderRoadmap(){
+  const grid = $("roadGrid");
+  grid.innerHTML = "";
+  run.roadmap.forEach((fid,i) => {
+    const f = fighterById(fid);
+    const node = document.createElement("div");
+    node.className = "roadNode" + (i < run.index ? " done" : i === run.index ? " current" : "");
+    node.innerHTML = `
+      <div class="nodeNum">Duel ${i+1}</div>
+      <div class="nodeIcon" style="color:${f.color}">${i <= run.index ? f.icon : "?"}</div>
+      <div class="nodeTitle">${i <= run.index ? f.name : "Unknown"}</div>
+      <div class="role">${i === run.index ? counterHint(f) : i < run.index ? "Recruited" : "Locked"}</div>
+    `;
+    grid.appendChild(node);
+  });
+  const active = fighterById(run.activeFighterId);
+  const enemy = fighterById(run.roadmap[run.index]);
+  $("roadInfo").innerHTML = `Active fighter: <b>${active.name}</b>. Next enemy: <b>${enemy.name}</b>, ${enemy.role}. Hint: ${counterHint(enemy)}`;
+  bonusPills("roadBonuses");
+  showScreen("roadmapScreen");
+}
+function counterHint(f){
+  if (f.tags.includes("melee")) return "Keep control or burst from range.";
+  if (f.tags.includes("explosive")) return "Fast fighters dodge blasts better.";
+  if (f.tags.includes("slow")) return "High HP and aura resist control.";
+  if (f.tags.includes("ricochet")) return "Melee pressure limits wall shots.";
+  if (f.tags.includes("aura")) return "Long range wins before aura ramps.";
+  return "Balanced matchup.";
+}
+function renderCampaign(){
+  const grid = $("campaignGrid");
+  grid.innerHTML = "";
+  CAMPAIGN_LEVELS.forEach((lvl,i) => {
+    const node = document.createElement("div");
+    node.className = "levelNode" + (i < run.index ? " done" : i === run.index ? " current" : "");
+    node.innerHTML = `
+      <div class="nodeNum">Level ${i+1}</div>
+      <div class="nodeIcon">${lvl.count}x</div>
+      <div class="nodeTitle">${lvl.reward}</div>
+      <div class="role">${i <= run.index ? lvl.roles.join(", ") : "Locked"}</div>
+    `;
+    grid.appendChild(node);
+  });
+  const active = fighterById(run.activeFighterId);
+  const lvl = CAMPAIGN_LEVELS[run.index];
+  $("campaignInfo").innerHTML = `Active fighter: <b>${active.name}</b>. Level ${run.index+1}: ${lvl.count} enemies, roles: <b>${lvl.roles.join(", ")}</b>.`;
+  bonusPills("campaignBonuses");
+  showScreen("campaignScreen");
+}
+function openPick(){
+  selectedRunFighter = fighterById(run.activeFighterId);
+  const fighters = run.collection.map(fighterById);
+  renderFighterCards("runFighterCards", fighters, selectedRunFighter.id, f => {
+    selectedRunFighter = f;
+    run.activeFighterId = f.id;
+    openPick();
+  });
+  const threat = selectedMode === "tournament" ? fighterById(run.roadmap[run.index]) : CAMPAIGN_LEVELS[run.index];
+  $("pickSubtitle").textContent = run.collection.length > 1 ? "Your run collection has multiple fighters." : "Only one fighter is available for now.";
+  $("nextThreat").innerHTML = selectedMode === "tournament"
+    ? `<div class="weaponIcon detailIcon" style="color:${threat.color}">${threat.icon}</div><h2 style="margin:0">Next: ${threat.name}</h2><p class="smallText">${threat.role}. ${threat.description}<br>Hint: ${counterHint(threat)}</p>`
+    : `<h2 style="margin:0">Level ${run.index+1}</h2><p class="smallText">${threat.count} mini-enemies: ${threat.roles.join(", ")}. Reward: ${threat.reward}.</p>`;
+  bonusPills("pickBonuses");
+  showScreen("pickScreen");
+}
+function renderUpgrades(){
+  const choices = weightedUpgradeChoices();
+  $("upgradeSubtitle").textContent = selectedMode === "tournament"
+    ? "Victory recruits the defeated fighter. Pick one upgrade before the next duel."
+    : "Campaign restores HP after each level. Pick one upgrade before moving on.";
+  $("upgradeChoices").innerHTML = "";
+  choices.forEach(up => {
+    const card = document.createElement("div");
+    card.className = "upgradeCard";
+    card.innerHTML = `<div class="rarity">${up.rarity}</div><h2 style="margin:0">${up.title}</h2><p class="smallText">${up.description}</p>${up.tags ? `<div class="bonusList">${up.tags.map(t=>`<span class="pill">${t}</span>`).join("")}</div>` : ""}`;
+    card.addEventListener("click", () => chooseUpgrade(up));
+    $("upgradeChoices").appendChild(card);
+  });
+  showScreen("upgradeScreen");
+}
+function weightedUpgradeChoices(){
+  const pool = [...UPGRADES].sort(() => Math.random() - .5);
+  return pool.slice(0,3);
+}
+function renderEnd(title,text){
+  $("endTitle").textContent = title;
+  $("endText").textContent = text;
+  renderMain();
+  showScreen("endScreen");
+}
+
+// ===== Mode Logic =====
+function startRun(){
+  selectedRunFighter = selectedStarter;
+  run = {
+    mode:selectedMode,
+    starterId:selectedStarter.id,
+    activeFighterId:selectedStarter.id,
+    collection:[selectedStarter.id],
+    globalBonuses:{...BASE_BONUSES},
+    index:0,
+    playerCarryHp:null,
+    roadmap:[],
+    lastBattle:null
+  };
+  if (selectedMode === "tournament") {
+    run.roadmap = generateTournament(selectedStarter.id);
+    renderRoadmap();
+  } else {
+    run.globalBonuses.healAfterBattlePercent = CAMPAIGN_BASE_HEAL;
+    renderCampaign();
+  }
+}
+function generateTournament(starterId){
+  const pool = FIGHTERS.filter(f=>f.id !== starterId).sort(() => Math.random() - .5).map(f=>f.id);
+  while (pool.length < 8) pool.push(pick(FIGHTERS).id);
+  return pool.slice(0,8);
+}
+function startCurrentBattle(){
+  if (run.collection.length > 1) {
+    openPick();
+    return;
+  }
+  launchBattle();
+}
+function chooseUpgrade(up){
+  up.apply(run.globalBonuses);
+  if (selectedMode === "tournament") renderRoadmap();
+  else renderCampaign();
+}
+function afterBattleVictory(){
+  if (selectedMode === "tournament") {
+    const defeated = run.roadmap[run.index];
+    if (!run.collection.includes(defeated)) run.collection.push(defeated);
+    run.index++;
+    if (run.index >= 8) {
+      progress.tournamentWins[run.starterId] = (progress.tournamentWins[run.starterId] || 0) + 1;
+      progress.totalCompletedRuns++;
+      saveProgress();
+      renderEnd("Tournament Complete", fighterById(run.starterId).name + " earned a tournament star.");
+      return;
+    }
+    renderUpgrades();
+  } else {
+    run.index++;
+    progress.bestCampaignLevel = Math.max(progress.bestCampaignLevel, run.index);
+    maybeRecruitCampaignFighter();
+    if (run.index >= 10) {
+      progress.campaignWins[run.starterId] = (progress.campaignWins[run.starterId] || 0) + 1;
+      progress.totalCompletedRuns++;
+      saveProgress();
+      renderEnd("Campaign Complete", fighterById(run.starterId).name + " cleared all ten levels.");
+      return;
+    }
+    saveProgress();
+    renderUpgrades();
+  }
+}
+function maybeRecruitCampaignFighter(){
+  const level = run.index;
+  const shouldRecruit = level === 3 || level === 7 || Math.random() < .18;
+  if (!shouldRecruit) return;
+  const missing = FIGHTERS.filter(f => !run.collection.includes(f.id));
+  if (missing.length) run.collection.push(pick(missing).id);
+}
+function afterBattleDefeat(){
+  if (selectedMode === "campaign") {
+    progress.bestCampaignLevel = Math.max(progress.bestCampaignLevel, run.index);
+    saveProgress();
+  }
+  renderEnd("Run Defeated", selectedMode === "tournament" ? "The tournament run ended at duel " + (run.index + 1) + "." : "The campaign run ended at level " + (run.index + 1) + ".");
+}
+
+// ===== Entities =====
+function makeEntity(fighter, team, x, y, opts={}){
+  const b = run.globalBonuses;
+  const isEnemy = team === "enemy";
+  const levelMult = opts.levelMult || 1;
+  const hpMult = isEnemy ? levelMult * (opts.hpMult || 1) * debug.enemyHpMult : b.hpMult;
+  const dmgMult = isEnemy ? levelMult * (opts.damageMult || 1) : b.damageMult * debug.damageMult;
+  const angle = rand(0,Math.PI*2);
+  const speed = getBallSpeed(fighter, team, opts);
+  return {
+    id:Math.random().toString(36).slice(2), fighter, team, x, y, vx:Math.cos(angle)*speed, vy:Math.sin(angle)*speed,
+    baseSpeed:speed,
+    radius:opts.radius || 30, maxHp:fighter.maxHp * hpMult, hp:fighter.maxHp * hpMult, damage:fighter.damage * dmgMult,
+    attackCooldown:fighter.attackCooldown / (isEnemy ? 1 : b.attackSpeedMult), projectileSpeed:fighter.projectileSpeed * (isEnemy ? 1 : b.projectileSpeedMult),
+    cooldown:rand(0,.4), status:{ burn:0, slow:0, stun:0, bleed:0 }, stacks:{ snow:0, knife:0, sword:0 }, dead:false,
+    ai:opts.ai || "duelist", speedFactor:opts.speedMult || 1, mini:!!opts.mini, boss:!!opts.boss, firstHitReady:!isEnemy && b.firstHitBonus > 0, auraTick:0, hitFlash:0
+  };
+}
+function launchBattle(){
+  run.activeFighterId = selectedRunFighter ? selectedRunFighter.id : run.activeFighterId;
+  const playerF = fighterById(run.activeFighterId);
+  const player = makeEntity(playerF,"player",220,H/2);
+  if (run.playerCarryHp != null) player.hp = clamp(run.playerCarryHp, 1, player.maxHp);
+  battle = {
+    player,
+    enemies: selectedMode === "tournament" ? [makeTournamentEnemy()] : makeCampaignEnemies(),
+    projectiles:[], melee:[], explosions:[], damageNumbers:[], zones:[], particles:[],
+    running:true, paused:false, ended:false, finalSlow:0, shake:0, time:0, result:null
+  };
+  updateBattleHud();
+  $("pauseOverlay").classList.remove("active");
+  $("battleResultOverlay").classList.remove("active");
+  $("debugPanel").classList.toggle("active", debug.open);
+  bonusPills("battleBonusTray");
+  showScreen("battleScreen");
+  lastTime = performance.now();
+  cancelAnimationFrame(raf);
+  raf = requestAnimationFrame(loop);
+}
+function makeTournamentEnemy(){
+  const f = fighterById(run.roadmap[run.index]);
+  const scale = 1 + run.index * .045;
+  return makeEntity(f,"enemy",W-220,H/2,{ levelMult:scale, hpMult:1, damageMult:.98 + run.index*.025, radius:31, ai:"duelist" });
+}
+function makeCampaignEnemies(){
+  const lvlIndex = run.index;
+  const lvl = CAMPAIGN_LEVELS[lvlIndex];
+  const count = lvl.count;
+  const countMod = COUNT_MOD[count] || .6;
+  const levelHp = (.75 + (lvlIndex+1) * .08) * countMod;
+  const levelDmg = (.75 + (lvlIndex+1) * .06) * countMod;
+  return lvl.roles.map((role,i) => makeMiniEnemy(role, i, count, levelHp, levelDmg, lvlIndex));
+}
+function makeMiniEnemy(role,i,count,hpMult,dmgMult,lvlIndex){
+  const template = miniTemplate(role);
+  const angle = (Math.PI * 2 / count) * i - Math.PI / 2;
+  const x = W/2 + Math.cos(angle) * 260;
+  const y = H/2 + Math.sin(angle) * 205;
+  const f = { ...template, id:"mini_"+role, name:template.name, icon:template.icon, tags:template.tags };
+  const boss = role === "boss";
+  return makeEntity(f,"enemy",x,y,{
+    levelMult:1, hpMult:hpMult * (boss ? 2.6 : 1), damageMult:dmgMult * (boss ? 1.35 : 1),
+    speedMult:template.speedFactor, radius:boss ? 34 : template.radius, ai:role, mini:!boss, boss
+  });
+}
+function miniTemplate(role){
+  const map = {
+    shooter:{ name:"Shooter", icon:"T", color:"#ffb347", role:"Mini Shooter", description:"Slow shots.", maxHp:145, moveSpeed:138, damage:17, attackCooldown:1.25, projectileSpeed:430, type:"pistol", tags:["projectile"], radius:22, speedFactor:.9 },
+    chaser:{ name:"Chaser", icon:"C", color:"#ff5a73", role:"Mini Chaser", description:"Pressures in melee.", maxHp:165, moveSpeed:170, damage:14, attackCooldown:.82, projectileSpeed:0, type:"knife", tags:["melee"], radius:23, speedFactor:1.05 },
+    bomber:{ name:"Bomber", icon:"O", color:"#ff9b42", role:"Mini Bomber", description:"Explodes nearby.", maxHp:135, moveSpeed:112, damage:34, attackCooldown:1.6, projectileSpeed:0, type:"bomber", tags:["explosive"], radius:24, speedFactor:.82 },
+    frost:{ name:"Frost", icon:"I", color:"#8edbff", role:"Mini Frost", description:"Applies slow.", maxHp:135, moveSpeed:132, damage:12, attackCooldown:1.05, projectileSpeed:400, type:"snowball", tags:["projectile","slow"], radius:22, speedFactor:.9 },
+    tank:{ name:"Tank", icon:"H", color:"#c9d4e8", role:"Mini Tank", description:"High HP, low damage.", maxHp:270, moveSpeed:96, damage:12, attackCooldown:1.05, projectileSpeed:0, type:"sword", tags:["melee","heavy"], radius:28, speedFactor:.72 },
+    swarm:{ name:"Swarm", icon:"V", color:"#ff6fa4", role:"Mini Swarm", description:"Low HP, fast.", maxHp:90, moveSpeed:225, damage:10, attackCooldown:.55, projectileSpeed:0, type:"knife", tags:["melee","fast"], radius:19, speedFactor:1.35 },
+    boss:{ name:"Boss", icon:"X", color:"#a875ff", role:"Mini Boss", description:"Hybrid bruiser.", maxHp:330, moveSpeed:132, damage:24, attackCooldown:.95, projectileSpeed:360, type:"rocket", tags:["projectile","explosive","heavy"], radius:34, speedFactor:.9 }
+  };
+  return map[role] || map.shooter;
+}
+
+// ===== Combat Logic =====
+function loop(now){
+  if (!battle) return;
+  const rawDt = Math.min(.033, (now - lastTime) / 1000 || .016);
+  lastTime = now;
+  const dt = (battle.finalSlow > 0 || debug.forceSlow) ? rawDt * .35 : rawDt;
+  if (!battle.paused && !battle.ended) updateBattle(dt, rawDt);
+  renderBattle(rawDt);
+  updateBattleHud();
+  updateDebug();
+  if (currentScreen === "battleScreen") raf = requestAnimationFrame(loop);
+}
+function updateBattle(dt, rawDt){
+  battle.time += dt;
+  battle.shake = Math.max(0, battle.shake - rawDt * 20);
+  battle.finalSlow = Math.max(0, battle.finalSlow - rawDt);
+  updateEntity(battle.player, dt);
+  for (const e of battle.enemies) updateEntity(e, dt);
+  for (const e of battle.enemies) resolveBodyCollision(battle.player, e);
+  updateAuras(dt);
+  updateProjectiles(dt);
+  updateMelee(dt);
+  updateEffects(dt);
+  checkWinLose();
+}
+function updateEntity(e, dt){
+  if (e.dead) return;
+  if (e.status.burn > 0) { e.status.burn -= dt; applyDamage(e, 8 * dt, null, { dot:true }); }
+  if (e.status.bleed > 0) { e.status.bleed -= dt; applyDamage(e, 6 * run.globalBonuses.bleedDamageMult * dt, null, { dot:true }); }
+  if (e.status.stun > 0) { e.status.stun -= dt; e.hitFlash = Math.max(0,e.hitFlash-dt); return; }
+  const target = e.team === "player" ? nearestEnemy(e) : battle.player;
+  if (!target || target.dead) return;
+  applyBallDrift(e,target,dt);
+  normalizeBallVelocity(e);
+  e.x += e.vx;
+  e.y += e.vy;
+  bounce(e);
+  e.cooldown -= dt;
+  e.hitFlash = Math.max(0,e.hitFlash-dt);
+  if (e.cooldown <= 0) attack(e,target);
+}
+function getBallSpeed(fighter, team, opts={}){
+  const isEnemy = team === "enemy";
+  const runSpeed = !isEnemy && run ? run.globalBonuses.moveSpeedMult : 1;
+  const roleSpeed = isEnemy ? (opts.speedMult || 1) : 1;
+  const bossSpeed = opts.boss ? .92 : 1;
+  return fighter.moveSpeed * runSpeed * roleSpeed * bossSpeed / 60;
+}
+function applyBallDrift(e,target,dt){
+  const slow = e.status.slow > 0 ? .55 : 1;
+  if (e.status.slow > 0) e.status.slow -= dt;
+  e.baseSpeed = getBallSpeed(e.fighter, e.team, { speedMult:e.speedFactor || 1, boss:e.boss });
+  e.currentSpeed = e.baseSpeed * slow;
+  const dx = target.x - e.x, dy = target.y - e.y, l = Math.hypot(dx,dy) || 1;
+  const drift = (BALL_STEER[e.ai] || (e.fighter.tags.includes("melee") ? .42 : .20)) * dt * e.currentSpeed;
+  const toward = ["chaser","bomber","tank","swarm"].includes(e.ai) || e.fighter.tags.includes("melee") || e.fighter.type === "drone";
+  const desiredX = toward ? dx/l : -dy/l;
+  const desiredY = toward ? dy/l : dx/l;
+  e.vx += desiredX * drift;
+  e.vy += desiredY * drift;
+}
+function normalizeBallVelocity(e){
+  const speed = e.currentSpeed || e.baseSpeed || 1;
+  const len = Math.hypot(e.vx,e.vy) || 1;
+  e.vx = e.vx / len * speed;
+  e.vy = e.vy / len * speed;
+}
+function bounce(e){
+  if (e.x < ARENA.left + e.radius) { e.x = ARENA.left + e.radius; e.vx = Math.abs(e.vx); }
+  if (e.x > ARENA.right - e.radius) { e.x = ARENA.right - e.radius; e.vx = -Math.abs(e.vx); }
+  if (e.y < ARENA.top + e.radius) { e.y = ARENA.top + e.radius; e.vy = Math.abs(e.vy); }
+  if (e.y > ARENA.bottom - e.radius) { e.y = ARENA.bottom - e.radius; e.vy = -Math.abs(e.vy); }
+}
+function nearestEnemy(e){
+  let best = null, bestD = Infinity;
+  for (const target of battle.enemies) {
+    if (target.dead) continue;
+    const d = dist(e,target);
+    if (d < bestD) { best = target; bestD = d; }
+  }
+  return best;
+}
+function attack(e,target){
+  e.cooldown = e.attackCooldown;
+  if (e.fighter.type === "drone") return;
+  if (e.fighter.type === "bomber") {
+    if (dist(e,target) < 78) explode(e.x,e.y,e.damage,e,120,true);
+    return;
+  }
+  if (["sword","knife"].includes(e.fighter.type)) {
+    meleeAttack(e,target);
+    return;
+  }
+  const a = Math.atan2(target.y-e.y,target.x-e.x);
+  if (e.fighter.type === "shotgun") {
+    for (let i=-2;i<=2;i++) spawnProjectile(e,a+i*.18,{ damage:e.damage, radius:7, speed:e.projectileSpeed, life:.9, color:"#ffb347" });
+    return;
+  }
+  if (e.fighter.type === "grenade") { spawnProjectile(e,a,{ grenade:true, damage:e.damage, radius:12, speed:e.projectileSpeed, life:1.25, color:"#ff9b42" }); return; }
+  if (e.fighter.type === "rocket") { spawnProjectile(e,a,{ rocket:true, damage:e.damage, radius:10, speed:e.projectileSpeed, life:2.8, color:"#ff5a73" }); return; }
+  if (e.fighter.type === "boomerang") { spawnProjectile(e,a,{ boomerang:true, damage:e.damage, radius:12, speed:e.projectileSpeed, life:2.4, color:"#ad8cff", owner:e, travel:.75 }); return; }
+  if (e.fighter.type === "bow") { spawnProjectile(e,a,{ ricochet:true, damage:e.damage * (e.team === "player" ? run.globalBonuses.ricochetDamageMult : 1), radius:6, speed:e.projectileSpeed, life:2.2, color:"#d7af6f", bounces:3 }); return; }
+  const effects = {};
+  if (e.fighter.type === "fireball") effects.burn = 2.2 * (e.team === "player" ? run.globalBonuses.burnDurationMult : 1);
+  if (e.fighter.type === "snowball") effects.slow = 1.6;
+  spawnProjectile(e,a,{ damage:e.damage, radius:e.fighter.type === "fireball" ? 11 : 7, speed:e.projectileSpeed, life:1.7, color:e.fighter.color, effects });
+}
+function spawnProjectile(owner, angle, extra){
+  const speed = extra.speed / 60;
+  battle.projectiles.push({
+    owner, team:owner.team, x:owner.x + Math.cos(angle) * (owner.radius+12), y:owner.y + Math.sin(angle) * (owner.radius+12),
+    vx:Math.cos(angle)*speed, vy:Math.sin(angle)*speed, age:0, hitIds:new Set(), ...extra
+  });
+}
+function meleeAttack(e,target){
+  const rangeBase = e.fighter.type === "sword" ? 112 : 78;
+  const range = rangeBase * (e.team === "player" ? run.globalBonuses.meleeRangeMult : 1);
+  e.stacks[e.fighter.type] = (e.stacks[e.fighter.type] || 0) + 1;
+  const empowered = e.fighter.type === "sword" && e.stacks.sword % 3 === 0;
+  const angle = Math.atan2(target.y-e.y,target.x-e.x);
+  const damage = e.damage * (empowered ? 1.75 : 1);
+  battle.melee.push({ owner:e, team:e.team, x:e.x, y:e.y, angle, range, age:0, life:.18, damage, width:e.fighter.type === "sword" ? 1.05 : .72, bleed:e.fighter.type === "knife" && e.stacks.knife % 3 === 0 });
+}
+function updateProjectiles(dt){
+  for (let i=battle.projectiles.length-1;i>=0;i--) {
+    const p = battle.projectiles[i];
+    p.age += dt;
+    if (p.rocket) {
+      const t = p.team === "player" ? nearestTargetPoint(p) : battle.player;
+      if (t) {
+        const a = Math.atan2(t.y-p.y,t.x-p.x), sp = Math.hypot(p.vx,p.vy);
+        p.vx += (Math.cos(a)*sp - p.vx) * .055;
+        p.vy += (Math.sin(a)*sp - p.vy) * .055;
+      }
+    }
+    if (p.boomerang && p.age > p.travel) {
+      const a = Math.atan2(p.owner.y-p.y,p.owner.x-p.x), sp = Math.hypot(p.vx,p.vy);
+      p.vx = Math.cos(a)*sp; p.vy = Math.sin(a)*sp;
+    }
+    p.x += p.vx; p.y += p.vy;
+    if (p.ricochet) handleRicochet(p);
+    const targets = p.team === "player" ? battle.enemies : [battle.player];
+    for (const t of targets) {
+      if (t.dead || p.hitIds.has(t.id)) continue;
+      if (Math.hypot(p.x-t.x,p.y-t.y) < p.radius + t.radius) {
+        if (p.grenade || p.rocket) explode(p.x,p.y,p.damage,p.owner,p.rocket ? 118 : 132,false);
+        else hitTarget(t,p.damage,p.owner,p.effects || {}, p);
+        p.hitIds.add(t.id);
+        if (!p.boomerang) { battle.projectiles.splice(i,1); i--; }
+        break;
+      }
+    }
+    if (i < 0) break;
+    if (p.grenade && p.age > p.life) { explode(p.x,p.y,p.damage,p.owner,132,false); battle.projectiles.splice(i,1); continue; }
+    if (p.age > p.life || p.x < -80 || p.x > W+80 || p.y < -80 || p.y > H+80) battle.projectiles.splice(i,1);
+  }
+}
+function nearestTargetPoint(p){
+  let best = null, bestD = Infinity;
+  for (const e of battle.enemies) {
+    if (e.dead) continue;
+    const d = Math.hypot(p.x-e.x,p.y-e.y);
+    if (d < bestD) { best=e; bestD=d; }
+  }
+  return best;
+}
+function handleRicochet(p){
+  let bounced = false;
+  if (p.x < ARENA.left + p.radius) { p.x = ARENA.left + p.radius; p.vx = Math.abs(p.vx); bounced = true; }
+  if (p.x > ARENA.right - p.radius) { p.x = ARENA.right - p.radius; p.vx = -Math.abs(p.vx); bounced = true; }
+  if (p.y < ARENA.top + p.radius) { p.y = ARENA.top + p.radius; p.vy = Math.abs(p.vy); bounced = true; }
+  if (p.y > ARENA.bottom - p.radius) { p.y = ARENA.bottom - p.radius; p.vy = -Math.abs(p.vy); bounced = true; }
+  if (bounced) { p.bounces--; addParticle(p.x,p.y,p.color,12); }
+  if (p.bounces < 0) p.age = p.life + 1;
+}
+function updateMelee(dt){
+  for (let i=battle.melee.length-1;i>=0;i--) {
+    const m = battle.melee[i];
+    m.age += dt;
+    const targets = m.team === "player" ? battle.enemies : [battle.player];
+    for (const t of targets) {
+      if (t.dead || m.hit) continue;
+      const a = Math.atan2(t.y-m.owner.y,t.x-m.owner.x);
+      const da = Math.abs(Math.atan2(Math.sin(a-m.angle),Math.cos(a-m.angle)));
+      if (dist(t,m.owner) < m.range + t.radius && da < m.width) {
+        hitTarget(t,m.damage,m.owner,m.bleed ? { bleed:2.8 } : {}, m);
+        m.hit = true;
+      }
+    }
+    if (m.age > m.life) battle.melee.splice(i,1);
+  }
+}
+function updateAuras(dt){
+  const all = [battle.player, ...battle.enemies];
+  for (const e of all) {
+    if (e.dead || e.fighter.type !== "drone") continue;
+    e.auraTick -= dt;
+    if (e.auraTick > 0) continue;
+    e.auraTick = e.attackCooldown;
+    const targets = e.team === "player" ? battle.enemies : [battle.player];
+    for (const t of targets) if (!t.dead && dist(e,t) < 128) hitTarget(t,e.damage,e,{},null);
+  }
+}
+function hitTarget(t,damage,source,effects,hitObj){
+  let final = damage;
+  if (source && source.firstHitReady) { final *= 1 + run.globalBonuses.firstHitBonus; source.firstHitReady = false; }
+  applyDamage(t, final, source);
+  if (effects.burn) t.status.burn = Math.max(t.status.burn, effects.burn);
+  if (effects.slow) {
+    t.status.slow = Math.max(t.status.slow, effects.slow);
+    t.stacks.snow = (t.stacks.snow || 0) + 1;
+    if (t.stacks.snow >= 4) { t.status.stun = Math.max(t.status.stun, .55 * run.globalBonuses.stunDurationMult); t.stacks.snow = 0; }
+  }
+  if (effects.bleed) t.status.bleed = Math.max(t.status.bleed, effects.bleed);
+  if (source) {
+    const dx = t.x - source.x, dy = t.y - source.y, l = Math.hypot(dx,dy) || 1;
+    t.vx += dx/l * 1.4; t.vy += dy/l * 1.4;
+  }
+}
+function applyDamage(t,damage,source,opts={}){
+  if (t.dead) return;
+  t.hp -= damage;
+  t.hitFlash = .08;
+  if (!opts.dot) battle.damageNumbers.push({ x:t.x+rand(-8,8), y:t.y-t.radius-8, value:Math.max(1,Math.round(damage)), life:.75, color:source && source.team === "player" ? "#ecf5ff" : "#ffb3c0" });
+  if (t.hp <= 0) {
+    t.hp = 0;
+    t.dead = true;
+    const finalKill = t.team === "player" || battle.enemies.every(e => e.dead || e.hp <= 0);
+    if (finalKill) battle.finalSlow = SLOW_FINAL_SECONDS;
+    battle.shake = Math.max(battle.shake, finalKill ? 7 : 3);
+    explodeVisual(t.x,t.y,70,t.fighter.color);
+  }
+}
+function explode(x,y,damage,owner,radius,selfDestruct){
+  const rad = radius * (owner.team === "player" ? run.globalBonuses.explosionRadiusMult : 1);
+  const targets = owner.team === "player" ? battle.enemies : [battle.player];
+  for (const t of targets) {
+    if (t.dead) continue;
+    const d = Math.hypot(x-t.x,y-t.y);
+    if (d < rad + t.radius) hitTarget(t, damage * (1 - d/(rad+t.radius) * .45), owner, {}, null);
+  }
+  battle.shake = Math.max(battle.shake,10);
+  explodeVisual(x,y,rad,"#ff9b42");
+  if (selfDestruct) owner.hp = 0, owner.dead = true;
+}
+function explodeVisual(x,y,radius,color){ battle.explosions.push({ x,y,radius,life:.45,max:.45,color }); }
+function addParticle(x,y,color,count){
+  for (let i=0;i<count;i++) battle.particles.push({ x,y,vx:rand(-2.5,2.5),vy:rand(-2.5,2.5),life:rand(.25,.55),color });
+}
+function updateEffects(dt){
+  for (let i=battle.explosions.length-1;i>=0;i--) { battle.explosions[i].life -= dt; if (battle.explosions[i].life <= 0) battle.explosions.splice(i,1); }
+  for (let i=battle.damageNumbers.length-1;i>=0;i--) { const d=battle.damageNumbers[i]; d.life-=dt; d.y-=dt*42; if (d.life<=0) battle.damageNumbers.splice(i,1); }
+  for (let i=battle.particles.length-1;i>=0;i--) { const p=battle.particles[i]; p.life-=dt; p.x+=p.vx; p.y+=p.vy; if (p.life<=0) battle.particles.splice(i,1); }
+}
+function resolveBodyCollision(a,b){
+  if (a.dead || b.dead) return;
+  const dx=b.x-a.x, dy=b.y-a.y, d=Math.hypot(dx,dy)||1, min=a.radius+b.radius;
+  if (d < min) {
+    const nx=dx/d, ny=dy/d, push=(min-d)/2;
+    a.x-=nx*push; a.y-=ny*push; b.x+=nx*push; b.y+=ny*push;
+    const tx = -ny, ty = nx;
+    const aN = a.vx * nx + a.vy * ny;
+    const aT = a.vx * tx + a.vy * ty;
+    const bN = b.vx * nx + b.vy * ny;
+    const bT = b.vx * tx + b.vy * ty;
+    a.vx = bN * nx + aT * tx;
+    a.vy = bN * ny + aT * ty;
+    b.vx = aN * nx + bT * tx;
+    b.vy = aN * ny + bT * ty;
+    normalizeBallVelocity(a);
+    normalizeBallVelocity(b);
+    if (b.ai === "bomber" && d < min + 4) explode(b.x,b.y,b.damage,b,116,true);
+    else { applyDamage(a,b.damage*.18,b,{dot:true}); applyDamage(b,a.damage*.08,a,{dot:true}); }
+  }
+}
+function checkWinLose(){
+  if (battle.ended) return;
+  const playerDead = battle.player.dead || battle.player.hp <= 0;
+  const enemiesDead = battle.enemies.every(e => e.dead || e.hp <= 0);
+  if (!playerDead && !enemiesDead) return;
+  battle.ended = true;
+  battle.running = false;
+  battle.result = enemiesDead ? "win" : "lose";
+  const won = battle.result === "win";
+  if (won) {
+    const heal = run.globalBonuses.healAfterBattlePercent;
+    run.playerCarryHp = clamp(battle.player.hp + battle.player.maxHp * heal, 1, battle.player.maxHp);
+  }
+  $("battleResultTitle").textContent = won ? "Victory" : "Defeat";
+  $("battleResultText").textContent = won ? "Battle won. Preparing run rewards..." : "Your active fighter fell. The run is over.";
+  $("battleResultOverlay").classList.add("active");
+  setTimeout(() => {
+    if (!battle || currentScreen !== "battleScreen") return;
+    won ? afterBattleVictory() : afterBattleDefeat();
+  }, 950);
+}
+
+// ===== Rendering =====
+function renderBattle(dt){
+  if (!battle) return;
+  ctx.save();
+  const sx = battle.shake ? rand(-battle.shake,battle.shake) : 0;
+  const sy = battle.shake ? rand(-battle.shake,battle.shake) : 0;
+  ctx.translate(sx,sy);
+  drawBackground();
+  drawProjectiles();
+  drawMelee();
+  drawExplosions();
+  drawEntity(battle.player);
+  for (const e of battle.enemies) drawEntity(e);
+  drawDamageNumbers();
+  drawParticles();
+  ctx.restore();
+}
+function drawBackground(){
+  const g = ctx.createLinearGradient(0,0,W,H);
+  g.addColorStop(0,"#111a3a"); g.addColorStop(.55,"#151238"); g.addColorStop(1,"#0b1024");
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle = "rgba(142,219,255,.08)"; ctx.lineWidth = 1;
+  for (let x=ARENA.left;x<=ARENA.right;x+=48) { ctx.beginPath(); ctx.moveTo(x,ARENA.top); ctx.lineTo(x,ARENA.bottom); ctx.stroke(); }
+  for (let y=ARENA.top;y<=ARENA.bottom;y+=48) { ctx.beginPath(); ctx.moveTo(ARENA.left,y); ctx.lineTo(ARENA.right,y); ctx.stroke(); }
+  ctx.strokeStyle = "rgba(62,231,255,.48)"; ctx.lineWidth = 3; ctx.strokeRect(ARENA.left,ARENA.top,ARENA.right-ARENA.left,ARENA.bottom-ARENA.top);
+  ctx.strokeStyle = "rgba(255,179,71,.22)"; ctx.lineWidth = 1; ctx.strokeRect(ARENA.left+10,ARENA.top+10,ARENA.right-ARENA.left-20,ARENA.bottom-ARENA.top-20);
+}
+function drawProjectiles(){
+  for (const p of battle.projectiles) {
+    ctx.save();
+    ctx.shadowColor = p.color; ctx.shadowBlur = 16;
+    ctx.fillStyle = p.color;
+    if (p.rocket) {
+      const a = Math.atan2(p.vy,p.vx); ctx.translate(p.x,p.y); ctx.rotate(a);
+      ctx.fillRect(-14,-6,28,12); ctx.fillStyle="#ffe06b"; ctx.beginPath(); ctx.arc(-16,0,5,0,Math.PI*2); ctx.fill();
+    } else if (p.grenade) {
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.radius,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle="#fff0a0"; ctx.stroke();
+    } else if (p.boomerang) {
+      ctx.translate(p.x,p.y); ctx.rotate(battle.time*8); ctx.fillRect(-15,-4,30,8); ctx.fillRect(-4,-15,8,30);
+    } else {
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.radius,0,Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+function drawMelee(){
+  for (const m of battle.melee) {
+    const t = 1 - m.age / m.life;
+    ctx.save();
+    ctx.translate(m.owner.x,m.owner.y); ctx.rotate(m.angle);
+    ctx.strokeStyle = m.team === "player" ? `rgba(243,229,108,${t})` : `rgba(255,90,115,${t})`;
+    ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = 16; ctx.lineWidth = m.bleed ? 9 : 12; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.arc(0,0,m.range,-m.width,m.width); ctx.stroke();
+    ctx.restore();
+  }
+}
+function drawExplosions(){
+  for (const e of battle.explosions) {
+    const t = e.life / e.max, r = e.radius * (1 - t*.25);
+    const g = ctx.createRadialGradient(e.x,e.y,0,e.x,e.y,r);
+    g.addColorStop(0,`rgba(255,240,150,${.75*t})`);
+    g.addColorStop(.35,`rgba(255,155,66,${.55*t})`);
+    g.addColorStop(1,"rgba(255,90,70,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(e.x,e.y,r,0,Math.PI*2); ctx.fill();
+  }
+}
+function drawEntity(e){
+  if (e.dead) return;
+  const color = e.team === "player" ? "#3ee7ff" : (e.fighter.color || "#ff5a73");
+  ctx.save();
+  if (e.fighter.type === "drone") {
+    ctx.beginPath(); ctx.arc(e.x,e.y,128,0,Math.PI*2); ctx.fillStyle = e.team === "player" ? "rgba(88,223,155,.10)" : "rgba(255,90,115,.08)"; ctx.fill();
+  }
+  ctx.shadowColor = color; ctx.shadowBlur = e.hitFlash > 0 ? 28 : 12;
+  ctx.fillStyle = e.team === "player" ? "#14274a" : (e.mini ? "#3a1822" : "#341d33");
+  ctx.beginPath(); ctx.arc(e.x,e.y,e.radius,0,Math.PI*2); ctx.fill();
+  ctx.lineWidth = e.team === "player" ? 5 : 4; ctx.strokeStyle = color; ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = e.hitFlash > 0 ? "#fff" : color;
+  ctx.font = `900 ${e.mini ? 18 : 24}px Trebuchet MS`;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(e.fighter.icon, e.x, e.y+1);
+  drawEntityHp(e);
+  drawStatus(e);
+  ctx.restore();
+}
+function drawEntityHp(e){
+  const w = e.mini ? 54 : 78, h = 7, y = e.y - e.radius - 18;
+  ctx.fillStyle = "rgba(0,0,0,.48)"; roundRect(e.x-w/2,y,w,h,4); ctx.fill();
+  ctx.fillStyle = e.team === "player" ? "#58df9b" : "#ff5a73"; roundRect(e.x-w/2,y,w*(e.hp/e.maxHp),h,4); ctx.fill();
+  ctx.fillStyle = "#dce7ff"; ctx.font = "11px Trebuchet MS"; ctx.textAlign="center"; ctx.fillText(e.fighter.name, e.x, e.y + e.radius + 16);
+}
+function drawStatus(e){
+  let x = e.x - 30, y = e.y - e.radius - 30;
+  ctx.font = "12px Trebuchet MS"; ctx.textAlign = "left";
+  if (e.status.burn > 0) { ctx.fillStyle="#ff653f"; ctx.fillText("BURN",x,y); x+=36; }
+  if (e.status.slow > 0) { ctx.fillStyle="#8edbff"; ctx.fillText("SLOW",x,y); x+=36; }
+  if (e.status.stun > 0) { ctx.fillStyle="#a875ff"; ctx.fillText("STUN",x,y); x+=36; }
+  if (e.status.bleed > 0) { ctx.fillStyle="#ff6fa4"; ctx.fillText("BLEED",x,y); }
+}
+function drawDamageNumbers(){
+  for (const d of battle.damageNumbers) {
+    ctx.save(); ctx.globalAlpha = clamp(d.life/.75,0,1); ctx.fillStyle = d.color; ctx.shadowColor="#000"; ctx.shadowBlur=5; ctx.font="900 18px Trebuchet MS"; ctx.textAlign="center"; ctx.fillText("-"+d.value,d.x,d.y); ctx.restore();
+  }
+}
+function drawParticles(){
+  for (const p of battle.particles) {
+    ctx.globalAlpha = clamp(p.life/.55,0,1); ctx.fillStyle=p.color; ctx.fillRect(p.x,p.y,3,3); ctx.globalAlpha=1;
+  }
+}
+function roundRect(x,y,w,h,r){
+  ctx.beginPath(); ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r); ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h); ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r); ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y);
+}
+
+// ===== HUD / Debug =====
+function updateBattleHud(){
+  if (!battle) return;
+  $("playerHudName").textContent = battle.player.fighter.name;
+  setHpFill($("playerHpFill"), $("playerHpText"), battle.player.hp, battle.player.maxHp);
+  const alive = battle.enemies.filter(e=>!e.dead);
+  const enemyHp = alive.reduce((s,e)=>s+e.hp,0);
+  const enemyMax = battle.enemies.reduce((s,e)=>s+e.maxHp,0);
+  $("enemyHudName").textContent = selectedMode === "tournament" ? battle.enemies[0].fighter.name : alive.length + " enemies alive";
+  setHpFill($("enemyHpFill"), $("enemyHpText"), enemyHp, enemyMax);
+  $("battleTitle").textContent = selectedMode === "tournament" ? "Tournament Duel " + (run.index+1) + " / 8" : "Campaign Level " + (run.index+1) + " / 10";
+}
+function updateDebug(){
+  if (!battle) return;
+  $("debugDamageMult").value = debug.damageMult;
+  $("debugEnemyHpMult").value = debug.enemyHpMult;
+  $("debugOut").textContent =
+    "mode: " + selectedMode +
+    "\nfight/level: " + (run.index + 1) +
+    "\nplayer hp: " + Math.ceil(battle.player.hp) + "/" + Math.ceil(battle.player.maxHp) +
+    "\nenemy count: " + battle.enemies.filter(e=>!e.dead).length +
+    "\nbonuses: " + JSON.stringify(run.globalBonuses, null, 2);
+}
+function togglePause(force){
+  if (!battle || battle.ended) return;
+  battle.paused = typeof force === "boolean" ? force : !battle.paused;
+  $("pauseOverlay").classList.toggle("active", battle.paused);
+}
+function quitRun(){ battle = null; cancelAnimationFrame(raf); afterBattleDefeat(); }
+
+// ===== Events =====
+$("modeTournament").addEventListener("click", () => setMode("tournament"));
+$("modeCampaign").addEventListener("click", () => setMode("campaign"));
+$("startModeBtn").addEventListener("click", openCharacterSelect);
+$("collectionBtn").addEventListener("click", openCollection);
+$("resetProgressBtn").addEventListener("click", () => {
+  if (!confirm("Reset Weapon Arena progress?")) return;
+  localStorage.removeItem(STORAGE_KEY);
+  progress = loadProgress();
+  renderMain();
+});
+document.querySelectorAll("[data-screen]").forEach(btn => btn.addEventListener("click", () => showScreen(btn.dataset.screen)));
+$("startRunBtn").addEventListener("click", startRun);
+$("roadStartBtn").addEventListener("click", startCurrentBattle);
+$("campaignStartBtn").addEventListener("click", startCurrentBattle);
+$("pickBackBtn").addEventListener("click", () => selectedMode === "tournament" ? renderRoadmap() : renderCampaign());
+$("pickStartBtn").addEventListener("click", launchBattle);
+$("endAgainBtn").addEventListener("click", openCharacterSelect);
+$("pauseBtn").addEventListener("click", () => togglePause());
+$("resumeBtn").addEventListener("click", () => togglePause(false));
+$("restartBattleBtn").addEventListener("click", () => launchBattle());
+$("quitBattleBtn").addEventListener("click", quitRun);
+$("debugBtn").addEventListener("click", () => { debug.open = !debug.open; $("debugPanel").classList.toggle("active", debug.open); });
+$("debugWin").addEventListener("click", () => { battle.enemies.forEach(e=>{e.hp=0;e.dead=true;}); checkWinLose(); });
+$("debugLose").addEventListener("click", () => { battle.player.hp=0; battle.player.dead=true; checkWinLose(); });
+$("debugSlow").addEventListener("click", () => { debug.forceSlow = !debug.forceSlow; });
+$("debugDamageMult").addEventListener("input", e => { debug.damageMult = parseFloat(e.target.value); });
+$("debugEnemyHpMult").addEventListener("input", e => { debug.enemyHpMult = parseFloat(e.target.value); });
+$("debugRestart").addEventListener("click", () => launchBattle());
+document.addEventListener("keydown", e => {
+  if (e.code === "Space" && currentScreen === "battleScreen") { e.preventDefault(); togglePause(); }
+  if (e.code === "Escape") {
+    if (currentScreen === "battleScreen") togglePause();
+    else if (currentScreen !== "mainMenu") showScreen("mainMenu");
+  }
+  if (e.key === "`") { debug.open = !debug.open; $("debugPanel").classList.toggle("active", debug.open); }
+});
+
+renderMain();
+setMode("tournament");
+renderFighterDetail(selectedStarter);
+})();
+</script>
+</body>
+</html>

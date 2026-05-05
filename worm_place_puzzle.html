@@ -308,6 +308,43 @@
       align-items:center;
     }
     .screenButtons .actionButton{min-width:150px}
+    .levelPicker{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) minmax(92px,120px);
+      gap:10px;
+      align-items:end;
+      padding:12px;
+      border-radius:18px;
+      background:rgba(255,255,255,.56);
+      border:1px solid rgba(24,49,79,.06);
+    }
+    .levelPicker label{
+      display:grid;
+      gap:4px;
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      color:var(--muted);
+      font-weight:700;
+    }
+    .levelPicker strong{
+      font-size:18px;
+      line-height:1.1;
+      color:var(--text);
+      text-transform:none;
+      letter-spacing:0;
+    }
+    .levelPicker input{
+      width:100%;
+      min-height:42px;
+      border:1px solid rgba(24,49,79,.1);
+      border-radius:14px;
+      padding:8px 12px;
+      color:var(--text);
+      background:linear-gradient(180deg,#fff,#f4f8ff);
+      font-weight:700;
+      box-shadow:0 10px 20px rgba(24,49,79,.06);
+    }
 
     .designerDrawer{
       position:fixed;
@@ -505,9 +542,15 @@
             <div class="statCard"><span>Total</span><strong>100</strong></div>
             <div class="statCard"><span>Save</span><strong>Local</strong></div>
           </div>
+          <div class="levelPicker">
+            <label for="campaignLevelInput">
+              Start from
+              <strong>Campaign Level</strong>
+            </label>
+            <input id="campaignLevelInput" type="number" min="1" max="100" step="1" value="1" aria-label="Campaign start level">
+          </div>
           <div class="screenButtons">
             <button id="campaignButton" class="actionButton accent" type="button">Campaign</button>
-            <button id="campaignRestartButton" class="actionButton secondary" type="button">Restart Level 1</button>
           </div>
         </section>
         <section class="menuPanel">
@@ -1485,7 +1528,7 @@
         }
         bindRefs() {
           const ids = [
-            "gameCanvas","menuScreen","victoryScreen","designerDrawer","designerCloseButton","campaignButton","campaignRestartButton",
+            "gameCanvas","menuScreen","victoryScreen","designerDrawer","designerCloseButton","campaignButton","campaignLevelInput",
             "sandboxButton","sandboxDesignerButton","restartButton","menuButton","debugButton","targetBadge","targetList","wormBadge","wormList",
             "hudMode","hudLevel","hudPlaced","hudMoves","hintLine","selectionMeta","selectedBox","tailButton","headButton","cycleButton",
             "switchEndButton","toastStack","menuUnlocked","victoryTitle","victoryText","resultLevel","resultPlaced","resultMoves",
@@ -1497,12 +1540,9 @@
           this.settingInputs = Array.from(document.querySelectorAll("[data-setting]"));
         }
         bindEvents() {
-          this.refs.campaignButton.addEventListener("click", () => this.startCampaign(Save.data.unlockedLevel));
-          this.refs.campaignRestartButton.addEventListener("click", () => {
-            Save.data.unlockedLevel = 1;
-            Save.commit();
-            this.startCampaign(1);
-          });
+          this.refs.campaignButton.addEventListener("click", () => this.startCampaign(this.getSelectedCampaignLevel()));
+          this.refs.campaignLevelInput.addEventListener("change", () => this.normalizeCampaignLevelInput());
+          this.refs.campaignLevelInput.addEventListener("blur", () => this.normalizeCampaignLevelInput());
           this.refs.sandboxButton.addEventListener("click", () => this.startSandbox(false));
           this.refs.sandboxDesignerButton.addEventListener("click", () => this.startSandbox(true));
           this.refs.restartButton.addEventListener("click", () => this.restart());
@@ -1576,6 +1616,14 @@
           this.toggleDesigner(false);
           this.refreshCompletion(true);
           this.toast(Campaign.hint(safeLevel), "success");
+        }
+        getSelectedCampaignLevel() {
+          return this.normalizeCampaignLevelInput();
+        }
+        normalizeCampaignLevelInput() {
+          const level = Helpers.clamp(Number(this.refs.campaignLevelInput.value) || 1, 1, CONFIG.MAX_LEVEL);
+          this.refs.campaignLevelInput.value = String(level);
+          return level;
         }
         startSandbox(openDesigner) {
           this.state.mode = "sandbox";
@@ -2000,6 +2048,7 @@
         updateUI() {
           const board = this.board;
           this.refs.menuUnlocked.textContent = String(Save.data.unlockedLevel);
+          this.renderCampaignLevelInput();
           this.refs.hudMode.textContent = this.state.mode === "campaign" ? "Campaign" : this.state.mode === "sandbox" ? "Sandbox" : "Menu";
           this.refs.hudLevel.textContent = this.state.mode === "campaign" ? String(this.state.level) : this.state.mode === "sandbox" ? "Free" : "-";
           this.refs.hudPlaced.textContent = board ? `${board.completedCount || 0} / ${board.worms.length}` : "0 / 0";
@@ -2011,6 +2060,11 @@
             : "Choose Campaign or Sandbox from the menu.";
           this.renderLists();
           this.renderSelection();
+        }
+        renderCampaignLevelInput() {
+          const input = this.refs.campaignLevelInput;
+          input.max = String(CONFIG.MAX_LEVEL);
+          if (!input.value) input.value = String(Save.data.unlockedLevel);
         }
         renderLists() {
           if (!this.board) {
