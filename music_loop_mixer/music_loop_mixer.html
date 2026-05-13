@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loop Crew Mixer</title>
+  <script src="https://cdn.jsdelivr.net/npm/tone@14.8.49/build/Tone.js"></script>
+  <style>
+    :root{
+      --bg:#080a12;
+      --panel:#121622;
+      --panel-2:#181d2b;
+      --line:rgba(255,255,255,.1);
+      --text:#f7f8ff;
+      --muted:#9fa8bd;
+      --hot:#ff5f6d;
+      --gold:#ffd166;
+      --green:#35d399;
+      --blue:#4ea1ff;
+      --purple:#b875ff;
+      --cyan:#54e0ff;
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);background:var(--bg)}
+    body{
+      display:flex;
+      justify-content:center;
+      padding:12px;
+      background:
+        radial-gradient(circle at 50% -10%, rgba(84,224,255,.16), transparent 30%),
+        linear-gradient(180deg,#0d1020 0%,#070911 50%,#05060a 100%);
+    }
+    button{font:inherit}
+    .app{
+      width:min(100%,480px);
+      min-height:calc(100vh - 24px);
+      display:grid;
+      grid-template-rows:auto minmax(320px,1fr) auto;
+      gap:12px;
+    }
+    .topBar,.stage,.library{
+      border:1px solid var(--line);
+      background:linear-gradient(180deg,rgba(24,29,43,.95),rgba(14,17,26,.98));
+      box-shadow:0 18px 50px rgba(0,0,0,.28);
+    }
+    .topBar{
+      border-radius:22px;
+      padding:14px;
+      display:grid;
+      gap:12px;
+    }
+    .titleRow{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+    }
+    h1{margin:0;font-size:28px;line-height:.95;letter-spacing:0}
+    .meta{margin:4px 0 0;color:var(--muted);font-size:12px}
+    .transport{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:8px;
+    }
+    .btn{
+      border:0;
+      border-radius:13px;
+      min-height:42px;
+      padding:10px 8px;
+      color:#071018;
+      font-weight:800;
+      cursor:pointer;
+      background:#f7f8ff;
+      box-shadow:0 10px 22px rgba(0,0,0,.2);
+      transition:transform .14s ease, opacity .14s ease, filter .14s ease;
+    }
+    .btn:hover{transform:translateY(-1px)}
+    .btn:active{transform:translateY(1px) scale(.99)}
+    .btn.play{background:linear-gradient(180deg,#70f0ad,#35d399)}
+    .btn.stop{background:linear-gradient(180deg,#ff9aa4,#ff5f6d)}
+    .btn.reset{background:linear-gradient(180deg,#ffe39a,#ffd166)}
+    .btn.back{background:#20283a;color:var(--text);border:1px solid var(--line)}
+    .statusGrid{
+      display:grid;
+      grid-template-columns:auto 1fr;
+      gap:12px;
+      align-items:center;
+    }
+    .cycleDial{
+      --progress:0deg;
+      width:74px;
+      height:74px;
+      border-radius:50%;
+      display:grid;
+      place-items:center;
+      background:
+        conic-gradient(var(--cyan) var(--progress), rgba(255,255,255,.1) 0),
+        radial-gradient(circle at center,#151a28 0 56%,transparent 57%);
+      border:1px solid rgba(255,255,255,.12);
+      position:relative;
+      flex:0 0 auto;
+    }
+    .cycleDial::after{
+      content:"";
+      width:50px;
+      height:50px;
+      border-radius:50%;
+      background:#0d111d;
+      border:1px solid rgba(255,255,255,.08);
+      position:absolute;
+    }
+    .cycleDial span{
+      position:relative;
+      z-index:1;
+      font-size:12px;
+      font-weight:900;
+      color:var(--text);
+    }
+    .statusText{display:grid;gap:4px;min-width:0}
+    .statusText strong{font-size:15px}
+    .statusText small{color:var(--muted);line-height:1.35}
+    .error{
+      display:none;
+      padding:10px 12px;
+      border-radius:12px;
+      color:#ffd5d9;
+      background:rgba(255,95,109,.14);
+      border:1px solid rgba(255,95,109,.3);
+      font-size:13px;
+    }
+    .error.show{display:block}
+    .stage{
+      border-radius:26px;
+      padding:14px;
+      position:relative;
+      overflow:hidden;
+      background:
+        linear-gradient(180deg,rgba(84,224,255,.08),transparent 26%),
+        radial-gradient(ellipse at center bottom,rgba(255,209,102,.13),transparent 52%),
+        linear-gradient(180deg,#121827,#090b12);
+    }
+    .stage::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      background:
+        linear-gradient(90deg,transparent 0 12%,rgba(84,224,255,.08) 12% 13%,transparent 13% 30%,rgba(255,95,109,.07) 31% 32%,transparent 32% 70%,rgba(255,209,102,.06) 70% 71%,transparent 71%),
+        linear-gradient(180deg,transparent 0 70%,rgba(255,255,255,.05) 70% 71%,transparent 71%);
+      opacity:.9;
+    }
+    .stageHeader{
+      position:relative;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      margin-bottom:12px;
+      color:var(--muted);
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+    }
+    .crewGrid{
+      position:relative;
+      z-index:1;
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+    }
+    .slot{
+      min-height:118px;
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:18px;
+      padding:10px;
+      background:rgba(255,255,255,.045);
+      display:grid;
+      place-items:center;
+      gap:7px;
+      cursor:pointer;
+      position:relative;
+      overflow:hidden;
+      transition:transform .16s ease, border-color .16s ease, background .16s ease;
+    }
+    .slot:nth-child(7){grid-column:1 / -1;min-height:104px}
+    .slot:hover{transform:translateY(-1px);border-color:rgba(255,255,255,.2)}
+    .slot.selectedTarget{border-color:var(--cyan)}
+    .performer{
+      width:54px;
+      height:54px;
+      border-radius:50%;
+      background:linear-gradient(180deg,#31384b,#171d2c);
+      border:2px solid rgba(255,255,255,.16);
+      box-shadow:inset 0 -10px 20px rgba(0,0,0,.22),0 12px 22px rgba(0,0,0,.22);
+      position:relative;
+      display:grid;
+      place-items:center;
+    }
+    .performer::before,.performer::after{
+      content:"";
+      position:absolute;
+      background:rgba(255,255,255,.72);
+    }
+    .performer::before{width:24px;height:6px;border-radius:99px;top:20px}
+    .performer::after{width:30px;height:4px;border-radius:99px;top:34px;opacity:.45}
+    .slotLabel{font-size:13px;font-weight:900;text-align:center}
+    .slotMeta{font-size:11px;color:var(--muted);text-align:center}
+    .slot.empty .slotMeta::after{content:"Tap with a selected loop"}
+    .slot.queuedStart{border-color:rgba(84,224,255,.72);background:rgba(84,224,255,.08)}
+    .slot.queuedStart .performer{box-shadow:0 0 0 0 rgba(84,224,255,.3),0 12px 22px rgba(0,0,0,.22);animation:waitingRing 1.15s linear infinite}
+    .slot.active{border-color:color-mix(in srgb,var(--sound-color),white 24%);background:color-mix(in srgb,var(--sound-color),transparent 88%)}
+    .slot.active .performer{background:linear-gradient(180deg,color-mix(in srgb,var(--sound-color),white 16%),color-mix(in srgb,var(--sound-color),black 45%));animation:beatPulse .6s ease-in-out infinite}
+    .slot.queuedStop{border-color:rgba(255,209,102,.78);background:rgba(255,209,102,.08);opacity:.82}
+    .slot.queuedStop .performer{filter:saturate(.6);animation:waitingRing 1.4s linear infinite}
+    .badge{
+      position:absolute;
+      right:8px;
+      top:8px;
+      padding:4px 7px;
+      border-radius:999px;
+      background:rgba(0,0,0,.34);
+      border:1px solid rgba(255,255,255,.12);
+      color:var(--text);
+      font-size:10px;
+      font-weight:900;
+      text-transform:uppercase;
+    }
+    @keyframes waitingRing{
+      0%{box-shadow:0 0 0 0 rgba(84,224,255,.36),0 12px 22px rgba(0,0,0,.22)}
+      100%{box-shadow:0 0 0 16px rgba(84,224,255,0),0 12px 22px rgba(0,0,0,.22)}
+    }
+    @keyframes beatPulse{
+      0%,100%{transform:scale(1)}
+      45%{transform:scale(1.06)}
+    }
+    .library{
+      border-radius:22px;
+      padding:12px;
+      display:grid;
+      gap:10px;
+    }
+    .tabs{
+      display:grid;
+      grid-template-columns:repeat(5,1fr);
+      gap:7px;
+    }
+    .tab{
+      border:1px solid var(--line);
+      border-radius:12px;
+      min-height:38px;
+      background:#202638;
+      color:var(--text);
+      font-size:12px;
+      font-weight:900;
+      cursor:pointer;
+    }
+    .tab.active{background:var(--category-color);color:#071018;border-color:transparent}
+    .padGrid{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:8px;
+      max-height:178px;
+      overflow:auto;
+      padding-bottom:2px;
+    }
+    .pad{
+      min-height:66px;
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:15px;
+      padding:8px;
+      color:var(--text);
+      background:linear-gradient(180deg,color-mix(in srgb,var(--pad-color),#202638 42%),#151a28);
+      cursor:pointer;
+      display:grid;
+      align-content:space-between;
+      gap:4px;
+      text-align:left;
+      position:relative;
+      overflow:hidden;
+    }
+    .pad::after{
+      content:"";
+      position:absolute;
+      right:8px;
+      bottom:8px;
+      width:28px;
+      height:18px;
+      background:repeating-linear-gradient(90deg,rgba(255,255,255,.72) 0 4px,transparent 4px 7px);
+      opacity:.32;
+      transform:skewX(-10deg);
+    }
+    .pad.selected{outline:2px solid #fff;outline-offset:1px}
+    .pad.disabled{opacity:.38;cursor:not-allowed}
+    .padCode{font-size:10px;font-weight:900;color:rgba(255,255,255,.78)}
+    .padName{font-size:13px;font-weight:900;line-height:1.1;max-width:82px}
+    @media (min-width:760px){
+      body{padding:22px}
+      .app{width:min(100%,980px);min-height:calc(100vh - 44px);grid-template-columns:1fr 360px;grid-template-rows:auto 1fr}
+      .topBar{grid-column:1 / -1}
+      .stage{min-height:520px}
+      .library{align-self:stretch}
+      .crewGrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .slot:nth-child(7){grid-column:2 / 3}
+      .padGrid{grid-template-columns:repeat(2,minmax(0,1fr));max-height:none}
+    }
+    @media (max-width:380px){
+      .transport{grid-template-columns:repeat(2,1fr)}
+      h1{font-size:24px}
+      .padGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="topBar">
+      <div class="titleRow">
+        <div>
+          <h1>Loop Crew Mixer</h1>
+          <p class="meta">100 BPM &middot; 4/4 &middot; 4-bar synchronized cycle</p>
+        </div>
+      </div>
+      <div class="transport" id="transportControls"></div>
+      <div class="statusGrid">
+        <div class="cycleDial" id="cycleDial"><span id="cycleCount">0%</span></div>
+        <div class="statusText">
+          <strong id="statusTitle">Transport stopped</strong>
+          <small id="statusDetail">Press Play, pick a loop, then tap a performer slot. Starts wait for the next 4-bar cycle.</small>
+        </div>
+      </div>
+      <div class="error" id="errorBox"></div>
+    </section>
+
+    <section class="stage">
+      <div class="stageHeader">
+        <span>Character Slots</span>
+        <span id="queueSummary">No queued actions</span>
+      </div>
+      <div class="crewGrid" id="crewGrid"></div>
+    </section>
+
+    <section class="library">
+      <div class="tabs" id="categoryTabs"></div>
+      <div class="padGrid" id="soundLibrary"></div>
+    </section>
+  </main>
+
+  <script>
+    "use strict";
+
+    // 1. Config
+    const PACK_CONFIG = {
+      id: "pack_01",
+      title: "Pack 01",
+      bpm: 100,
+      timeSignature: [4, 4],
+      cycleLength: "4m",
+      basePath: "audio/pack_01/"
+    };
+
+    const SOUNDS = [
+      { id: "drums_1", code: "DRUMS.1", category: "drums", displayName: "Main Kick Groove", filePath: "audio/pack_01/DRUMS.1.mp3", color: "#ff5f6d", shortLabel: "Kick", description: "Main pulse and groove." },
+      { id: "drums_2", code: "DRUMS.2", category: "drums", displayName: "Tamborzao Percussion", filePath: "audio/pack_01/DRUMS.2.mp3", color: "#ff7a4d", shortLabel: "Tambor", description: "Percussive syncopation." },
+      { id: "drums_3", code: "DRUMS.3", category: "drums", displayName: "Trap Hats Loop", filePath: "audio/pack_01/DRUMS.3.mp3", color: "#ffb14a", shortLabel: "Hats", description: "Fast hat movement." },
+      { id: "drums_4", code: "DRUMS.4", category: "drums", displayName: "Snare & Clap Groove", filePath: "audio/pack_01/DRUMS.4.mp3", color: "#ff4fa0", shortLabel: "Clap", description: "Backbeat layer." },
+      { id: "drums_5", code: "DRUMS.5", category: "drums", displayName: "Percussion Texture Loop", filePath: "audio/pack_01/DRUMS.5.mp3", color: "#ff8f6b", shortLabel: "Texture", description: "Extra movement." },
+
+      { id: "bass_1", code: "BASS.1", category: "bass", displayName: "Distorted 808 Bass", filePath: "audio/pack_01/BASS.1.mp3", color: "#35d399", shortLabel: "808", description: "Heavy low end." },
+      { id: "bass_2", code: "BASS.2", category: "bass", displayName: "Sliding Sub Bass", filePath: "audio/pack_01/BASS.2.mp3", color: "#2ee6a6", shortLabel: "Slide", description: "Sliding sub line." },
+      { id: "bass_3", code: "BASS.3", category: "bass", displayName: "Punch Bass Stabs", filePath: "audio/pack_01/BASS.3.mp3", color: "#65e06f", shortLabel: "Stabs", description: "Short bass hits." },
+      { id: "bass_4", code: "BASS.4", category: "bass", displayName: "Dark Reese Bass", filePath: "audio/pack_01/BASS.4.mp3", color: "#1eb980", shortLabel: "Reese", description: "Wide bass tone." },
+
+      { id: "melody_1", code: "MELODY.1", category: "melody", displayName: "Cowbell Lead", filePath: "audio/pack_01/MELODY.1.mp3", color: "#4ea1ff", shortLabel: "Cowbell", description: "Bright lead rhythm." },
+      { id: "melody_2", code: "MELODY.2", category: "melody", displayName: "Dark Synth Melody", filePath: "audio/pack_01/MELODY.2.mp3", color: "#54e0ff", shortLabel: "Synth", description: "Dark melodic loop." },
+      { id: "melody_3", code: "MELODY.3", category: "melody", displayName: "Favela Brass Hook", filePath: "audio/pack_01/MELODY.3.mp3", color: "#6fb7ff", shortLabel: "Brass", description: "Brass hook." },
+      { id: "melody_4", code: "MELODY.4", category: "melody", displayName: "Vocal Chop Melody", filePath: "audio/pack_01/MELODY.4.mp3", color: "#7c8cff", shortLabel: "Chop", description: "Chopped lead." },
+      { id: "melody_5", code: "MELODY.5", category: "melody", displayName: "Bell Pluck Loop", filePath: "audio/pack_01/MELODY.5.mp3", color: "#45c7ff", shortLabel: "Bell", description: "Plucked melody." },
+
+      { id: "vocal_1", code: "VOCAL.1", category: "vocal", displayName: "Portuguese Chant", filePath: "audio/pack_01/VOCAL.1.mp3", color: "#b875ff", shortLabel: "Chant", description: "Chant phrase." },
+      { id: "vocal_2", code: "VOCAL.2", category: "vocal", displayName: "Phonk Rap Adlibs", filePath: "audio/pack_01/VOCAL.2.mp3", color: "#d05cff", shortLabel: "Adlibs", description: "Adlib hits." },
+      { id: "vocal_3", code: "VOCAL.3", category: "vocal", displayName: "Female Vocal Hook", filePath: "audio/pack_01/VOCAL.3.mp3", color: "#ff7bd5", shortLabel: "Hook", description: "Hook phrase." },
+
+      { id: "fx_1", code: "FX.1", category: "fx", displayName: "Street Atmosphere Loop", filePath: "audio/pack_01/FX.1.mp3", color: "#ffd166", shortLabel: "Street", description: "Background texture." },
+      { id: "fx_2", code: "FX.2", category: "fx", displayName: "Riser & Reverse FX", filePath: "audio/pack_01/FX.2.mp3", color: "#ffe066", shortLabel: "Riser", description: "Transition sweep." },
+      { id: "fx_3", code: "FX.3", category: "fx", displayName: "Vinyl & Texture Loop", filePath: "audio/pack_01/FX.3.mp3", color: "#e8c547", shortLabel: "Vinyl", description: "Noisy layer." }
+    ];
+
+    const CHARACTER_SLOTS = [
+      { id: "slot_1", name: "Crew 1" },
+      { id: "slot_2", name: "Crew 2" },
+      { id: "slot_3", name: "Crew 3" },
+      { id: "slot_4", name: "Crew 4" },
+      { id: "slot_5", name: "Crew 5" },
+      { id: "slot_6", name: "Crew 6" },
+      { id: "slot_7", name: "Crew 7" }
+    ];
+
+    const CATEGORY_CONFIG = [
+      { id: "drums", label: "Drums", color: "#ff5f6d" },
+      { id: "bass", label: "Bass", color: "#35d399" },
+      { id: "melody", label: "Melody", color: "#4ea1ff" },
+      { id: "vocal", label: "Vocal", color: "#b875ff" },
+      { id: "fx", label: "FX", color: "#ffd166" }
+    ];
+
+    // 2. State
+    let selectedSoundId = null;
+    let selectedCategory = "drums";
+    let isPlaying = false;
+    let currentCycle = 0;
+    const characters = CHARACTER_SLOTS.map((slot) => ({
+      id: slot.id,
+      name: slot.name,
+      state: "empty",
+      soundId: null,
+      queuedSoundId: null
+    }));
+    const queuedStarts = new Map();
+    const queuedStops = new Set();
+    const loadedPlayers = new Map();
+    const mediaElements = new Map();
+    const fallbackInstruments = new Map();
+    let animationFrameId = null;
+
+    const byId = (id) => document.getElementById(id);
+    const getSound = (soundId) => SOUNDS.find((sound) => sound.id === soundId);
+    const getCharacter = (characterId) => characters.find((character) => character.id === characterId);
+
+    // 3. AudioEngine
+    const AudioEngine = {
+      initialized: false,
+      boundaryEventId: null,
+      fallbackGain: null,
+      masterLimiter: null,
+      fallbackParts: new Map(),
+      activeFallbacks: new Set(),
+
+      async init() {
+        if (this.initialized) return true;
+        if (!window.Tone) {
+          showError("Tone.js did not load. Check the CDN connection, then reload this file.");
+          return false;
+        }
+
+        Tone.Transport.bpm.value = PACK_CONFIG.bpm;
+        Tone.Transport.timeSignature = PACK_CONFIG.timeSignature[0];
+        this.masterLimiter = new Tone.Limiter(-1).toDestination();
+        this.fallbackGain = new Tone.Gain(0.42).connect(this.masterLimiter);
+        this.createPlaceholderFallbacks();
+        this.loadMediaElements();
+        this.loadPlayers();
+
+        // Musical synchronization core:
+        // queued starts and stops are only applied inside this 4-bar repeat.
+        // Click handlers mutate queuedStarts/queuedStops, but never start audio directly.
+        this.boundaryEventId = Tone.Transport.scheduleRepeat((time) => {
+          this.applyQueuedActions(time);
+        }, PACK_CONFIG.cycleLength, 0);
+
+        this.initialized = true;
+        return true;
+      },
+
+      async startTransport() {
+        const ready = await this.init();
+        if (!ready) return false;
+        await Tone.start();
+        if (Tone.Transport.state !== "started") {
+          Tone.Transport.start("+0.05");
+        }
+        isPlaying = true;
+        return true;
+      },
+
+      stopTransport() {
+        if (!window.Tone || !this.initialized) return;
+        Tone.Transport.stop();
+        Tone.Transport.position = 0;
+        this.stopAllPlayers();
+        this.stopAllFallbacks();
+        isPlaying = false;
+      },
+
+      queueStart(characterId, soundId) {
+        const character = getCharacter(characterId);
+        if (!character || isSoundAssignedElsewhere(soundId, characterId)) return;
+        if (character.soundId) this.queueStop(characterId);
+        queuedStarts.set(characterId, soundId);
+        queuedStops.delete(characterId);
+        character.state = "queuedStart";
+        character.queuedSoundId = soundId;
+        renderAll();
+      },
+
+      queueStop(characterId) {
+        const character = getCharacter(characterId);
+        if (!character || !character.soundId) return;
+        queuedStops.add(characterId);
+        queuedStarts.delete(characterId);
+        character.state = "queuedStop";
+        character.queuedSoundId = null;
+        renderAll();
+      },
+
+      cancelQueuedStart(characterId) {
+        const character = getCharacter(characterId);
+        if (!character) return;
+        queuedStarts.delete(characterId);
+        character.state = "empty";
+        character.queuedSoundId = null;
+        renderAll();
+      },
+
+      reset() {
+        if (window.Tone && this.initialized) {
+          Tone.Transport.stop();
+          Tone.Transport.position = 0;
+          this.stopAllPlayers();
+          this.stopAllFallbacks();
+        }
+        queuedStarts.clear();
+        queuedStops.clear();
+        characters.forEach((character) => {
+          character.state = "empty";
+          character.soundId = null;
+          character.queuedSoundId = null;
+        });
+        currentCycle = 0;
+        isPlaying = false;
+        renderAll();
+      },
+
+      applyQueuedActions(time) {
+        currentCycle += 1;
+
+        // Stops are applied at the cycle edge first, so removed loops do not
+        // leak into the next 4-bar phrase.
+        queuedStops.forEach((characterId) => {
+          const character = getCharacter(characterId);
+          if (!character || !character.soundId) return;
+          this.stopSound(character.soundId, time);
+          character.soundId = null;
+          character.queuedSoundId = null;
+          character.state = "empty";
+        });
+        queuedStops.clear();
+
+        queuedStarts.forEach((soundId, characterId) => {
+          const character = getCharacter(characterId);
+          if (!character) return;
+          this.stopSound(character.soundId, time);
+          character.soundId = soundId;
+          character.queuedSoundId = null;
+          character.state = "active";
+        });
+        queuedStarts.clear();
+
+        characters.forEach((character) => {
+          if (character.state === "active" && character.soundId) {
+            this.startSound(character.soundId, time);
+          }
+        });
+
+        Tone.Draw.schedule(() => renderAll(), time);
+      },
+
+      getCycleProgress() {
+        if (!window.Tone || !this.initialized || Tone.Transport.state !== "started") return 0;
+        const cycleTicks = Tone.Time(PACK_CONFIG.cycleLength).toTicks();
+        if (!cycleTicks) return 0;
+        return (Tone.Transport.ticks % cycleTicks) / cycleTicks;
+      },
+
+      loadPlayers() {
+        SOUNDS.forEach((sound) => {
+          const player = new Tone.Player({
+            url: sound.filePath,
+            loop: false,
+            autostart: false,
+            fadeIn: 0.01,
+            fadeOut: 0.05,
+            onload: () => {
+              loadedPlayers.set(sound.id, { player, loaded: true, failed: false });
+              renderSoundLibrary();
+            },
+            onerror: () => {
+              loadedPlayers.set(sound.id, { player: null, loaded: false, failed: true });
+              renderSoundLibrary();
+            }
+          }).connect(this.masterLimiter);
+          player.loopStart = 0;
+          loadedPlayers.set(sound.id, { player, loaded: false, failed: false });
+        });
+      },
+
+      loadMediaElements() {
+        SOUNDS.forEach((sound) => {
+          const audio = new Audio(sound.filePath);
+          audio.preload = "auto";
+          audio.loop = false;
+          audio.volume = 0.92;
+          audio.addEventListener("canplaythrough", () => {
+            const current = mediaElements.get(sound.id);
+            if (current) current.loaded = true;
+            renderSoundLibrary();
+          });
+          audio.addEventListener("error", () => {
+            const current = mediaElements.get(sound.id);
+            if (current) current.failed = true;
+            renderSoundLibrary();
+          });
+          mediaElements.set(sound.id, { audio, loaded: false, failed: false });
+          audio.load();
+        });
+      },
+
+      createPlaceholderFallbacks() {
+        fallbackInstruments.set("drums", {
+          kick: new Tone.MembraneSynth({ volume: -8, envelope: { attack: 0.001, decay: 0.18, sustain: 0.01, release: 0.1 } }).connect(this.fallbackGain),
+          snare: new Tone.NoiseSynth({ volume: -16, noise: { type: "white" }, envelope: { attack: 0.001, decay: 0.09, sustain: 0, release: 0.04 } }).connect(this.fallbackGain),
+          hat: new Tone.MetalSynth({ volume: -20, frequency: 320, envelope: { attack: 0.001, decay: 0.04, release: 0.02 }, harmonicity: 5.1, modulationIndex: 16, resonance: 3800, octaves: 1.2 }).connect(this.fallbackGain)
+        });
+        fallbackInstruments.set("bass", new Tone.MonoSynth({ volume: -12, oscillator: { type: "sawtooth" }, filter: { Q: 2, type: "lowpass", rolloff: -24 }, envelope: { attack: 0.01, decay: 0.12, sustain: 0.6, release: 0.08 }, filterEnvelope: { attack: 0.01, decay: 0.18, sustain: 0.2, release: 0.08, baseFrequency: 80, octaves: 2.5 } }).connect(this.fallbackGain));
+        fallbackInstruments.set("melody", new Tone.PolySynth(Tone.Synth, { volume: -15, oscillator: { type: "triangle" }, envelope: { attack: 0.01, decay: 0.08, sustain: 0.2, release: 0.12 } }).connect(this.fallbackGain));
+        fallbackInstruments.set("vocal", new Tone.Synth({ volume: -17, oscillator: { type: "sine" }, envelope: { attack: 0.02, decay: 0.08, sustain: 0.1, release: 0.08 } }).connect(this.fallbackGain));
+        fallbackInstruments.set("fx", {
+          noise: new Tone.NoiseSynth({ volume: -24, noise: { type: "pink" }, envelope: { attack: 0.5, decay: 1.6, sustain: 0.2, release: 1.2 } }).connect(this.fallbackGain),
+          ping: new Tone.Synth({ volume: -18, oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.3, sustain: 0, release: 0.2 } }).connect(this.fallbackGain)
+        });
+      },
+
+      startSound(soundId, time) {
+        const loaded = loadedPlayers.get(soundId);
+        if (loaded && loaded.loaded && loaded.player) {
+          this.stopFallbackSound(soundId, time);
+          this.stopMediaSound(soundId);
+          loaded.player.stop(time);
+          loaded.player.start(time, 0, Tone.Time(PACK_CONFIG.cycleLength).toSeconds());
+          return;
+        }
+        if (this.startMediaSound(soundId)) {
+          this.stopFallbackSound(soundId, time);
+          return;
+        }
+        this.startFallbackSound(soundId, time);
+      },
+
+      stopSound(soundId, time) {
+        if (!soundId) return;
+        const loaded = loadedPlayers.get(soundId);
+        if (loaded && loaded.player) {
+          loaded.player.stop(time);
+        }
+        this.stopMediaSound(soundId);
+        this.stopFallbackSound(soundId, time);
+      },
+
+      stopAllPlayers() {
+        loadedPlayers.forEach(({ player }) => {
+          if (player) player.stop();
+        });
+        mediaElements.forEach(({ audio }) => {
+          audio.pause();
+          try {
+            audio.currentTime = 0;
+          } catch (error) {
+            // Some browsers reject currentTime before metadata is ready.
+          }
+        });
+      },
+
+      startMediaSound(soundId) {
+        const media = mediaElements.get(soundId);
+        if (!media || media.failed) return false;
+        const { audio } = media;
+        try {
+          audio.pause();
+          if (audio.readyState > 0) audio.currentTime = 0;
+          const playPromise = audio.play();
+          if (playPromise && typeof playPromise.catch === "function") {
+            playPromise.catch(() => {
+              media.failed = true;
+              renderSoundLibrary();
+            });
+          }
+          media.loaded = true;
+          renderSoundLibrary();
+          return true;
+        } catch (error) {
+          media.failed = true;
+          renderSoundLibrary();
+          return false;
+        }
+      },
+
+      stopMediaSound(soundId) {
+        const media = mediaElements.get(soundId);
+        if (!media) return;
+        media.audio.pause();
+        try {
+          media.audio.currentTime = 0;
+        } catch (error) {
+          // Some browsers reject currentTime before metadata is ready.
+        }
+      },
+
+      stopAllFallbacks() {
+        this.fallbackParts.forEach((part) => part.stop(0));
+        this.activeFallbacks.clear();
+      },
+
+      startFallbackSound(soundId, time) {
+        if (this.activeFallbacks.has(soundId)) return;
+        const sound = getSound(soundId);
+        if (!sound) return;
+        const part = this.getFallbackPart(sound);
+        const transportPosition = Tone.Transport.position;
+        part.stop(transportPosition);
+        part.start(transportPosition, 0);
+        this.activeFallbacks.add(soundId);
+      },
+
+      stopFallbackSound(soundId, time) {
+        const part = this.fallbackParts.get(soundId);
+        if (part) part.stop(Tone.Transport.state === "started" ? Tone.Transport.position : 0);
+        this.activeFallbacks.delete(soundId);
+      },
+
+      getFallbackPart(sound) {
+        if (this.fallbackParts.has(sound.id)) return this.fallbackParts.get(sound.id);
+        const part = new Tone.Part((time, event) => {
+          this.triggerPlaceholderEvent(sound.category, event, time);
+        }, this.createFallbackEvents(sound));
+        part.loop = true;
+        part.loopEnd = PACK_CONFIG.cycleLength;
+        part.humanize = false;
+        this.fallbackParts.set(sound.id, part);
+        return part;
+      },
+
+      createFallbackEvents(sound) {
+        const events = [];
+        const add = (time, event) => events.push([time, event]);
+        if (sound.category === "drums") {
+          ["0:0:0", "0:2:0", "1:0:0", "1:2:0", "2:0:0", "2:2:0", "3:0:0", "3:2:0"].forEach((time) => add(time, { type: "kick" }));
+          ["0:1:0", "0:3:0", "1:1:0", "1:3:0", "2:1:0", "2:3:0", "3:1:0", "3:3:0"].forEach((time) => add(time, { type: "snare" }));
+          for (let bar = 0; bar < 4; bar += 1) {
+            for (let eighth = 0; eighth < 8; eighth += 1) {
+              add(`${bar}:${Math.floor(eighth / 2)}:${(eighth % 2) * 2}`, { type: "hat" });
+            }
+          }
+        }
+        if (sound.category === "bass") {
+          [["0:0:0", "C1"], ["0:2:0", "C1"], ["1:0:0", "G0"], ["2:0:0", "Bb0"], ["3:0:0", "G0"]].forEach(([time, note]) => add(time, { type: "bass", note, duration: "4n" }));
+        }
+        if (sound.category === "melody") {
+          [["0:0:0", "G4"], ["0:1:0", "Bb4"], ["0:2:0", "C5"], ["1:0:0", "G4"], ["2:0:0", "F4"], ["2:2:0", "G4"], ["3:0:0", "D5"]].forEach(([time, note]) => add(time, { type: "melody", note, duration: "8n" }));
+        }
+        if (sound.category === "vocal") {
+          [["0:0:0", "A4"], ["0:1:2", "C5"], ["1:0:0", "A4"], ["2:0:0", "E5"], ["3:0:0", "C5"]].forEach(([time, note]) => add(time, { type: "vocal", note, duration: "16n" }));
+        }
+        if (sound.category === "fx") {
+          add("0:0:0", { type: "noise", duration: "2m" });
+          ["0:3:2", "1:3:2", "2:3:2", "3:3:2"].forEach((time) => add(time, { type: "ping", note: "C6", duration: "16n" }));
+        }
+        return events;
+      },
+
+      triggerPlaceholderEvent(category, event, time) {
+        if (category === "drums") {
+          const kit = fallbackInstruments.get("drums");
+          if (event.type === "kick") kit.kick.triggerAttackRelease("C1", "8n", time);
+          if (event.type === "snare") kit.snare.triggerAttackRelease("16n", time);
+          if (event.type === "hat") kit.hat.triggerAttackRelease("C5", "32n", time);
+        }
+        if (category === "bass") fallbackInstruments.get("bass").triggerAttackRelease(event.note, event.duration, time);
+        if (category === "melody") fallbackInstruments.get("melody").triggerAttackRelease(event.note, event.duration, time);
+        if (category === "vocal") fallbackInstruments.get("vocal").triggerAttackRelease(event.note, event.duration, time);
+        if (category === "fx") {
+          const fx = fallbackInstruments.get("fx");
+          if (event.type === "noise") fx.noise.triggerAttackRelease(event.duration, time);
+          if (event.type === "ping") fx.ping.triggerAttackRelease(event.note, event.duration, time);
+        }
+      }
+    };
+
+    // 4. UI rendering
+    function renderCharacters() {
+      const grid = byId("crewGrid");
+      grid.innerHTML = "";
+      characters.forEach((character) => {
+        const soundId = character.queuedSoundId || character.soundId;
+        const sound = getSound(soundId);
+        const slot = document.createElement("button");
+        slot.type = "button";
+        slot.className = `slot ${character.state}`;
+        slot.dataset.characterId = character.id;
+        slot.style.setProperty("--sound-color", sound ? sound.color : "#54e0ff");
+        if (selectedSoundId && character.state === "empty") slot.classList.add("selectedTarget");
+        const stateLabel = character.state === "queuedStart" ? "Queued" : character.state === "queuedStop" ? "Leaving" : character.state === "active" ? "Active" : "Empty";
+        slot.innerHTML = `
+          <span class="badge">${stateLabel}</span>
+          <div class="performer" aria-hidden="true"></div>
+          <div class="slotLabel">${sound ? sound.shortLabel : character.name}</div>
+          <div class="slotMeta">${sound ? `${sound.code} &middot; ${sound.displayName}` : ""}</div>
+        `;
+        slot.addEventListener("click", () => handleCharacterClick(character.id));
+        grid.appendChild(slot);
+      });
+    }
+
+    function renderSoundLibrary() {
+      const library = byId("soundLibrary");
+      const assignedIds = getAssignedSoundIds();
+      library.innerHTML = "";
+      SOUNDS.filter((sound) => sound.category === selectedCategory).forEach((sound) => {
+        const loaded = loadedPlayers.get(sound.id);
+        const unavailable = assignedIds.has(sound.id);
+        const pad = document.createElement("button");
+        pad.type = "button";
+        pad.className = `pad${selectedSoundId === sound.id ? " selected" : ""}${unavailable ? " disabled" : ""}`;
+        pad.style.setProperty("--pad-color", sound.color);
+        pad.disabled = unavailable;
+        const media = mediaElements.get(sound.id);
+        const sourceState = loaded && loaded.loaded ? "MP3" : media && media.loaded ? "MP3" : loaded && loaded.failed && media && media.failed ? "Fallback" : "Loading";
+        pad.innerHTML = `
+          <span class="padCode">${sound.code} &middot; ${sourceState}</span>
+          <span class="padName">${sound.shortLabel}</span>
+        `;
+        pad.title = sound.displayName;
+        pad.addEventListener("click", () => handleSoundSelect(sound.id));
+        library.appendChild(pad);
+      });
+    }
+
+    function renderCategoryTabs() {
+      const tabs = byId("categoryTabs");
+      tabs.innerHTML = "";
+      CATEGORY_CONFIG.forEach((category) => {
+        const tab = document.createElement("button");
+        tab.type = "button";
+        tab.className = `tab${selectedCategory === category.id ? " active" : ""}`;
+        tab.style.setProperty("--category-color", category.color);
+        tab.textContent = category.label;
+        tab.addEventListener("click", () => handleCategorySelect(category.id));
+        tabs.appendChild(tab);
+      });
+    }
+
+    function renderTransportControls() {
+      const controls = byId("transportControls");
+      controls.innerHTML = `
+        <button class="btn play" type="button" id="playBtn">Play</button>
+        <button class="btn stop" type="button" id="stopBtn">Stop</button>
+        <button class="btn reset" type="button" id="resetBtn">Reset</button>
+        <button class="btn back" type="button" id="backBtn">Back To Launcher</button>
+      `;
+      byId("playBtn").addEventListener("click", handlePlay);
+      byId("stopBtn").addEventListener("click", handleStop);
+      byId("resetBtn").addEventListener("click", handleReset);
+      byId("backBtn").addEventListener("click", handleBackToLauncher);
+    }
+
+    function updateCycleProgress() {
+      const progress = AudioEngine.getCycleProgress();
+      byId("cycleDial").style.setProperty("--progress", `${Math.round(progress * 360)}deg`);
+      byId("cycleCount").textContent = `${Math.floor(progress * 100)}%`;
+      renderStatusText();
+      animationFrameId = requestAnimationFrame(updateCycleProgress);
+    }
+
+    function renderStatusText() {
+      const pendingStarts = queuedStarts.size;
+      const pendingStops = queuedStops.size;
+      const active = characters.filter((character) => character.state === "active" || character.state === "queuedStop").length;
+      byId("queueSummary").textContent = pendingStarts || pendingStops ? `${pendingStarts} start / ${pendingStops} stop queued` : "No queued actions";
+      if (!window.Tone) return;
+      if (!isPlaying) {
+        byId("statusTitle").textContent = "Transport stopped";
+        byId("statusDetail").textContent = active ? "Assignments are visible. Press Play to restart the global cycle." : "Press Play, pick a loop, then tap a performer slot.";
+        return;
+      }
+      const progress = AudioEngine.getCycleProgress();
+      const cycleSeconds = window.Tone ? Tone.Time(PACK_CONFIG.cycleLength).toSeconds() : 0;
+      const secondsLeft = Math.max(0, cycleSeconds - progress * cycleSeconds);
+      byId("statusTitle").textContent = pendingStarts || pendingStops ? `Next drop in ${secondsLeft.toFixed(1)}s` : `Cycle ${currentCycle}`;
+      byId("statusDetail").textContent = pendingStarts || pendingStops ? "Queued actions will enter together at the next 4-bar boundary." : "All active loops are locked to the same 4-bar Transport grid.";
+    }
+
+    function renderAll() {
+      renderCharacters();
+      renderCategoryTabs();
+      renderSoundLibrary();
+      renderStatusText();
+    }
+
+    // 5. Event handlers
+    async function handlePlay() {
+      hideError();
+      const started = await AudioEngine.startTransport();
+      if (!started) return;
+      renderAll();
+    }
+
+    function handleStop() {
+      AudioEngine.stopTransport();
+      renderAll();
+    }
+
+    function handleReset() {
+      selectedSoundId = null;
+      AudioEngine.reset();
+    }
+
+    function handleSoundSelect(soundId) {
+      if (getAssignedSoundIds().has(soundId)) return;
+      selectedSoundId = selectedSoundId === soundId ? null : soundId;
+      renderAll();
+    }
+
+    function handleCategorySelect(category) {
+      selectedCategory = category;
+      renderAll();
+    }
+
+    function handleCharacterClick(characterId) {
+      const character = getCharacter(characterId);
+      if (!character) return;
+      if (character.state === "queuedStart") {
+        AudioEngine.cancelQueuedStart(characterId);
+        return;
+      }
+      if (character.state === "active") {
+        AudioEngine.queueStop(characterId);
+        return;
+      }
+      if (character.state === "queuedStop") {
+        queuedStops.delete(characterId);
+        character.state = "active";
+        renderAll();
+        return;
+      }
+      if (selectedSoundId) {
+        AudioEngine.queueStart(characterId, selectedSoundId);
+        selectedSoundId = null;
+      }
+    }
+
+    function handleBackToLauncher() {
+      window.location.href = "../game_launcher.html";
+    }
+
+    function getAssignedSoundIds() {
+      const assigned = new Set();
+      characters.forEach((character) => {
+        if (character.soundId) assigned.add(character.soundId);
+        if (character.queuedSoundId) assigned.add(character.queuedSoundId);
+      });
+      return assigned;
+    }
+
+    function isSoundAssignedElsewhere(soundId, characterId) {
+      return characters.some((character) => character.id !== characterId && (character.soundId === soundId || character.queuedSoundId === soundId));
+    }
+
+    function showError(message) {
+      const errorBox = byId("errorBox");
+      errorBox.textContent = message;
+      errorBox.classList.add("show");
+    }
+
+    function hideError() {
+      const errorBox = byId("errorBox");
+      errorBox.textContent = "";
+      errorBox.classList.remove("show");
+    }
+
+    renderTransportControls();
+    renderAll();
+    animationFrameId = requestAnimationFrame(updateCycleProgress);
+    window.addEventListener("beforeunload", () => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      if (window.Tone && AudioEngine.initialized) AudioEngine.stopTransport();
+    });
+  </script>
+</body>
+</html>

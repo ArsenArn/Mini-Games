@@ -1,0 +1,1886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Arena Oddities</title>
+  <style>
+    :root{
+      --bg:#111722;
+      --shell:#182231;
+      --panel:#202c3d;
+      --panel2:#263449;
+      --line:#3a4c66;
+      --text:#f3f7ff;
+      --muted:#aab8cc;
+      --cyan:#50d8ff;
+      --orange:#ff9356;
+      --green:#7be28d;
+      --red:#ff6575;
+      --gold:#ffd166;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{margin:0;min-height:100%;overflow-x:hidden;background:#0a0f17;color:var(--text);font-family:Verdana,"Trebuchet MS",Arial,sans-serif}
+    body{
+      min-height:100svh;
+      display:grid;
+      place-items:center;
+      padding:10px;
+      background:
+        radial-gradient(circle at 20% 8%, rgba(80,216,255,.16), transparent 30%),
+        radial-gradient(circle at 80% 88%, rgba(255,147,86,.12), transparent 26%),
+        linear-gradient(180deg,#0a0f17,#141b27);
+    }
+    button,input{font:inherit}
+    button{cursor:pointer;color:inherit}
+    .phone{
+      width:min(100vw - 20px,420px);
+      aspect-ratio:9/16;
+      max-height:calc(100svh - 20px);
+      min-height:650px;
+      position:relative;
+      overflow:hidden;
+      border-radius:28px;
+      background:linear-gradient(180deg,#182231,#101720 68%,#0d131b);
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow:0 28px 80px rgba(0,0,0,.52);
+    }
+    .game{
+      position:absolute;
+      inset:0;
+      display:grid;
+      grid-template-rows:auto auto 1fr;
+      gap:10px;
+      padding:14px;
+    }
+    .topbar{
+      min-height:70px;
+      display:grid;
+      grid-template-columns:1fr auto;
+      align-items:start;
+      gap:10px;
+    }
+    .kicker{font-size:11px;text-transform:uppercase;letter-spacing:.18em;color:var(--muted);font-weight:800}
+    h1,h2,h3,p{margin:0}
+    .title{font-size:30px;line-height:1;font-weight:900;letter-spacing:0}
+    .subtitle{margin-top:5px;color:var(--muted);font-size:13px;line-height:1.35}
+    .miniStats{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+    .pill{
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.06);
+      border-radius:999px;
+      padding:7px 9px;
+      font-size:11px;
+      color:var(--muted);
+      font-weight:800;
+      white-space:nowrap;
+    }
+    .arenaWrap{
+      display:grid;
+      place-items:center;
+      padding:8px;
+      border-radius:18px;
+      background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.025));
+      border:1px solid rgba(255,255,255,.09);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+    }
+    canvas{
+      width:min(100%,360px);
+      aspect-ratio:1/1;
+      border-radius:16px;
+      display:block;
+      background:#17202d;
+      touch-action:none;
+    }
+    .battlePanels{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+    }
+    .abilityPanel{
+      min-height:78px;
+      border-radius:14px;
+      padding:10px;
+      background:rgba(255,255,255,.065);
+      border:1px solid rgba(255,255,255,.1);
+      overflow:hidden;
+    }
+    .abilityPanel b{display:block;font-size:12px;margin-bottom:4px;color:#fff}
+    .abilityPanel span{display:block;font-size:11px;line-height:1.3;color:var(--muted)}
+    .overlay{
+      position:absolute;
+      inset:0;
+      z-index:5;
+      display:grid;
+      grid-template-rows:auto 1fr;
+      gap:10px;
+      padding:14px;
+      background:linear-gradient(180deg,rgba(14,20,30,.94),rgba(14,20,30,.98));
+      overflow:auto;
+      scrollbar-color:rgba(255,255,255,.42) rgba(255,255,255,.08);
+    }
+    .overlay::-webkit-scrollbar{width:8px}
+    .overlay::-webkit-scrollbar-thumb{background:rgba(255,255,255,.36);border-radius:999px}
+    .overlay::-webkit-scrollbar-track{background:rgba(255,255,255,.06)}
+    .overlay.hidden{display:none}
+    .screenBody{display:grid;align-content:start;gap:10px;padding-bottom:8px}
+    .card{
+      border-radius:8px;
+      padding:12px;
+      color:var(--text);
+      background:linear-gradient(180deg,rgba(255,255,255,.095),rgba(255,255,255,.045));
+      border:1px solid rgba(214,234,255,.16);
+      box-shadow:0 12px 26px rgba(0,0,0,.16);
+    }
+    .btnGrid{display:grid;gap:9px}
+    .btn{
+      border:0;
+      border-radius:8px;
+      padding:13px 14px;
+      min-height:48px;
+      background:linear-gradient(180deg,#4fd7ff,#269dc1);
+      color:#05121a;
+      font-weight:900;
+      text-align:left;
+      box-shadow:0 14px 24px rgba(45,184,224,.2);
+    }
+    .btn.secondary{background:#26364a;color:var(--text);box-shadow:none;border:1px solid rgba(255,255,255,.12)}
+    .btn.warn{background:linear-gradient(180deg,#ff8d72,#d84c5e);color:#18090b}
+    .btn:active{transform:translateY(1px)}
+    .row{display:flex;gap:8px;align-items:center;justify-content:space-between}
+    .small{font-size:12px;color:var(--muted);line-height:1.4}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .list{display:grid;gap:8px}
+    .selectable{
+      position:relative;
+      min-height:88px;
+      text-align:left;
+      appearance:none;
+    }
+    .selectable.selected{
+      outline:2px solid var(--cyan);
+      border-color:rgba(80,216,255,.72);
+      background:linear-gradient(180deg,rgba(80,216,255,.18),rgba(255,255,255,.055));
+      box-shadow:0 0 0 4px rgba(80,216,255,.08),0 14px 28px rgba(0,0,0,.2);
+    }
+    .icon{
+      width:38px;
+      height:38px;
+      border-radius:50%;
+      display:grid;
+      place-items:center;
+      font-weight:900;
+      color:white;
+      border:2px solid rgba(255,255,255,.72);
+      box-shadow:0 8px 14px rgba(0,0,0,.22);
+      flex:0 0 auto;
+    }
+    .fighterName{font-size:14px;font-weight:900;line-height:1.1;color:#f8fbff}
+    .fighterRole{display:block;margin-top:2px;font-size:12px;color:#c8d4e5;font-weight:800;line-height:1.2}
+    .fighterCard{
+      display:grid;
+      grid-template-columns:auto 1fr;
+      gap:10px;
+      align-items:start;
+      min-height:0;
+      padding:10px;
+    }
+    .fighterInfo{display:grid;gap:6px;min-width:0}
+    .fighterTop{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap}
+    .fighterText{min-width:120px;flex:1 1 120px}
+    .fighterDesc{font-size:12px;line-height:1.35;color:#d7e2f2}
+    .statLine{display:flex;gap:5px;flex-wrap:wrap;margin-top:0;justify-content:flex-end}
+    .stat{
+      font-size:10px;
+      padding:4px 7px;
+      border-radius:999px;
+      background:rgba(219,233,250,.13);
+      border:1px solid rgba(255,255,255,.08);
+      color:#dce8f8;
+      font-weight:900;
+      white-space:nowrap;
+    }
+    .road{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+    .node{min-height:58px;text-align:center}
+    .node.current{outline:2px solid var(--gold)}
+    .node.done{opacity:.55}
+    .upgrade{min-height:126px;display:grid;gap:6px}
+    .rarity{font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--gold);font-weight:900}
+    .debug{
+      position:absolute;
+      z-index:9;
+      right:10px;
+      bottom:10px;
+      width:min(94%,360px);
+      max-height:70%;
+      overflow:auto;
+      border-radius:8px;
+      padding:12px;
+      background:rgba(7,10,15,.94);
+      border:1px solid rgba(255,255,255,.18);
+      box-shadow:0 18px 40px rgba(0,0,0,.35);
+      display:none;
+    }
+    .debug.open{display:grid;gap:8px}
+    .debug label{display:grid;gap:5px;font-size:12px;color:var(--muted)}
+    .debug input{width:100%}
+    .debugBtns{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    .tinyBtn{
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:8px;
+      background:#223047;
+      color:var(--text);
+      padding:8px;
+      font-weight:800;
+      font-size:12px;
+    }
+    .battleControls{
+      display:flex;
+      gap:7px;
+      justify-content:flex-end;
+      margin-top:8px;
+    }
+    .iconBtn{
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:8px;
+      width:40px;
+      height:36px;
+      display:grid;
+      place-items:center;
+      background:#24344a;
+      color:#fff;
+      font-weight:900;
+    }
+    .shapePreview{
+      height:86px;
+      display:grid;
+      place-items:center;
+    }
+    .shapeBox{width:74px;height:74px;border:4px solid var(--cyan);background:rgba(80,216,255,.08)}
+    .shapeCircle{width:78px;height:78px;border-radius:50%;border:4px solid var(--orange);background:rgba(255,147,86,.08)}
+    .emptyArena{opacity:.58;filter:grayscale(.25)}
+    @media (max-height:720px){
+      .phone{min-height:620px}
+      .title{font-size:25px}
+      .topbar{min-height:58px}
+      .abilityPanel{min-height:64px}
+      .abilityPanel span{font-size:10px}
+    }
+    @media (max-width:430px){
+      .grid3{grid-template-columns:1fr}
+      .title{font-size:28px}
+      .subtitle{font-size:12px}
+      .fighterDesc{font-size:11px}
+    }
+    @media (max-width:370px){
+      body{padding:0}
+      .phone{width:100vw;max-height:none;min-height:100svh;border-radius:0}
+      .game,.overlay{padding:10px}
+      .title{font-size:24px}
+      .fighterCard{grid-template-columns:34px 1fr;gap:8px}
+      .icon{width:34px;height:34px;font-size:13px}
+    }
+  </style>
+</head>
+<body>
+  <main class="phone" id="phone">
+    <section class="game" aria-label="Arena Oddities game">
+      <header class="topbar">
+        <div>
+          <div class="kicker" id="kicker">Arena Oddities</div>
+          <h1 class="title" id="battleTitle">Odd Arena</h1>
+          <p class="subtitle" id="battleSubtitle">Choose a mode to begin.</p>
+        </div>
+        <div>
+          <div class="miniStats" id="miniStats"></div>
+          <div class="battleControls">
+            <button class="iconBtn" id="pauseBtn" type="button" title="Pause">II</button>
+            <button class="iconBtn" id="debugBtn" type="button" title="Debug">`</button>
+          </div>
+        </div>
+      </header>
+      <div class="arenaWrap">
+        <canvas id="arena" width="360" height="360"></canvas>
+      </div>
+      <section class="battlePanels">
+        <div class="abilityPanel"><b id="playerAbility">Player Ability</b><span id="playerAbilityText">Pick a fighter.</span></div>
+        <div class="abilityPanel"><b id="enemyAbility">Enemy Ability</b><span id="enemyAbilityText">Opponents appear here.</span></div>
+      </section>
+    </section>
+    <section class="overlay" id="overlay"></section>
+    <aside class="debug" id="debugPanel"></aside>
+  </main>
+
+  <script>
+  "use strict";
+
+  const C = {
+    W: 360,
+    H: 360,
+    CENTER: 180,
+    SQUARE: {x: 30, y: 30, w: 300, h: 300},
+    CIRCLE_R: 146,
+    SAVE_KEY: "arenaOdditiesSave_v1",
+    DT_CAP: 1 / 30,
+    BASE_HEAL: 0.2,
+    UNIT_SPEED_MULT: 2,
+    SUDDEN_TIME: 45,
+    SUDDEN_STEP: 15
+  };
+
+  const FIGHTERS = [
+    {id:"swordsman",name:"Swordsman",icon:"/",color:"#46c9f3",enemyColor:"#b8643f",role:"Orbit duelist",maxHp:115,moveSpeed:66,bodyRadius:20,abilityType:"swordsman",abilityCooldown:.45,damage:13,range:47,description:"A long sword spins around the body and clips targets at medium range.",tags:["melee","orbit","contact"]},
+    {id:"vampire",name:"Vampire",icon:"V",color:"#6fd6ff",enemyColor:"#a84b4b",role:"Lifesteal brawler",maxHp:105,moveSpeed:74,bodyRadius:20,abilityType:"vampire",abilityCooldown:3,damage:7,range:25,lifesteal:.45,description:"Latches on for three quick bites and heals from the damage dealt.",tags:["melee","lifesteal","burst"]},
+    {id:"assassin",name:"Assassin",icon:"A",color:"#4ee6d1",enemyColor:"#ba5738",role:"Fast close DPS",maxHp:90,moveSpeed:86,bodyRadius:18,abilityType:"assassin",abilityCooldown:.28,damage:8,range:35,description:"Two short daggers whirl quickly on opposite sides.",tags:["melee","orbit","fast"]},
+    {id:"mage",name:"Mage",icon:"*",color:"#70b9ff",enemyColor:"#9d5d35",role:"Area caster",maxHp:85,moveSpeed:63,bodyRadius:18,abilityType:"mage",abilityCooldown:1.25,damage:10,explosionDamage:8,range:56,description:"Fires an orb that bursts for area damage on hit or timeout.",tags:["projectile","aoe","magic"]},
+    {id:"archer",name:"Archer",icon:">",color:"#55d5ff",enemyColor:"#b75b3d",role:"Precision ranged",maxHp:90,moveSpeed:64,bodyRadius:18,abilityType:"archer",abilityCooldown:1.1,damage:15,range:120,description:"Shoots arrows that curve slightly toward the nearest enemy.",tags:["projectile","precision"]},
+    {id:"summoner",name:"Summoner",icon:"S",color:"#67d7ec",enemyColor:"#a55a31",role:"Swarm scaler",maxHp:80,moveSpeed:62,bodyRadius:18,abilityType:"summoner",abilityCooldown:4,damage:0,range:0,description:"Does not attack directly. Calls up to four small allies.",tags:["summon","swarm","scaling"]},
+    {id:"warlock",name:"Warlock",icon:"W",color:"#8fc9ff",enemyColor:"#8f573e",role:"Ricochet chaos",maxHp:90,moveSpeed:63,bodyRadius:18,abilityType:"warlock",abilityCooldown:1.6,damage:12,range:100,description:"Releases random bouncing orbs that punish small arenas.",tags:["projectile","random","ricochet","magic"]},
+    {id:"spider",name:"Spider",icon:"X",color:"#5de1f5",enemyColor:"#9f5a37",role:"Web trapper",maxHp:95,moveSpeed:74,bodyRadius:18,abilityType:"spider",abilityCooldown:.8,damage:5,range:0,description:"Touches walls to leave cutting web lines across the arena.",tags:["trap","wall","area-control"]},
+    {id:"saw",name:"Saw",icon:"O",color:"#4fd7ff",enemyColor:"#b76635",role:"Burst orbit",maxHp:110,moveSpeed:64,bodyRadius:20,abilityType:"saw",abilityCooldown:.38,damage:10,range:38,expandedRange:65,description:"A circular saw expands every few seconds for a dangerous window.",tags:["melee","orbit","burst-window"]},
+    {id:"bomber",name:"Bomber",icon:"B",color:"#63d6ff",enemyColor:"#bd6538",role:"Delayed explosive",maxHp:100,moveSpeed:62,bodyRadius:19,abilityType:"bomber",abilityCooldown:2.2,damage:13,range:52,description:"Drops bombs that explode after a short delay.",tags:["trap","explosive","aoe"]},
+    {id:"monk",name:"Monk",icon:"M",color:"#74e2e0",enemyColor:"#aa6241",role:"Shield tank",maxHp:120,moveSpeed:61,bodyRadius:21,abilityType:"monk",abilityCooldown:5,damage:5,range:34,description:"Refreshes a shield that blocks one hit and knocks attackers away.",tags:["tank","shield","knockback"]},
+    {id:"alchemist",name:"Alchemist",icon:"?",color:"#7edfa4",enemyColor:"#9f6535",role:"Acid zones",maxHp:90,moveSpeed:62,bodyRadius:18,abilityType:"alchemist",abilityCooldown:2,damage:4,puddleDamage:5,range:55,description:"Throws flasks that leave acid puddles dealing damage over time.",tags:["aoe","dot","zone-control"]},
+    {id:"ram",name:"Ram",icon:"R",color:"#54d7ff",enemyColor:"#bd5a42",role:"Dash bruiser",maxHp:115,moveSpeed:61,bodyRadius:20,abilityType:"ram",abilityCooldown:3.2,damage:18,range:0,description:"Charges toward a target and knocks it back on collision.",tags:["dash","melee","knockback"]},
+    {id:"mirror",name:"Mirror",icon:"[]",color:"#88d8ff",enemyColor:"#9c6048",role:"Projectile counter",maxHp:95,moveSpeed:63,bodyRadius:19,abilityType:"mirror",abilityCooldown:4,damage:7,range:96,description:"Fires weak shards and periodically reflects a nearby projectile.",tags:["counter","projectile","utility"]},
+    {id:"ghost",name:"Ghost",icon:"G",color:"#b1e3ff",enemyColor:"#9d6450",role:"Phase trickster",maxHp:80,moveSpeed:86,bodyRadius:18,abilityType:"ghost",abilityCooldown:5,damage:10,range:46,description:"Phases through danger, then bursts when returning.",tags:["evasion","burst","tricky"]}
+  ];
+
+  const UPGRADES = [
+    {id:"hp",name:"Thicker Oddity",rarity:"Common",desc:"+15% Max HP for all owned fighters.",apply:b=>b.hpMult*=1.15},
+    {id:"damage",name:"Sharper Intent",rarity:"Common",desc:"+12% damage from abilities and attacks.",apply:b=>b.damageMult*=1.12},
+    {id:"attackSpeed",name:"Twitch Reflex",rarity:"Common",desc:"+10% attack speed.",apply:b=>b.cooldownMult*=.9},
+    {id:"move",name:"Restless Feet",rarity:"Common",desc:"+12% movement speed.",apply:b=>b.moveSpeedMult*=1.12},
+    {id:"projSpeed",name:"Fast Missiles",rarity:"Common",desc:"+15% projectile speed.",apply:b=>b.projectileSpeedMult*=1.15},
+    {id:"area",name:"Bigger Mess",rarity:"Uncommon",desc:"+15% explosion and puddle radius.",apply:b=>b.areaRadiusMult*=1.15},
+    {id:"lifesteal",name:"Sweet Bite",rarity:"Uncommon",desc:"+20% lifesteal effects.",apply:b=>b.lifestealMult*=1.2},
+    {id:"trap",name:"Mean Traps",rarity:"Uncommon",desc:"+20% trap, web, bomb, and acid damage.",apply:b=>b.trapDamageMult*=1.2},
+    {id:"orbit",name:"Longer Orbit",rarity:"Uncommon",desc:"+15% orbit weapon range.",apply:b=>b.orbitRangeMult*=1.15},
+    {id:"summonHp",name:"Sturdy Minions",rarity:"Uncommon",desc:"+20% summon HP.",apply:b=>b.summonHpMult*=1.2},
+    {id:"summonDmg",name:"Angry Minions",rarity:"Uncommon",desc:"+20% summon damage.",apply:b=>b.summonDamageMult*=1.2},
+    {id:"heal",name:"Patchwork Recovery",rarity:"Rare",desc:"Heal 25% after each battle.",apply:b=>b.healAfterBattlePercent+=.25},
+    {id:"firstHit",name:"Opening Trick",rarity:"Rare",desc:"First hit from each owned fighter deals +40%.",apply:b=>b.firstHitDamageMult=Math.max(b.firstHitDamageMult,1.4)},
+    {id:"contactReduce",name:"Rubber Bones",rarity:"Rare",desc:"Contact damage taken reduced by 15%.",apply:b=>b.contactDamageTakenMult*=.85},
+    {id:"cooldowns",name:"Clock Bite",rarity:"Rare",desc:"Cooldowns reduced by 8%.",apply:b=>b.cooldownMult*=.92},
+    {id:"rage",name:"Low HP Rage",rarity:"Rare",desc:"Below 30% HP, owned fighters deal +20% damage.",apply:b=>b.lowHpRage=true}
+  ];
+
+  const MINI_TYPES = [
+    {id:"mini_chaser",name:"Mini Chaser",icon:"c",maxHp:24,moveSpeed:76,bodyRadius:13,damage:4,type:"chaser"},
+    {id:"mini_shooter",name:"Mini Shooter",icon:"s",maxHp:22,moveSpeed:56,bodyRadius:12,damage:5,type:"shooter"},
+    {id:"mini_bomber",name:"Mini Bomber",icon:"b",maxHp:25,moveSpeed:54,bodyRadius:12,damage:7,type:"bomber"},
+    {id:"mini_frost",name:"Mini Frost",icon:"f",maxHp:24,moveSpeed:55,bodyRadius:12,damage:4,type:"frost"},
+    {id:"mini_tank",name:"Mini Tank",icon:"t",maxHp:42,moveSpeed:45,bodyRadius:15,damage:4,type:"tank"},
+    {id:"mini_swarm",name:"Mini Swarm",icon:"w",maxHp:18,moveSpeed:84,bodyRadius:11,damage:3,type:"chaser"},
+    {id:"mini_spider",name:"Mini Spider",icon:"x",maxHp:23,moveSpeed:64,bodyRadius:12,damage:3,type:"spider"}
+  ];
+
+  const canvas = document.getElementById("arena");
+  const ctx = canvas.getContext("2d");
+  const overlay = document.getElementById("overlay");
+  const debugPanel = document.getElementById("debugPanel");
+  const ui = {
+    kicker: document.getElementById("kicker"),
+    title: document.getElementById("battleTitle"),
+    subtitle: document.getElementById("battleSubtitle"),
+    miniStats: document.getElementById("miniStats"),
+    playerAbility: document.getElementById("playerAbility"),
+    playerAbilityText: document.getElementById("playerAbilityText"),
+    enemyAbility: document.getElementById("enemyAbility"),
+    enemyAbilityText: document.getElementById("enemyAbilityText"),
+    pauseBtn: document.getElementById("pauseBtn"),
+    debugBtn: document.getElementById("debugBtn")
+  };
+
+  const SAVE_DEFAULT = {
+    tournamentWins: 0,
+    campaignWins: 0,
+    bestCampaignLevel: 0,
+    totalRuns: 0,
+    winsPerFighter: {},
+    lastArenaShape: "square"
+  };
+
+  let save = loadSave();
+  let screen = "main";
+  let selectedMode = "tournament";
+  let selectedArena = save.lastArenaShape || "square";
+  let selectedFighter = "swordsman";
+  let selectedPick = "swordsman";
+  let upgradeChoices = [];
+  let resultData = null;
+  let lastTime = performance.now();
+  let idCounter = 1;
+
+  const debug = {
+    open: false,
+    hitboxes: false,
+    slow: false,
+    damageMult: 1,
+    enemyHpMult: 1,
+    unitSpeedMult: 1
+  };
+
+  let run = null;
+  let battle = emptyBattle();
+
+  function emptyBattle(){
+    return {
+      active: false,
+      title: "Odd Arena",
+      subtitle: "Choose a mode to begin.",
+      arenaShape: selectedArena,
+      mode: "",
+      entities: [],
+      projectiles: [],
+      bombs: [],
+      puddles: [],
+      webs: [],
+      particles: [],
+      numbers: [],
+      flashes: [],
+      time: 0,
+      suddenStacks: 0,
+      shake: 0,
+      ended: false,
+      paused: false,
+      outcome: null,
+      enemySummary: "None"
+    };
+  }
+
+  function defaultBonuses(){
+    return {
+      hpMult: 1,
+      damageMult: 1,
+      cooldownMult: 1,
+      moveSpeedMult: 1,
+      projectileSpeedMult: 1,
+      areaRadiusMult: 1,
+      orbitRangeMult: 1,
+      summonHpMult: 1,
+      summonDamageMult: 1,
+      trapDamageMult: 1,
+      lifestealMult: 1,
+      healAfterBattlePercent: C.BASE_HEAL,
+      contactDamageTakenMult: 1,
+      firstHitDamageMult: 1,
+      lowHpRage: false
+    };
+  }
+
+  function loadSave(){
+    try{
+      return {...SAVE_DEFAULT, ...JSON.parse(localStorage.getItem(C.SAVE_KEY) || "{}")};
+    }catch(e){
+      return {...SAVE_DEFAULT};
+    }
+  }
+
+  function persist(){
+    localStorage.setItem(C.SAVE_KEY, JSON.stringify(save));
+  }
+
+  function fighter(id){return FIGHTERS.find(f => f.id === id) || FIGHTERS[0];}
+  function mini(id){return MINI_TYPES.find(m => m.id === id) || MINI_TYPES[0];}
+  function rnd(a,b){return a + Math.random() * (b - a);}
+  function pick(arr){return arr[Math.floor(Math.random() * arr.length)];}
+  function clamp(v,a,b){return Math.max(a, Math.min(b, v));}
+  function dist(a,b){return Math.hypot(a.x - b.x, a.y - b.y);}
+  function norm(x,y){const d = Math.hypot(x,y) || 1; return {x:x/d,y:y/d,d};}
+  function teamHostile(a,b){return a && b && isPlayerTeam(a.team) !== isPlayerTeam(b.team);}
+  function isPlayerTeam(team){return team === "player" || team === "playerSummon";}
+  function randomDir(){
+    const a = rnd(0, Math.PI * 2);
+    return {x: Math.cos(a), y: Math.sin(a)};
+  }
+  function normalizeEntityVelocity(e){
+    const n = norm(e.vx, e.vy);
+    e.vx = n.x;
+    e.vy = n.y;
+  }
+
+  function spawnPoint(index, total, team){
+    const side = isPlayerTeam(team) ? -1 : 1;
+    const spread = total > 1 ? (index - (total - 1) / 2) * 28 : 0;
+    return {x: C.CENTER + side * 82 + rnd(-8,8), y: C.CENTER + spread + rnd(-8,8)};
+  }
+
+  function makeEntity(kind, team, index, total, opts = {}){
+    const isMini = kind.startsWith("mini_");
+    const data = isMini ? mini(kind) : fighter(kind);
+    const p = opts.x !== undefined ? {x:opts.x,y:opts.y} : spawnPoint(index, total, team);
+    const owned = isPlayerTeam(team);
+    const bonuses = owned && run ? run.bonuses : defaultBonuses();
+    const hpMult = owned ? bonuses.hpMult : debug.enemyHpMult;
+    const maxHp = Math.round(data.maxHp * hpMult * (opts.hpScale || 1));
+    const radius = data.bodyRadius * (opts.radiusScale || 1);
+    const dir = randomDir();
+    const entity = {
+      uid: "e" + idCounter++,
+      fighterId: kind,
+      name: data.name,
+      icon: data.icon,
+      team,
+      x: p.x,
+      y: p.y,
+      px: p.x,
+      py: p.y,
+      vx: dir.x,
+      vy: dir.y,
+      radius,
+      hp: opts.hp !== undefined ? Math.min(opts.hp, maxHp) : maxHp,
+      maxHp,
+      speed: data.moveSpeed * (owned ? bonuses.moveSpeedMult : 1) * (opts.speedScale || 1),
+      abilityTimer: rnd(.2,1.1),
+      hitTimers: {},
+      alive: true,
+      isMini,
+      owner: opts.owner || null,
+      data,
+      state: {},
+      firstHitReady: true,
+      flash: 0,
+      status: {},
+      wallLatch: 0
+    };
+    if (data.abilityType === "monk") entity.state.shield = true;
+    return entity;
+  }
+
+  function startRun(mode){
+    selectedMode = mode;
+    screen = "arenaSelect";
+    renderScreen();
+  }
+
+  function startCharacterSelect(){
+    save.lastArenaShape = selectedArena;
+    persist();
+    screen = "characterSelect";
+    renderScreen();
+  }
+
+  function beginRun(){
+    save.totalRuns += 1;
+    persist();
+    run = {
+      mode: selectedMode,
+      arenaShape: selectedArena,
+      activeFighterId: selectedFighter,
+      collection: [selectedFighter],
+      collectionHp: {},
+      defeatedReward: null,
+      bonuses: defaultBonuses(),
+      upgrades: [],
+      tournamentIndex: 0,
+      tournamentQueue: [],
+      campaignLevel: 1
+    };
+    run.collectionHp[selectedFighter] = Math.round(fighter(selectedFighter).maxHp * run.bonuses.hpMult);
+    if (selectedMode === "tournament") {
+      run.tournamentQueue = makeTournamentQueue(selectedFighter);
+      screen = "tournamentRoad";
+    } else {
+      screen = "campaignLevel";
+    }
+    renderScreen();
+  }
+
+  function makeTournamentQueue(startId){
+    const pool = FIGHTERS.filter(f => f.id !== startId).map(f => f.id);
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    while (pool.length < 8) pool.push(pick(FIGHTERS).id);
+    return pool.slice(0,8);
+  }
+
+  function campaignEnemies(level){
+    const table = [
+      ["mini_chaser","mini_swarm"],
+      ["mini_chaser","mini_shooter"],
+      ["mini_chaser","mini_swarm","mini_spider"],
+      ["mini_chaser","mini_shooter","mini_tank"],
+      ["ram","mini_chaser","mini_swarm"],
+      ["mini_chaser","mini_shooter","mini_bomber","mini_swarm"],
+      ["mini_frost","mini_spider","mini_tank","mini_shooter"],
+      ["mini_swarm","mini_swarm","mini_chaser","mini_spider","mini_bomber"],
+      ["mini_tank","mini_shooter","mini_frost","mini_bomber"],
+      ["saw","mini_tank","mini_shooter","mini_spider","mini_bomber"]
+    ];
+    return table[level - 1] || table[0];
+  }
+
+  function startTournamentBattle(){
+    const enemyId = run.tournamentQueue[run.tournamentIndex];
+    const player = makeEntity(run.activeFighterId, "player", 0, 1, {hp: run.collectionHp[run.activeFighterId]});
+    const enemy = makeEntity(enemyId, "enemy", 0, 1);
+    setupBattle(`${fighter(run.activeFighterId).name} VS ${fighter(enemyId).name}`, `Tournament duel ${run.tournamentIndex + 1} of 8`, [player, enemy], fighter(enemyId).description);
+  }
+
+  function startCampaignBattle(){
+    const list = campaignEnemies(run.campaignLevel);
+    const entities = [makeEntity(run.activeFighterId, "player", 0, 1, {hp: run.collectionHp[run.activeFighterId]})];
+    list.forEach((id, i) => {
+      const scale = id.startsWith("mini_") ? 1 + run.campaignLevel * .045 : .75 + run.campaignLevel * .035;
+      entities.push(makeEntity(id, "enemy", i, list.length, {hpScale: scale}));
+    });
+    setupBattle(`Level ${run.campaignLevel}: Swarm`, `${list.length} strange enemies in a compact ${run.arenaShape} arena`, entities, list.map(id => id.startsWith("mini_") ? mini(id).name : fighter(id).name).join(", "));
+  }
+
+  function setupBattle(title, subtitle, entities, enemySummary){
+    battle = emptyBattle();
+    battle.active = true;
+    battle.title = title;
+    battle.subtitle = subtitle;
+    battle.mode = run.mode;
+    battle.arenaShape = run.arenaShape;
+    battle.entities = entities;
+    battle.enemySummary = enemySummary;
+    screen = "battle";
+    overlay.classList.add("hidden");
+    syncBattleUi();
+  }
+
+  function syncBattleUi(){
+    ui.kicker.textContent = run ? (run.mode === "tournament" ? "Tournament Mode" : "Campaign Mode") : "Arena Oddities";
+    ui.title.textContent = battle.title;
+    ui.subtitle.textContent = battle.subtitle;
+    const active = run ? fighter(run.activeFighterId) : null;
+    ui.playerAbility.textContent = active ? `${active.name}: ${active.role}` : "Player Ability";
+    ui.playerAbilityText.textContent = active ? active.description : "Pick a fighter.";
+    ui.enemyAbility.textContent = battle.mode === "campaign" ? "Wave" : "Enemy Ability";
+    ui.enemyAbilityText.textContent = battle.enemySummary || "Opponents appear here.";
+    ui.pauseBtn.textContent = battle.paused ? ">" : "II";
+    ui.miniStats.innerHTML = run ? `
+      <span class="pill">${run.arenaShape}</span>
+      <span class="pill">${run.mode === "tournament" ? `${run.tournamentIndex + 1}/8` : `${run.campaignLevel}/10`}</span>
+    ` : `<span class="pill">local</span>`;
+  }
+
+  function update(dt){
+    if (!battle.active || battle.ended || battle.paused) return;
+    dt = Math.min(dt, C.DT_CAP);
+    if (debug.slow) dt *= .35;
+    battle.time += dt;
+    const newStacks = battle.time > C.SUDDEN_TIME ? Math.floor((battle.time - C.SUDDEN_TIME) / C.SUDDEN_STEP) + 1 : 0;
+    battle.suddenStacks = newStacks;
+
+    battle.entities.forEach(e => {
+      e.px = e.x; e.py = e.y;
+      e.flash = Math.max(0, e.flash - dt * 5);
+      if (e.status.slow) e.status.slow -= dt;
+      if (e.state.phase) e.state.phase -= dt;
+      if (e.state.phaseEnded) e.state.phaseEnded -= dt;
+      if (e.alive) updateEntity(e, dt);
+    });
+    updateBodyContacts(dt);
+    updateProjectiles(dt);
+    updateBombs(dt);
+    updatePuddles(dt);
+    updateWebs(dt);
+    updateParticles(dt);
+    battle.entities = battle.entities.filter(e => e.alive || e.state.deathT > 0);
+    battle.shake = Math.max(0, battle.shake - dt * 16);
+    checkBattleEnd();
+  }
+
+  function updateEntity(e, dt){
+    const data = e.data;
+    const target = nearestEnemy(e);
+    const slowMult = e.status.slow > 0 ? .62 : 1;
+    if (data.abilityType === "ram" && e.state.dashing > 0) {
+      e.state.dashing -= dt;
+    }
+    normalizeEntityVelocity(e);
+    const speed = e.speed * C.UNIT_SPEED_MULT * debug.unitSpeedMult * slowMult * (e.state.phase ? 1.15 : 1) * (e.state.dashing > 0 ? 3.4 : 1);
+    e.x += e.vx * speed * dt;
+    e.y += e.vy * speed * dt;
+    keepInArena(e);
+    updateAbility(e, target, dt);
+  }
+
+  function keepInArena(e){
+    e.wallHit = null;
+    if (battle.arenaShape === "circle") {
+      const dx = e.x - C.CENTER, dy = e.y - C.CENTER;
+      const maxR = C.CIRCLE_R - e.radius;
+      const d = Math.hypot(dx,dy);
+      if (d > maxR) {
+        const n = norm(dx,dy);
+        e.x = C.CENTER + n.x * maxR;
+        e.y = C.CENTER + n.y * maxR;
+        const dot = e.vx * n.x + e.vy * n.y;
+        e.vx -= 2 * dot * n.x;
+        e.vy -= 2 * dot * n.y;
+        normalizeEntityVelocity(e);
+        e.wallHit = {x:e.x + n.x * e.radius, y:e.y + n.y * e.radius};
+      }
+      return;
+    }
+    const a = C.SQUARE;
+    let bounced = false;
+    if (e.x - e.radius < a.x) {e.x = a.x + e.radius; e.vx = Math.abs(e.vx); e.wallHit = {x:a.x,y:e.y}; bounced = true;}
+    if (e.x + e.radius > a.x + a.w) {e.x = a.x + a.w - e.radius; e.vx = -Math.abs(e.vx); e.wallHit = {x:a.x+a.w,y:e.y}; bounced = true;}
+    if (e.y - e.radius < a.y) {e.y = a.y + e.radius; e.vy = Math.abs(e.vy); e.wallHit = {x:e.x,y:a.y}; bounced = true;}
+    if (e.y + e.radius > a.y + a.h) {e.y = a.y + a.h - e.radius; e.vy = -Math.abs(e.vy); e.wallHit = {x:e.x,y:a.y+a.h}; bounced = true;}
+    if (bounced) normalizeEntityVelocity(e);
+  }
+
+  function nearestEnemy(e){
+    let best = null, bd = Infinity;
+    for (const other of battle.entities) {
+      if (!other.alive || !teamHostile(e, other)) continue;
+      const d = dist(e, other);
+      if (d < bd) {bd = d; best = other;}
+    }
+    return best;
+  }
+
+  function updateAbility(e, target, dt){
+    if (!e.alive || e.state.phase > 0) return;
+    if (e.isMini) return updateMiniAbility(e, target, dt);
+    const type = e.data.abilityType;
+    e.abilityTimer -= dt;
+    if (type === "swordsman") orbitDamage(e, [0], e.data.range, e.data.damage, e.data.abilityCooldown, dt, 1.9);
+    if (type === "assassin") orbitDamage(e, [0, Math.PI], e.data.range, e.data.damage, e.data.abilityCooldown, dt, 3.8);
+    if (type === "saw") {
+      e.state.expandTimer = (e.state.expandTimer || 0) - dt;
+      e.state.expandCd = (e.state.expandCd || 0) - dt;
+      if (e.state.expandCd <= 0) {e.state.expandTimer = 1; e.state.expandCd = 4.5;}
+      const range = e.state.expandTimer > 0 ? e.data.expandedRange : e.data.range;
+      orbitDamage(e, [0], range, e.data.damage, e.data.abilityCooldown, dt, 2.7);
+    }
+    if (type === "vampire") updateVampire(e, target, dt);
+    if (type === "summoner" && e.abilityTimer <= 0) summonMinion(e);
+    if (type === "spider" && e.wallHit && e.wallLatch <= 0) makeWeb(e);
+    if (type === "monk") updateMonk(e, dt);
+    if (type === "ghost") updateGhost(e, dt);
+    if (target && e.abilityTimer <= 0) {
+      if (type === "mage") shoot(e, target, "mageOrb", 145, e.data.damage, 2.4);
+      if (type === "archer") shoot(e, target, "arrow", 210, e.data.damage, 2.2);
+      if (type === "warlock") shootRandom(e, "chaosOrb", 135, e.data.damage, 4);
+      if (type === "bomber") dropBomb(e);
+      if (type === "alchemist") shoot(e, target, "flask", 120, e.data.damage, 1.3);
+      if (type === "ram") startDash(e, target);
+      if (type === "mirror") shoot(e, target, "mirrorShard", 170, e.data.damage, 1.9);
+      e.abilityTimer = scaledCooldown(e, e.data.abilityCooldown);
+    }
+    if (type === "mirror") reflectProjectile(e, dt);
+    e.wallLatch = Math.max(0, e.wallLatch - dt);
+  }
+
+  function updateMiniAbility(e, target, dt){
+    e.abilityTimer -= dt;
+    if (!target) return;
+    if (e.data.type === "shooter" && e.abilityTimer <= 0) {
+      shoot(e, target, "miniShot", 155, e.data.damage, 1.8);
+      e.abilityTimer = 1.7;
+    }
+    if (e.data.type === "frost" && e.abilityTimer <= 0) {
+      shoot(e, target, "frost", 135, e.data.damage, 1.8);
+      e.abilityTimer = 2.2;
+    }
+    if (e.data.type === "bomber" && e.abilityTimer <= 0) {
+      dropBomb(e);
+      e.abilityTimer = 2.8;
+    }
+    if (e.data.type === "spider" && e.wallHit && e.wallLatch <= 0) makeWeb(e, true);
+  }
+
+  function scaledCooldown(e, base){
+    return base * (isPlayerTeam(e.team) && run ? run.bonuses.cooldownMult : 1);
+  }
+
+  function damageScale(e, category){
+    let mult = debug.damageMult * (1 + battle.suddenStacks * .2);
+    if (isPlayerTeam(e.team) && run) {
+      mult *= run.bonuses.damageMult;
+      if (category === "trap") mult *= run.bonuses.trapDamageMult;
+      if (run.bonuses.lowHpRage && e.hp / e.maxHp < .3) mult *= 1.2;
+      if (e.firstHitReady && run.bonuses.firstHitDamageMult > 1) mult *= run.bonuses.firstHitDamageMult;
+    }
+    return mult;
+  }
+
+  function finalDamage(source, raw, category){
+    const dmg = raw * damageScale(source, category);
+    if (source.firstHitReady && isPlayerTeam(source.team)) source.firstHitReady = false;
+    return dmg;
+  }
+
+  function orbitDamage(e, offsets, range, rawDamage, hitCd, dt, spin){
+    const bonusRange = isPlayerTeam(e.team) && run ? run.bonuses.orbitRangeMult : 1;
+    const r = range * bonusRange;
+    const angle = battle.time * spin + (e.uid.charCodeAt(1) || 0);
+    for (const off of offsets) {
+      const wx = e.x + Math.cos(angle + off) * r;
+      const wy = e.y + Math.sin(angle + off) * r;
+      for (const target of battle.entities) {
+        if (!target.alive || !teamHostile(e,target)) continue;
+        if (Math.hypot(target.x - wx, target.y - wy) < target.radius + 11) {
+          const key = target.uid + ":orbit";
+          e.hitTimers[key] = (e.hitTimers[key] || 0) - dt;
+          if (e.hitTimers[key] <= 0) {
+            dealDamage(target, finalDamage(e, rawDamage, "melee"), e, {heavy: rawDamage >= 12, knock: 26});
+            e.hitTimers[key] = hitCd;
+          }
+        }
+      }
+    }
+  }
+
+  function updateVampire(e, target, dt){
+    if (e.state.combo) {
+      const c = e.state.combo;
+      c.t -= dt;
+      if (c.target && c.target.alive) {
+        const n = norm(c.target.x - e.x, c.target.y - e.y);
+        e.x += n.x * 34 * dt;
+        e.y += n.y * 34 * dt;
+      }
+      if (c.t <= 0 && c.hits < 3 && c.target && c.target.alive) {
+        const dealt = dealDamage(c.target, finalDamage(e, e.data.damage, "melee"), e, {knock:12});
+        const ls = e.data.lifesteal * (isPlayerTeam(e.team) && run ? run.bonuses.lifestealMult : 1);
+        heal(e, dealt * ls);
+        c.hits += 1;
+        c.t = .22;
+      }
+      if (c.hits >= 3 || !c.target || !c.target.alive) e.state.combo = null;
+      return;
+    }
+    if (target && e.abilityTimer <= 0 && dist(e,target) < e.radius + target.radius + 7) {
+      e.state.combo = {target, hits:0, t:.05};
+      e.abilityTimer = scaledCooldown(e, e.data.abilityCooldown);
+    }
+  }
+
+  function updateMonk(e, dt){
+    e.state.shieldTimer = (e.state.shieldTimer || 0) - dt;
+    if (!e.state.shield && e.state.shieldTimer <= 0) {
+      e.state.shield = true;
+      e.state.shieldTimer = e.data.abilityCooldown;
+      burstParticles(e.x, e.y, "#a9fff4", 14);
+    }
+    for (const target of battle.entities) {
+      if (!target.alive || !teamHostile(e,target)) continue;
+      if (dist(e,target) < e.data.range) {
+        const key = target.uid + ":pulse";
+        e.hitTimers[key] = (e.hitTimers[key] || 0) - dt;
+        if (e.hitTimers[key] <= 0) {
+          dealDamage(target, finalDamage(e, e.data.damage, "melee"), e, {knock:22});
+          e.hitTimers[key] = 1.2;
+        }
+      }
+    }
+  }
+
+  function updateGhost(e, dt){
+    if (e.state.phase > 0) return;
+    if (e.state.phaseEnded > 0) return;
+    if (e.abilityTimer <= 0) {
+      e.state.phase = .9;
+      e.state.phaseEnded = 1;
+      e.abilityTimer = scaledCooldown(e, e.data.abilityCooldown);
+      return;
+    }
+    if (e.state.phase !== undefined && e.state.phase <= 0) {
+      aoe(e.x, e.y, e.data.range, finalDamage(e, e.data.damage, "magic"), e, "#b9e8ff", false);
+      e.state.phase = undefined;
+      battle.shake = Math.max(battle.shake, 4);
+    }
+  }
+
+  function summonMinion(e){
+    const owned = isPlayerTeam(e.team);
+    const summonTeam = owned ? "playerSummon" : "enemySummon";
+    const count = battle.entities.filter(x => x.alive && x.owner === e.uid).length;
+    if (count < 4) {
+      const b = owned && run ? run.bonuses : defaultBonuses();
+      const minion = makeEntity("mini_chaser", summonTeam, 0, 1, {
+        x:e.x + rnd(-18,18),
+        y:e.y + rnd(-18,18),
+        owner:e.uid,
+        hpScale:(owned ? b.summonHpMult : 1) * .92,
+        speedScale:1.05,
+        radiusScale:.82
+      });
+      minion.data = {...minion.data, damage:minion.data.damage * (owned ? b.summonDamageMult : 1)};
+      battle.entities.push(minion);
+      burstParticles(e.x, e.y, owned ? "#7eeaff" : "#ff9d6b", 10);
+    }
+    e.abilityTimer = scaledCooldown(e, e.data.abilityCooldown);
+  }
+
+  function makeWeb(e, miniWeb){
+    const p = e.wallHit;
+    battle.webs.push({x1:e.x,y1:e.y,x2:p.x,y2:p.y,life:28,owner:e.uid,team:e.team,damage:miniWeb ? 3 : e.data.damage, hits:{}});
+    while (battle.webs.length > 30) battle.webs.shift();
+    e.wallLatch = .65;
+  }
+
+  function startDash(e, target){
+    const n = norm(target.x - e.x, target.y - e.y);
+    e.vx = n.x; e.vy = n.y;
+    e.state.dashing = .45;
+    e.state.dashHit = {};
+  }
+
+  function shoot(e, target, type, speed, rawDamage, life){
+    const n = norm(target.x - e.x, target.y - e.y);
+    const sp = speed * (isPlayerTeam(e.team) && run ? run.bonuses.projectileSpeedMult : 1);
+    battle.projectiles.push({
+      id:"p"+idCounter++,
+      type,
+      team:e.team,
+      owner:e.uid,
+      x:e.x + n.x * (e.radius + 6),
+      y:e.y + n.y * (e.radius + 6),
+      px:e.x,
+      py:e.y,
+      vx:n.x * sp,
+      vy:n.y * sp,
+      speed:sp,
+      damage:rawDamage,
+      life,
+      radius:type === "arrow" ? 5 : 8,
+      trail:[],
+      color:projectileColor(type)
+    });
+  }
+
+  function shootRandom(e, type, speed, rawDamage, life){
+    const a = rnd(0, Math.PI * 2);
+    const sp = speed * (isPlayerTeam(e.team) && run ? run.bonuses.projectileSpeedMult : 1);
+    battle.projectiles.push({id:"p"+idCounter++,type,team:e.team,owner:e.uid,x:e.x,y:e.y,px:e.x,py:e.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,speed:sp,damage:rawDamage,life,radius:9,trail:[],color:"#b284ff"});
+  }
+
+  function projectileColor(type){
+    if (type === "arrow") return "#ffd166";
+    if (type === "flask") return "#75e35f";
+    if (type === "frost") return "#a8eaff";
+    if (type === "mirrorShard") return "#d7f5ff";
+    if (type === "chaosOrb") return "#b284ff";
+    return "#6ee8ff";
+  }
+
+  function dropBomb(e){
+    battle.bombs.push({x:e.x,y:e.y,team:e.team,owner:e.uid,t:1.5,damage:e.data.damage || 7,radius:(e.data.range || 46),pulse:0});
+  }
+
+  function reflectProjectile(e){
+    e.state.reflectTimer = (e.state.reflectTimer || 0) - 1 / 60;
+    if (e.state.reflectTimer > 0) return;
+    let best = null, bd = 72;
+    for (const p of battle.projectiles) {
+      if (isPlayerTeam(p.team) === isPlayerTeam(e.team)) continue;
+      const d = Math.hypot(p.x - e.x, p.y - e.y);
+      if (d < bd) {bd = d; best = p;}
+    }
+    if (best) {
+      best.team = e.team;
+      best.owner = e.uid;
+      best.vx *= -1.1;
+      best.vy *= -1.1;
+      best.color = "#ffffff";
+      e.state.reflectTimer = e.data.abilityCooldown;
+      burstParticles(e.x, e.y, "#d7f5ff", 18);
+    }
+  }
+
+  function updateBodyContacts(dt){
+    for (let i = 0; i < battle.entities.length; i++) {
+      const a = battle.entities[i];
+      if (!a.alive) continue;
+      for (let j = i + 1; j < battle.entities.length; j++) {
+        const b = battle.entities[j];
+        if (!b.alive || !teamHostile(a,b)) continue;
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const d = Math.hypot(dx,dy) || 1;
+        const overlap = a.radius + b.radius - d;
+        if (overlap > 0 && !(a.state.phase > 0) && !(b.state.phase > 0)) {
+          const nx = dx / d, ny = dy / d;
+          a.x -= nx * overlap * .5; a.y -= ny * overlap * .5;
+          b.x += nx * overlap * .5; b.y += ny * overlap * .5;
+          resolveBallCollision(a, b, nx, ny);
+          if (a.isMini || b.isMini || a.data.abilityType === "ram" || b.data.abilityType === "ram") {
+            contactHit(a,b,dt);
+            contactHit(b,a,dt);
+          }
+        }
+      }
+    }
+  }
+
+  function resolveBallCollision(a, b, nx, ny){
+    const avx = a.vx * a.speed;
+    const avy = a.vy * a.speed;
+    const bvx = b.vx * b.speed;
+    const bvy = b.vy * b.speed;
+    const rel = (avx - bvx) * nx + (avy - bvy) * ny;
+    if (rel <= 0) return;
+    const massA = Math.max(1, a.radius * a.radius);
+    const massB = Math.max(1, b.radius * b.radius);
+    const impulse = (2 * rel) / (massA + massB);
+    const navx = avx - impulse * massB * nx;
+    const navy = avy - impulse * massB * ny;
+    const nbvx = bvx + impulse * massA * nx;
+    const nbvy = bvy + impulse * massA * ny;
+    const ad = norm(navx, navy);
+    const bd = norm(nbvx, nbvy);
+    a.vx = ad.x;
+    a.vy = ad.y;
+    b.vx = bd.x;
+    b.vy = bd.y;
+    if (a.state.dashing > 0 || b.state.dashing > 0) {
+      battle.shake = Math.max(battle.shake, 3);
+      burstParticles((a.x + b.x) * .5, (a.y + b.y) * .5, "#ffffff", 8);
+    }
+  }
+
+  function contactHit(source, target, dt){
+    if (!source.alive || !target.alive || !teamHostile(source,target)) return;
+    const raw = source.isMini ? source.data.damage : (source.data.abilityType === "ram" && source.state.dashing > 0 ? source.data.damage : 0);
+    if (raw <= 0) return;
+    const key = target.uid + ":contact";
+    source.hitTimers[key] = (source.hitTimers[key] || 0) - dt;
+    if (source.hitTimers[key] <= 0) {
+      dealDamage(target, finalDamage(source, raw, "contact"), source, {knock:source.state.dashing > 0 ? 62 : 18, contact:true, heavy:raw >= 12});
+      source.hitTimers[key] = source.state.dashing > 0 ? .8 : .7;
+    }
+  }
+
+  function updateProjectiles(dt){
+    for (const p of battle.projectiles) {
+      p.life -= dt;
+      p.px = p.x; p.py = p.y;
+      p.trail.push({x:p.x,y:p.y});
+      if (p.trail.length > 8) p.trail.shift();
+      if (p.type === "arrow") steerProjectile(p, dt, .95);
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      if (p.type === "chaosOrb") bounceProjectile(p);
+      for (const e of battle.entities) {
+        if (!e.alive || isPlayerTeam(e.team) === isPlayerTeam(p.team)) continue;
+        if (e.state.phase > 0) continue;
+        if (Math.hypot(e.x - p.x, e.y - p.y) < e.radius + p.radius) {
+          const owner = battle.entities.find(x => x.uid === p.owner) || e;
+          if (p.type === "mageOrb") {
+            aoe(p.x,p.y,56 * bonusArea(owner), finalDamage(owner, owner.data.explosionDamage || 8, "magic"), owner, "#6ee8ff", true);
+          } else if (p.type === "flask") {
+            dealDamage(e, finalDamage(owner, p.damage, "trap"), owner, {knock:8});
+            makePuddle(p.x,p.y,p.team,p.owner);
+          } else {
+            dealDamage(e, finalDamage(owner, p.damage, p.type === "miniShot" ? "contact" : "projectile"), owner, {knock:p.type === "arrow" ? 20 : 12});
+            if (p.type === "frost") e.status.slow = 1.4;
+          }
+          p.life = -1;
+          break;
+        }
+      }
+      if (p.life <= 0 && p.type === "mageOrb") {
+        const owner = battle.entities.find(x => x.uid === p.owner);
+        if (owner) aoe(p.x,p.y,50 * bonusArea(owner), finalDamage(owner, owner.data.explosionDamage || 8, "magic"), owner, "#6ee8ff", true);
+      }
+    }
+    battle.projectiles = battle.projectiles.filter(p => p.life > 0 && inLooseArena(p));
+  }
+
+  function steerProjectile(p, dt, turnRate){
+    let best = null, bd = Infinity;
+    for (const e of battle.entities) {
+      if (!e.alive || isPlayerTeam(e.team) === isPlayerTeam(p.team)) continue;
+      const d = Math.hypot(e.x - p.x, e.y - p.y);
+      if (d < bd) {bd = d; best = e;}
+    }
+    if (!best) return;
+    const desired = norm(best.x - p.x, best.y - p.y);
+    const cur = norm(p.vx, p.vy);
+    const mix = clamp(turnRate * dt, 0, .08);
+    const nx = cur.x * (1 - mix) + desired.x * mix;
+    const ny = cur.y * (1 - mix) + desired.y * mix;
+    const n = norm(nx,ny);
+    p.vx = n.x * p.speed;
+    p.vy = n.y * p.speed;
+  }
+
+  function bounceProjectile(p){
+    if (battle.arenaShape === "circle") {
+      const d = Math.hypot(p.x - C.CENTER, p.y - C.CENTER);
+      if (d > C.CIRCLE_R - p.radius) {
+        const n = norm(p.x - C.CENTER, p.y - C.CENTER);
+        const dot = p.vx*n.x + p.vy*n.y;
+        p.vx -= 2*dot*n.x; p.vy -= 2*dot*n.y;
+        p.x = C.CENTER + n.x * (C.CIRCLE_R - p.radius);
+        p.y = C.CENTER + n.y * (C.CIRCLE_R - p.radius);
+      }
+    } else {
+      const a = C.SQUARE;
+      if (p.x < a.x || p.x > a.x + a.w) p.vx *= -1;
+      if (p.y < a.y || p.y > a.y + a.h) p.vy *= -1;
+      p.x = clamp(p.x, a.x, a.x + a.w);
+      p.y = clamp(p.y, a.y, a.y + a.h);
+    }
+  }
+
+  function inLooseArena(p){return p.x > -30 && p.x < C.W + 30 && p.y > -30 && p.y < C.H + 30;}
+
+  function updateBombs(dt){
+    for (const b of battle.bombs) {
+      b.t -= dt;
+      b.pulse += dt;
+      if (b.t <= 0) {
+        const owner = battle.entities.find(x => x.uid === b.owner);
+        if (owner) aoe(b.x,b.y,b.radius * bonusArea(owner), finalDamage(owner, b.damage, "trap"), owner, "#ffb457", true, true);
+        b.dead = true;
+      }
+    }
+    battle.bombs = battle.bombs.filter(b => !b.dead);
+  }
+
+  function makePuddle(x,y,team,owner){
+    battle.puddles.push({x,y,team,owner,life:4,radius:43,damage:5,hits:{}});
+  }
+
+  function updatePuddles(dt){
+    for (const p of battle.puddles) {
+      p.life -= dt;
+      const owner = battle.entities.find(x => x.uid === p.owner);
+      for (const e of battle.entities) {
+        if (!e.alive || isPlayerTeam(e.team) === isPlayerTeam(p.team) || e.state.phase > 0) continue;
+        if (Math.hypot(e.x - p.x, e.y - p.y) < p.radius + e.radius * .4) {
+          dealDamage(e, finalDamage(owner || e, p.damage * dt, "trap"), owner || e, {dot:true});
+        }
+      }
+    }
+    battle.puddles = battle.puddles.filter(p => p.life > 0);
+  }
+
+  function updateWebs(dt){
+    for (const w of battle.webs) {
+      w.life -= dt;
+      for (const e of battle.entities) {
+        if (!e.alive || isPlayerTeam(e.team) === isPlayerTeam(w.team) || e.state.phase > 0) continue;
+        w.hits[e.uid] = (w.hits[e.uid] || 0) - dt;
+        if (w.hits[e.uid] <= 0 && segmentCross(e.px,e.py,e.x,e.y,w.x1,w.y1,w.x2,w.y2)) {
+          const owner = battle.entities.find(x => x.uid === w.owner) || e;
+          dealDamage(e, finalDamage(owner, w.damage, "trap"), owner, {knock:10});
+          w.hits[e.uid] = .8;
+        }
+      }
+    }
+    battle.webs = battle.webs.filter(w => w.life > 0);
+  }
+
+  function segmentCross(ax,ay,bx,by,cx,cy,dx,dy){
+    function ccw(x1,y1,x2,y2,x3,y3){return (y3-y1)*(x2-x1) > (y2-y1)*(x3-x1);}
+    return ccw(ax,ay,cx,cy,dx,dy) !== ccw(bx,by,cx,cy,dx,dy) && ccw(ax,ay,bx,by,cx,cy) !== ccw(ax,ay,bx,by,dx,dy);
+  }
+
+  function bonusArea(owner){return isPlayerTeam(owner.team) && run ? run.bonuses.areaRadiusMult : 1;}
+
+  function aoe(x,y,radius,damage,source,color,particles,heavy){
+    for (const e of battle.entities) {
+      if (!e.alive || !teamHostile(source,e) || e.state.phase > 0) continue;
+      if (Math.hypot(e.x - x, e.y - y) < radius + e.radius) {
+        dealDamage(e, damage, source, {knock:heavy ? 40 : 20, heavy});
+      }
+    }
+    battle.flashes.push({x,y,r:radius,t:.35,color});
+    if (particles) burstParticles(x,y,color,heavy ? 32 : 18);
+    if (heavy) battle.shake = Math.max(battle.shake, 6);
+  }
+
+  function dealDamage(target, amount, source, opts = {}){
+    if (!target.alive || target.state.phase > 0) return 0;
+    if (target.data && target.data.abilityType === "monk" && target.state.shield && amount > 0) {
+      target.state.shield = false;
+      target.state.shieldTimer = target.data.abilityCooldown;
+      if (source) knockback(source, target, 48);
+      burstParticles(target.x,target.y,"#a9fff4",16);
+      return 0;
+    }
+    let dmg = amount;
+    if (opts.contact && isPlayerTeam(target.team) && run) dmg *= run.bonuses.contactDamageTakenMult;
+    dmg = Math.max(.4, dmg);
+    target.hp -= dmg;
+    target.flash = 1;
+    addNumber(target.x, target.y - target.radius, Math.max(1, Math.round(dmg)), "#fff2c4");
+    if (source && opts.knock) knockback(target, source, opts.knock);
+    if (opts.heavy) battle.shake = Math.max(battle.shake, 5);
+    burstParticles(target.x,target.y, isPlayerTeam(target.team) ? "#77e8ff" : "#ff9b62", opts.dot ? 1 : 5);
+    if (target.hp <= 0) killEntity(target);
+    return dmg;
+  }
+
+  function heal(e, amount){
+    if (!e.alive || amount <= 0) return;
+    const before = e.hp;
+    e.hp = Math.min(e.maxHp, e.hp + amount);
+    if (e.hp > before + .5) addNumber(e.x, e.y + e.radius, "+" + Math.round(e.hp - before), "#8dff9d");
+  }
+
+  function knockback(target, source, force){
+    const n = norm(target.x - source.x, target.y - source.y);
+    target.x += n.x * force * .16;
+    target.y += n.y * force * .16;
+    target.vx += n.x * .4;
+    target.vy += n.y * .4;
+    normalizeEntityVelocity(target);
+  }
+
+  function killEntity(e){
+    e.alive = false;
+    e.state.deathT = .45;
+    burstParticles(e.x,e.y,isPlayerTeam(e.team) ? "#77e8ff" : "#ff9b62",28);
+    battle.shake = Math.max(battle.shake, 6);
+  }
+
+  function addNumber(x,y,text,color){
+    battle.numbers.push({x,y,text:String(text),color,life:.75,vy:-34});
+  }
+
+  function burstParticles(x,y,color,count){
+    for (let i = 0; i < count; i++) {
+      const a = rnd(0,Math.PI*2), s = rnd(20,90);
+      battle.particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:rnd(.22,.62),color,r:rnd(1.5,4)});
+    }
+  }
+
+  function updateParticles(dt){
+    for (const p of battle.particles) {p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= .96; p.vy *= .96;}
+    for (const n of battle.numbers) {n.life -= dt; n.y += n.vy * dt;}
+    for (const f of battle.flashes) f.t -= dt;
+    battle.particles = battle.particles.filter(p => p.life > 0);
+    battle.numbers = battle.numbers.filter(n => n.life > 0);
+    battle.flashes = battle.flashes.filter(f => f.t > 0);
+  }
+
+  function checkBattleEnd(){
+    const players = battle.entities.some(e => e.alive && isPlayerTeam(e.team));
+    const enemies = battle.entities.some(e => e.alive && !isPlayerTeam(e.team));
+    if (!players || !enemies) {
+      battle.ended = true;
+      battle.outcome = players ? "win" : "lose";
+      setTimeout(() => finishBattle(battle.outcome), 450);
+    }
+  }
+
+  function finishBattle(outcome){
+    if (screen !== "battle") return;
+    const active = battle.entities.find(e => e.team === "player");
+    if (active) {
+      const healPct = run.bonuses.healAfterBattlePercent;
+      const baseHp = active.alive ? active.hp : 1;
+      run.collectionHp[run.activeFighterId] = Math.min(active.maxHp, Math.ceil(baseHp + active.maxHp * healPct));
+    }
+    if (outcome === "lose") {
+      resultData = {type:"defeat",title:"Run Defeated",desc: run.mode === "campaign" ? `Best reached this run: level ${run.campaignLevel}.` : `Tournament ended at duel ${run.tournamentIndex + 1}.`};
+      if (run.mode === "campaign") {
+        save.bestCampaignLevel = Math.max(save.bestCampaignLevel, run.campaignLevel);
+        persist();
+      }
+      screen = "result";
+      renderScreen();
+      return;
+    }
+    if (run.mode === "tournament") {
+      const defeated = run.tournamentQueue[run.tournamentIndex];
+      if (!run.collection.includes(defeated)) {
+        run.collection.push(defeated);
+        run.collectionHp[defeated] = Math.round(fighter(defeated).maxHp * run.bonuses.hpMult * .55);
+      }
+      run.defeatedReward = defeated;
+      run.tournamentIndex += 1;
+      if (run.tournamentIndex >= 8) {
+        save.tournamentWins += 1;
+        save.winsPerFighter[run.activeFighterId] = (save.winsPerFighter[run.activeFighterId] || 0) + 1;
+        persist();
+        resultData = {type:"victory",title:"Tournament Complete",desc:`${fighter(run.activeFighterId).name} survived eight compact duels.`};
+        screen = "result";
+      } else {
+        openUpgradeScreen();
+      }
+    } else {
+      save.bestCampaignLevel = Math.max(save.bestCampaignLevel, run.campaignLevel);
+      run.campaignLevel += 1;
+      maybeAddCampaignRecruit();
+      if (run.campaignLevel > 10) {
+        save.campaignWins += 1;
+        save.winsPerFighter[run.activeFighterId] = (save.winsPerFighter[run.activeFighterId] || 0) + 1;
+        persist();
+        resultData = {type:"victory",title:"Campaign Complete",desc:"The whole ten-level swarm collapsed."};
+        screen = "result";
+      } else {
+        openUpgradeScreen();
+      }
+    }
+    renderScreen();
+  }
+
+  function maybeAddCampaignRecruit(){
+    if (run.campaignLevel % 3 !== 0 && Math.random() > .22) return;
+    const missing = FIGHTERS.map(f => f.id).filter(id => !run.collection.includes(id));
+    if (!missing.length) return;
+    const id = pick(missing);
+    run.collection.push(id);
+    run.collectionHp[id] = Math.round(fighter(id).maxHp * run.bonuses.hpMult * .72);
+    run.defeatedReward = id;
+  }
+
+  function openUpgradeScreen(){
+    const pool = [...UPGRADES];
+    upgradeChoices = [];
+    while (upgradeChoices.length < 3 && pool.length) {
+      const i = Math.floor(Math.random() * pool.length);
+      upgradeChoices.push(pool.splice(i,1)[0]);
+    }
+    screen = "upgrade";
+  }
+
+  function chooseUpgrade(id){
+    const up = UPGRADES.find(u => u.id === id);
+    if (!up || !run) return;
+    up.apply(run.bonuses);
+    run.upgrades.push(id);
+    for (const fid of run.collection) {
+      const f = fighter(fid);
+      const max = Math.round(f.maxHp * run.bonuses.hpMult);
+      run.collectionHp[fid] = Math.min(max, Math.round((run.collectionHp[fid] || max) * 1.08));
+    }
+    screen = run.collection.length > 1 ? "fighterPick" : (run.mode === "tournament" ? "tournamentRoad" : "campaignLevel");
+    renderScreen();
+  }
+
+  function chooseActive(id){
+    run.activeFighterId = id;
+    screen = run.mode === "tournament" ? "tournamentRoad" : "campaignLevel";
+    renderScreen();
+  }
+
+  function renderScreen(){
+    overlay.classList.remove("hidden");
+    syncBattleUi();
+    if (screen === "main") return renderMain();
+    if (screen === "arenaSelect") return renderArenaSelect();
+    if (screen === "characterSelect") return renderCharacterSelect();
+    if (screen === "tournamentRoad") return renderTournamentRoad();
+    if (screen === "campaignLevel") return renderCampaignLevel();
+    if (screen === "fighterPick") return renderFighterPick();
+    if (screen === "upgrade") return renderUpgrade();
+    if (screen === "result") return renderResult();
+    if (screen === "collection") return renderCollection();
+  }
+
+  function screenHeader(title, sub){
+    return `<header><div class="kicker">Arena Oddities</div><h2 class="title">${title}</h2><p class="subtitle">${sub}</p></header>`;
+  }
+
+  function renderMain(){
+    battle = emptyBattle();
+    ui.title.textContent = "Arena Oddities";
+    ui.subtitle.textContent = "Short mobile auto-battles with strange circular fighters.";
+    ui.miniStats.innerHTML = `<span class="pill">Wins T ${save.tournamentWins}</span><span class="pill">Wins C ${save.campaignWins}</span>`;
+    overlay.innerHTML = `
+      ${screenHeader("Arena Oddities","Pick a run type. Tournament is 1v1 captures; Campaign is compact waves.")}
+      <div class="screenBody">
+        <div class="card small">Last arena: ${save.lastArenaShape}. Best campaign level: ${save.bestCampaignLevel}. Total runs: ${save.totalRuns}.</div>
+        <div class="btnGrid">
+          <button class="btn" data-action="mode" data-mode="tournament">Tournament</button>
+          <button class="btn secondary" data-action="mode" data-mode="campaign">Campaign</button>
+          <button class="btn secondary" data-action="collection">Collection</button>
+          <button class="btn warn" data-action="reset">Reset Progress</button>
+        </div>
+      </div>`;
+  }
+
+  function renderArenaSelect(){
+    overlay.innerHTML = `
+      ${screenHeader("Arena Select", selectedMode === "tournament" ? "Choose the boundary for eight duels." : "Choose the boundary for ten campaign waves.")}
+      <div class="screenBody">
+        <div class="grid2">
+          <button class="card selectable ${selectedArena === "square" ? "selected" : ""}" data-action="arena" data-shape="square">
+            <div class="shapePreview"><div class="shapeBox"></div></div>
+            <div class="fighterName">Square Arena</div><p class="small">Tight walls and sharp corner bounces.</p>
+          </button>
+          <button class="card selectable ${selectedArena === "circle" ? "selected" : ""}" data-action="arena" data-shape="circle">
+            <div class="shapePreview"><div class="shapeCircle"></div></div>
+            <div class="fighterName">Circle Arena</div><p class="small">Smooth rim reflection and constant pressure.</p>
+          </button>
+        </div>
+        <button class="btn" data-action="arenaContinue">Continue</button>
+        <button class="btn secondary" data-action="main">Main Menu</button>
+      </div>`;
+  }
+
+  function renderCharacterSelect(){
+    overlay.innerHTML = `
+      ${screenHeader("Character Select","Choose the first oddity for this run. Every fighter uses a different data-driven ability.")}
+      <div class="screenBody">
+        <div class="list">${FIGHTERS.map(f => fighterCard(f, selectedFighter, "selectFighter")).join("")}</div>
+        <button class="btn" data-action="beginRun">Start</button>
+        <button class="btn secondary" data-action="arenaBack">Arena Select</button>
+      </div>`;
+  }
+
+  function fighterCard(f, selected, action, hpText){
+    return `<button class="card selectable fighterCard ${selected === f.id ? "selected" : ""}" data-action="${action}" data-fighter="${f.id}">
+      <span class="icon" style="background:${f.color}">${f.icon}</span>
+      <span class="fighterInfo">
+        <span class="fighterTop">
+          <span class="fighterText"><span class="fighterName">${f.name}</span><span class="fighterRole">${f.role}</span></span>
+          <span class="statLine"><span class="stat">HP ${hpText || f.maxHp}</span><span class="stat">DMG ${f.damage || "-"}</span><span class="stat">SPD ${f.moveSpeed}</span></span>
+        </span>
+        <span class="fighterDesc">${f.description}</span>
+      </span>
+    </button>`;
+  }
+
+  function renderTournamentRoad(){
+    const enemy = fighter(run.tournamentQueue[run.tournamentIndex]);
+    overlay.innerHTML = `
+      ${screenHeader("Tournament Roadmap",`Active: ${fighter(run.activeFighterId).name}. Next duel: ${enemy.name}.`)}
+      <div class="screenBody">
+        <div class="road">${run.tournamentQueue.map((id,i) => {
+          const f = fighter(id);
+          return `<div class="card node ${i === run.tournamentIndex ? "current" : ""} ${i < run.tournamentIndex ? "done" : ""}">
+            <span class="icon" style="margin:auto;background:${f.enemyColor}">${f.icon}</span>
+            <div class="small">${i + 1}. ${f.name}</div>
+          </div>`;
+        }).join("")}</div>
+        <div class="card small">Collection: ${run.collection.map(id => fighter(id).name).join(", ")}. Upgrades: ${run.upgrades.length || "none"}.</div>
+        ${run.collection.length > 1 ? `<button class="btn secondary" data-action="openPick">Change Fighter</button>` : ""}
+        <button class="btn" data-action="startTournamentBattle">Start Duel</button>
+        <button class="btn secondary" data-action="main">Main Menu</button>
+      </div>`;
+  }
+
+  function renderCampaignLevel(){
+    const list = campaignEnemies(run.campaignLevel);
+    overlay.innerHTML = `
+      ${screenHeader("Campaign Level",`Level ${run.campaignLevel} of 10. Active: ${fighter(run.activeFighterId).name}.`)}
+      <div class="screenBody">
+        <div class="card">
+          <div class="row"><b>Incoming wave</b><span class="pill">${list.length} enemies</span></div>
+          <p class="small">${list.map(id => id.startsWith("mini_") ? mini(id).name : fighter(id).name).join(", ")}</p>
+        </div>
+        <div class="card small">Global bonuses: damage x${run.bonuses.damageMult.toFixed(2)}, HP x${run.bonuses.hpMult.toFixed(2)}, cooldown x${run.bonuses.cooldownMult.toFixed(2)}.</div>
+        ${run.collection.length > 1 ? `<button class="btn secondary" data-action="openPick">Change Fighter</button>` : ""}
+        <button class="btn" data-action="startCampaignBattle">Start Level</button>
+        <button class="btn secondary" data-action="main">Main Menu</button>
+      </div>`;
+  }
+
+  function renderFighterPick(){
+    const next = run.mode === "tournament" ? fighter(run.tournamentQueue[run.tournamentIndex]).name : `Campaign level ${run.campaignLevel}`;
+    overlay.innerHTML = `
+      ${screenHeader("Fighter Pick",`Choose who enters next. Next: ${next}.`)}
+      <div class="screenBody">
+        <div class="list">${run.collection.map(id => {
+          const f = fighter(id);
+          const max = Math.round(f.maxHp * run.bonuses.hpMult);
+          const hp = run.collectionHp[id] || max;
+          return fighterCard(f, run.activeFighterId, "pickActive", `${Math.round(hp)}/${max}`);
+        }).join("")}</div>
+        <div class="card small">Bonuses: ${run.upgrades.map(id => UPGRADES.find(u => u.id === id).name).join(", ") || "none"}.</div>
+        <button class="btn" data-action="confirmPick">Continue</button>
+      </div>`;
+  }
+
+  function renderUpgrade(){
+    const reward = run.defeatedReward ? `Reward: ${fighter(run.defeatedReward).name} joined the run.` : "Pick one run upgrade.";
+    overlay.innerHTML = `
+      ${screenHeader("Upgrade", reward)}
+      <div class="screenBody">
+        <div class="grid3">${upgradeChoices.map(u => `
+          <button class="card upgrade" data-action="upgrade" data-upgrade="${u.id}">
+            <span class="rarity">${u.rarity}</span>
+            <b>${u.name}</b>
+            <span class="small">${u.desc}</span>
+          </button>`).join("")}</div>
+      </div>`;
+  }
+
+  function renderResult(){
+    const win = resultData && resultData.type === "victory";
+    overlay.innerHTML = `
+      ${screenHeader(resultData.title, resultData.desc)}
+      <div class="screenBody">
+        <div class="card">
+          <div class="row"><b>${win ? "Victory" : "Defeat"}</b><span class="pill">${run ? run.mode : "run"}</span></div>
+          <p class="small">Tournament wins: ${save.tournamentWins}. Campaign wins: ${save.campaignWins}. Best campaign level: ${save.bestCampaignLevel}.</p>
+        </div>
+        <button class="btn" data-action="main">Main Menu</button>
+      </div>`;
+  }
+
+  function renderCollection(){
+    overlay.innerHTML = `
+      ${screenHeader("Collection","All current fighter designs in Arena Oddities.")}
+      <div class="screenBody">
+        <div class="list">${FIGHTERS.map(f => `<div class="card fighterCard">
+          <span class="icon" style="background:${f.color}">${f.icon}</span>
+          <span class="fighterInfo">
+            <span class="fighterTop">
+              <span class="fighterText"><span class="fighterName">${f.name}</span><span class="fighterRole">${f.role}</span></span>
+              <span class="statLine"><span class="stat">HP ${f.maxHp}</span><span class="stat">DMG ${f.damage || "-"}</span><span class="stat">CD ${f.abilityCooldown}s</span></span>
+            </span>
+            <span class="fighterDesc">${f.description}</span>
+          </span>
+        </div>`).join("")}</div>
+        <button class="btn secondary" data-action="main">Main Menu</button>
+      </div>`;
+  }
+
+  overlay.addEventListener("click", (ev) => {
+    const el = ev.target.closest("[data-action]");
+    if (!el) return;
+    const action = el.dataset.action;
+    if (action === "mode") startRun(el.dataset.mode);
+    if (action === "arena") {selectedArena = el.dataset.shape; renderScreen();}
+    if (action === "arenaContinue") startCharacterSelect();
+    if (action === "arenaBack") {screen = "arenaSelect"; renderScreen();}
+    if (action === "selectFighter") {selectedFighter = el.dataset.fighter; renderScreen();}
+    if (action === "beginRun") beginRun();
+    if (action === "startTournamentBattle") startTournamentBattle();
+    if (action === "startCampaignBattle") startCampaignBattle();
+    if (action === "openPick") {screen = "fighterPick"; renderScreen();}
+    if (action === "pickActive") {run.activeFighterId = el.dataset.fighter; renderScreen();}
+    if (action === "confirmPick") {screen = run.mode === "tournament" ? "tournamentRoad" : "campaignLevel"; renderScreen();}
+    if (action === "upgrade") chooseUpgrade(el.dataset.upgrade);
+    if (action === "collection") {screen = "collection"; renderScreen();}
+    if (action === "reset") {if (confirm("Reset Arena Oddities progress?")) {save = {...SAVE_DEFAULT}; persist(); renderScreen();}}
+    if (action === "main") {screen = "main"; run = null; battle = emptyBattle(); renderScreen();}
+  });
+
+  ui.pauseBtn.addEventListener("click", () => {
+    if (!battle.active) return;
+    battle.paused = !battle.paused;
+    syncBattleUi();
+  });
+  ui.debugBtn.addEventListener("click", () => toggleDebug());
+  window.addEventListener("keydown", ev => {
+    if (ev.key === "`") toggleDebug();
+    if (ev.key === "Escape" && battle.active) {battle.paused = !battle.paused; syncBattleUi();}
+  });
+
+  function toggleDebug(){
+    debug.open = !debug.open;
+    renderDebug();
+  }
+
+  debugPanel.addEventListener("input", ev => {
+    if (ev.target.id === "debugDmg") debug.damageMult = Number(ev.target.value);
+    if (ev.target.id === "debugEnemyHp") debug.enemyHpMult = Number(ev.target.value);
+    if (ev.target.id === "debugUnitSpeed") debug.unitSpeedMult = Number(ev.target.value);
+    renderDebug(false);
+  });
+  debugPanel.addEventListener("click", ev => {
+    const btn = ev.target.closest("[data-debug]");
+    if (!btn) return;
+    const a = btn.dataset.debug;
+    if (a === "win") finishBattle("win");
+    if (a === "lose") finishBattle("lose");
+    if (a === "restart") {
+      if (run && run.mode === "tournament") startTournamentBattle();
+      if (run && run.mode === "campaign") startCampaignBattle();
+    }
+    if (a === "hitboxes") debug.hitboxes = !debug.hitboxes;
+    if (a === "slow") debug.slow = !debug.slow;
+    if (a === "close") debug.open = false;
+    renderDebug();
+  });
+
+  function renderDebug(full = true){
+    debugPanel.classList.toggle("open", debug.open);
+    if (!debug.open) return;
+    const player = battle.entities.find(e => e.team === "player");
+    const enemies = battle.entities.filter(e => e.alive && !isPlayerTeam(e.team)).length;
+    debugPanel.innerHTML = `
+      <div class="row"><b>Debug</b><button class="tinyBtn" data-debug="close">Close</button></div>
+      <div class="small">mode: ${run ? run.mode : "none"} | arena: ${run ? run.arenaShape : selectedArena} | fight: ${run ? (run.mode === "tournament" ? run.tournamentIndex + 1 : run.campaignLevel) : "-"}</div>
+      <div class="small">active: ${run ? fighter(run.activeFighterId).name : "-"} | enemies alive: ${enemies} | player HP: ${player ? Math.ceil(player.hp) + "/" + player.maxHp : "-"}</div>
+      <div class="small">bonuses: ${run ? JSON.stringify(run.bonuses) : "{}"}</div>
+      <div class="debugBtns">
+        <button class="tinyBtn" data-debug="win">Instant Win</button>
+        <button class="tinyBtn" data-debug="lose">Instant Lose</button>
+        <button class="tinyBtn" data-debug="restart">Restart Battle</button>
+        <button class="tinyBtn" data-debug="hitboxes">Hitboxes ${debug.hitboxes ? "On" : "Off"}</button>
+        <button class="tinyBtn" data-debug="slow">Slow Motion ${debug.slow ? "On" : "Off"}</button>
+      </div>
+      <label>Damage multiplier ${debug.damageMult.toFixed(1)}<input id="debugDmg" type="range" min=".2" max="4" step=".1" value="${debug.damageMult}"></label>
+      <label>Unit speed ${debug.unitSpeedMult.toFixed(1)}x over new 2x base<input id="debugUnitSpeed" type="range" min=".4" max="3" step=".1" value="${debug.unitSpeedMult}"></label>
+      <label>Enemy HP multiplier ${debug.enemyHpMult.toFixed(1)}<input id="debugEnemyHp" type="range" min=".3" max="3" step=".1" value="${debug.enemyHpMult}"></label>`;
+  }
+
+  function draw(){
+    ctx.save();
+    ctx.clearRect(0,0,C.W,C.H);
+    const sx = battle.shake ? rnd(-battle.shake,battle.shake) : 0;
+    const sy = battle.shake ? rnd(-battle.shake,battle.shake) : 0;
+    ctx.translate(sx,sy);
+    drawArena();
+    battle.webs.forEach(drawWeb);
+    battle.puddles.forEach(drawPuddle);
+    battle.bombs.forEach(drawBomb);
+    battle.flashes.forEach(drawFlash);
+    battle.projectiles.forEach(drawProjectile);
+    battle.entities.forEach(drawAbilityVisuals);
+    battle.entities.forEach(drawEntity);
+    battle.particles.forEach(drawParticle);
+    battle.numbers.forEach(drawNumber);
+    if (battle.paused) drawPause();
+    ctx.restore();
+  }
+
+  function drawArena(){
+    ctx.fillStyle = "#151f2d";
+    ctx.fillRect(0,0,C.W,C.H);
+    ctx.save();
+    if (battle.arenaShape === "circle") {
+      ctx.beginPath();
+      ctx.arc(C.CENTER,C.CENTER,C.CIRCLE_R,0,Math.PI*2);
+      ctx.clip();
+      drawGrid();
+      ctx.fillStyle = "rgba(80,216,255,.045)";
+      ctx.fillRect(34,34,292,292);
+      ctx.restore();
+      ctx.strokeStyle = "#ff9356";
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.arc(C.CENTER,C.CENTER,C.CIRCLE_R,0,Math.PI*2);
+      ctx.stroke();
+    } else {
+      const a = C.SQUARE;
+      ctx.beginPath();
+      ctx.rect(a.x,a.y,a.w,a.h);
+      ctx.clip();
+      drawGrid();
+      ctx.fillStyle = "rgba(255,255,255,.025)";
+      ctx.fillRect(a.x,a.y,a.w,a.h);
+      ctx.restore();
+      ctx.strokeStyle = "#50d8ff";
+      ctx.lineWidth = 5;
+      ctx.strokeRect(a.x,a.y,a.w,a.h);
+    }
+    ctx.strokeStyle = "rgba(255,255,255,.06)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(7,7,C.W-14,C.H-14);
+  }
+
+  function drawGrid(){
+    ctx.strokeStyle = "rgba(255,255,255,.045)";
+    ctx.lineWidth = 1;
+    for (let x = 30; x <= 330; x += 30) {ctx.beginPath(); ctx.moveTo(x,30); ctx.lineTo(x,330); ctx.stroke();}
+    for (let y = 30; y <= 330; y += 30) {ctx.beginPath(); ctx.moveTo(30,y); ctx.lineTo(330,y); ctx.stroke();}
+  }
+
+  function drawEntity(e){
+    if (!e.alive && !e.state.deathT) return;
+    const player = isPlayerTeam(e.team);
+    const base = player ? (e.team === "playerSummon" ? "#8eeeff" : e.data.color || "#50d8ff") : (e.data.enemyColor || "#c4683d");
+    const hpPct = clamp(e.hp / e.maxHp, 0, 1);
+    ctx.save();
+    if (e.state.phase > 0) ctx.globalAlpha = .42;
+    ctx.fillStyle = e.flash > 0 ? "#ffffff" : shade(base, hpPct < .3 ? -.25 : 0);
+    ctx.strokeStyle = player ? "#d9fbff" : "#ffd2b4";
+    ctx.lineWidth = e.team.includes("Summon") ? 2 : 3;
+    ctx.beginPath();
+    ctx.arc(e.x,e.y,e.radius,0,Math.PI*2);
+    ctx.fill();
+    ctx.stroke();
+    if (e.state.shield) {
+      ctx.strokeStyle = "#a9fff4";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(e.x,e.y,e.radius+5,0,Math.PI*2);
+      ctx.stroke();
+    }
+    if (e.status.slow > 0) {
+      ctx.strokeStyle = "#b7efff";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(e.x,e.y,e.radius+8,0,Math.PI*2);
+      ctx.stroke();
+    }
+    ctx.font = `900 ${e.isMini ? 12 : 16}px Verdana`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = "rgba(0,0,0,.75)";
+    ctx.strokeText(String(Math.max(0, Math.ceil(e.hp))), e.x, e.y + 1);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(String(Math.max(0, Math.ceil(e.hp))), e.x, e.y + 1);
+    if (debug.hitboxes) {
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(e.x-e.radius,e.y-e.radius,e.radius*2,e.radius*2);
+    }
+    ctx.restore();
+  }
+
+  function shade(hex, amt){
+    const n = parseInt(hex.slice(1),16);
+    let r = (n>>16) + amt * 255, g = ((n>>8)&255) + amt * 255, b = (n&255) + amt * 255;
+    return `rgb(${Math.round(clamp(r,0,255))},${Math.round(clamp(g,0,255))},${Math.round(clamp(b,0,255))})`;
+  }
+
+  function drawAbilityVisuals(e){
+    if (!e.alive || e.isMini) return;
+    const t = e.data.abilityType;
+    const col = isPlayerTeam(e.team) ? "#dffbff" : "#ffd0ae";
+    ctx.save();
+    ctx.strokeStyle = col;
+    ctx.fillStyle = col;
+    ctx.lineWidth = 5;
+    ctx.lineCap = "round";
+    if (["swordsman","assassin","saw"].includes(t)) {
+      const range = t === "saw" && e.state.expandTimer > 0 ? e.data.expandedRange : e.data.range;
+      const r = range * (isPlayerTeam(e.team) && run ? run.bonuses.orbitRangeMult : 1);
+      const count = t === "assassin" ? 2 : 1;
+      const a = battle.time * (t === "assassin" ? 3.8 : t === "saw" ? 2.7 : 1.9);
+      for (let i = 0; i < count; i++) {
+        const ang = a + i * Math.PI;
+        if (t === "saw") {
+          ctx.strokeStyle = e.state.expandTimer > 0 ? "#ffed8a" : col;
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.arc(e.x,e.y,r,ang,ang+1.4);
+          ctx.stroke();
+          for (let k=0;k<8;k++){
+            const ta = ang + k * .35;
+            ctx.beginPath();
+            ctx.moveTo(e.x + Math.cos(ta)*r, e.y + Math.sin(ta)*r);
+            ctx.lineTo(e.x + Math.cos(ta)*(r+7), e.y + Math.sin(ta)*(r+7));
+            ctx.stroke();
+          }
+        } else {
+          ctx.beginPath();
+          ctx.moveTo(e.x + Math.cos(ang)*(e.radius+8), e.y + Math.sin(ang)*(e.radius+8));
+          ctx.lineTo(e.x + Math.cos(ang)*r, e.y + Math.sin(ang)*r);
+          ctx.stroke();
+        }
+      }
+    }
+    if (t === "vampire") {
+      ctx.fillStyle = "#fff";
+      ctx.beginPath(); ctx.moveTo(e.x-10,e.y-e.radius-2); ctx.lineTo(e.x-3,e.y-e.radius-17); ctx.lineTo(e.x+1,e.y-e.radius-2); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(e.x+10,e.y-e.radius-2); ctx.lineTo(e.x+3,e.y-e.radius-17); ctx.lineTo(e.x-1,e.y-e.radius-2); ctx.fill();
+    }
+    if (t === "ghost" && e.state.phase > 0) {
+      ctx.strokeStyle = "#c9f0ff";
+      ctx.lineWidth = 2;
+      for (let i=0;i<3;i++){ctx.beginPath();ctx.arc(e.x,e.y,e.radius+8+i*6,0,Math.PI*2);ctx.stroke();}
+    }
+    ctx.restore();
+  }
+
+  function drawProjectile(p){
+    ctx.save();
+    for (let i = 0; i < p.trail.length; i++) {
+      const pt = p.trail[i];
+      ctx.globalAlpha = i / p.trail.length * .45;
+      ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(pt.x,pt.y,p.radius*(i/p.trail.length),0,Math.PI*2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = p.color;
+    if (p.type === "arrow") {
+      const a = Math.atan2(p.vy,p.vx);
+      ctx.translate(p.x,p.y); ctx.rotate(a);
+      ctx.fillRect(-8,-2,16,4);
+      ctx.beginPath(); ctx.moveTo(9,0); ctx.lineTo(2,-5); ctx.lineTo(2,5); ctx.fill();
+    } else {
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.radius,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,.72)"; ctx.lineWidth = 2; ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawBomb(b){
+    ctx.save();
+    const pulse = 1 + Math.sin(b.pulse * 16) * .12;
+    ctx.fillStyle = "#1c1b22";
+    ctx.strokeStyle = "#ffb457";
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(b.x,b.y,10*pulse,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#ffdf7e";
+    ctx.fillRect(b.x+6,b.y-13,4,8);
+    ctx.restore();
+  }
+
+  function drawPuddle(p){
+    ctx.save();
+    ctx.globalAlpha = clamp(p.life / 4,0,1) * .55;
+    ctx.fillStyle = "#6bdf50";
+    ctx.beginPath(); ctx.ellipse(p.x,p.y,p.radius,p.radius*.62,0,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawWeb(w){
+    ctx.save();
+    ctx.globalAlpha = clamp(w.life / 8,0,.62);
+    ctx.strokeStyle = isPlayerTeam(w.team) ? "#bbf7ff" : "#ffd0b8";
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(w.x1,w.y1); ctx.lineTo(w.x2,w.y2); ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawFlash(f){
+    ctx.save();
+    ctx.globalAlpha = f.t / .35 * .32;
+    ctx.fillStyle = f.color;
+    ctx.beginPath(); ctx.arc(f.x,f.y,f.r*(1.2-f.t),0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawParticle(p){
+    ctx.save();
+    ctx.globalAlpha = clamp(p.life * 2,0,1);
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawNumber(n){
+    ctx.save();
+    ctx.globalAlpha = clamp(n.life / .75,0,1);
+    ctx.font = "900 14px Verdana";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = "rgba(0,0,0,.72)";
+    ctx.strokeText(n.text,n.x,n.y);
+    ctx.fillStyle = n.color;
+    ctx.fillText(n.text,n.x,n.y);
+    ctx.restore();
+  }
+
+  function drawPause(){
+    ctx.save();
+    ctx.fillStyle = "rgba(0,0,0,.35)";
+    ctx.fillRect(0,0,C.W,C.H);
+    ctx.fillStyle = "#fff";
+    ctx.font = "900 28px Verdana";
+    ctx.textAlign = "center";
+    ctx.fillText("PAUSED",C.CENTER,C.CENTER);
+    ctx.restore();
+  }
+
+  function loop(ts){
+    const dt = (ts - lastTime) / 1000;
+    lastTime = ts;
+    update(dt);
+    draw();
+    if (debug.open) renderDebug(false);
+    requestAnimationFrame(loop);
+  }
+
+  renderScreen();
+  requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
