@@ -1,0 +1,2338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Ball Bastion</title>
+  <style>
+    :root{
+      --bg-a:#d9ecf2;
+      --bg-b:#d6e8d4;
+      --panel:rgba(12,26,34,.78);
+      --panel-soft:rgba(11,38,29,.66);
+      --text:#f2f7fb;
+      --muted:#9bc4d5;
+      --ok:#5ee29c;
+      --warn:#ffcc68;
+      --bad:#ff6c6c;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{margin:0;height:100%;overflow:hidden;font-family:Trebuchet MS,Verdana,sans-serif;background:linear-gradient(180deg,var(--bg-a),var(--bg-b));color:var(--text)}
+    body{
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      padding:max(8px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));
+    }
+    .app{
+      width:min(100vw,560px);
+      height:100dvh;
+      display:grid;
+    }
+    .frame{
+      position:relative;
+      width:100%;
+      height:100%;
+      border-radius:22px;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.28);
+      box-shadow:0 26px 62px rgba(16,37,52,.26);
+      background:linear-gradient(180deg,#b8d8c0,#bfd9e8);
+      touch-action:none;
+    }
+    canvas{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      display:block;
+    }
+    .controls{
+      position:absolute;
+      left:10px;
+      right:10px;
+      bottom:10px;
+      z-index:3;
+      display:flex;
+      gap:10px;
+      justify-content:flex-end;
+      align-items:center;
+      padding:10px;
+      border-radius:14px;
+      background:rgba(8,20,28,.72);
+      border:1px solid rgba(255,255,255,.12);
+    }
+    .btn{
+      border:0;
+      border-radius:14px;
+      font:inherit;
+      font-weight:800;
+      color:#0d1f28;
+      background:#ffdb86;
+      padding:12px 14px;
+      min-width:100px;
+      box-shadow:0 8px 18px rgba(13,31,40,.2);
+      cursor:pointer;
+    }
+    .btn.secondary{
+      background:#c6f0ff;
+    }
+    .btn:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+    }
+    .overlay{
+      position:absolute;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:14px;
+      background:rgba(8,16,21,.65);
+      z-index:4;
+    }
+    .overlay.show{
+      display:flex;
+    }
+    .panel{
+      width:min(100%,470px);
+      max-height:100%;
+      overflow:auto;
+      border-radius:18px;
+      padding:14px;
+      background:linear-gradient(180deg,rgba(18,39,51,.96),rgba(13,31,42,.97));
+      border:1px solid rgba(255,255,255,.15);
+      box-shadow:0 22px 56px rgba(0,0,0,.32);
+    }
+    .panel h2,.panel h3{
+      margin:0 0 10px;
+      letter-spacing:.04em;
+    }
+    .muted{
+      color:var(--muted);
+      margin:0 0 10px;
+      line-height:1.4;
+    }
+    .cards{
+      display:grid;
+      gap:10px;
+    }
+    .card{
+      text-align:left;
+      border:1px solid rgba(255,255,255,.16);
+      border-radius:14px;
+      padding:10px;
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      font:inherit;
+      cursor:pointer;
+    }
+    .card strong{display:block;margin-bottom:3px}
+    .card small{color:#aed8e7;display:block}
+    .card .row{
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      align-items:center;
+    }
+    .chip{
+      font-size:11px;
+      font-weight:800;
+      color:#09222e;
+      background:#88e0ff;
+      padding:4px 7px;
+      border-radius:999px;
+      white-space:nowrap;
+    }
+    .metaGrid{
+      display:grid;
+      gap:10px;
+      margin:12px 0;
+    }
+    .rowBtns{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .rowBtns .btn{
+      flex:1 1 140px;
+    }
+    .tiny{
+      font-size:12px;
+      color:#b9d2de;
+    }
+    .ammoPanel{
+      display:grid;
+      gap:6px;
+      margin-right:auto;
+      color:#d7f1ff;
+      min-width:0;
+    }
+    .ammoTop{
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      font-size:12px;
+    }
+    .ammoSlots{
+      display:flex;
+      gap:8px;
+    }
+    .ammoSlot{
+      width:34px;
+      height:34px;
+      border-radius:50%;
+      border:2px solid rgba(255,255,255,.45);
+      background:rgba(255,255,255,.1);
+      position:relative;
+      display:grid;
+      place-items:center;
+      font-size:12px;
+      font-weight:900;
+      color:#102734;
+    }
+    .ammoSlot.current{
+      width:44px;
+      height:44px;
+      border-width:3px;
+      box-shadow:0 0 16px rgba(120,224,255,.35);
+    }
+    .debugToggle{
+      position:absolute;
+      right:10px;
+      bottom:86px;
+      z-index:3;
+      width:36px;
+      height:36px;
+      border-radius:10px;
+      border:0;
+      color:#051217;
+      background:#8dd8f2;
+      font-weight:900;
+      opacity:.75;
+    }
+    .levelCard.selected{
+      border-color:#8fe2ff;
+      box-shadow:0 0 0 2px rgba(143,226,255,.35) inset;
+      background:rgba(100,189,227,.2);
+    }
+    .levelContinue{
+      margin-top:10px;
+      width:100%;
+    }
+    @media (max-height:740px){
+      .controls{padding:8px;gap:8px}
+      .btn{padding:10px 11px;min-width:88px}
+      .ammoSlot.current{width:40px;height:40px}
+      .ammoSlot{width:30px;height:30px}
+      .debugToggle{bottom:80px}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="frame" id="frame">
+      <canvas id="game" width="540" height="960" aria-label="Ball Bastion"></canvas>
+      <button class="debugToggle" id="debugToggle" type="button">D</button>
+      <div class="overlay show" id="metaOverlay">
+        <div class="panel">
+          <h2>Ball Bastion</h2>
+          <p class="muted">Upgrade permanent stats with gold, then start a 3-minute defense run.</p>
+          <h3 id="metaGold">Gold: 0</h3>
+          <div class="metaGrid" id="metaCards"></div>
+          <div class="rowBtns">
+            <button class="btn secondary" id="startRunBtn" type="button">Start Run</button>
+            <button class="btn" id="resetSaveBtn" type="button">Reset Save</button>
+          </div>
+          <div class="rowBtns" style="margin-top:8px">
+            <button class="btn secondary" id="addGoldBtn" type="button">Debug: +100 Gold</button>
+          </div>
+          <p class="tiny">Desktop: move mouse to aim, click field or Shoot. Mobile: drag to aim, release to fire.</p>
+        </div>
+      </div>
+      <div class="overlay" id="levelOverlay">
+        <div class="panel">
+          <h2>LEVEL UP</h2>
+          <p class="muted">Choose one upgrade.</p>
+          <div class="cards" id="levelCards"></div>
+          <button class="btn levelContinue" id="levelContinueBtn" type="button" disabled>Continue</button>
+        </div>
+      </div>
+      <div class="overlay" id="resultOverlay">
+        <div class="panel">
+          <h2 id="resultTitle">Defeat</h2>
+          <div id="resultStats" class="muted"></div>
+          <div id="resultUpgrades" class="tiny"></div>
+          <div class="rowBtns" style="margin-top:10px">
+            <button class="btn secondary" id="toMetaBtn" type="button">Meta Upgrades</button>
+            <button class="btn" id="playAgainBtn" type="button">Play Again</button>
+          </div>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="ammoPanel">
+          <div class="ammoTop">
+            <span>Ammo</span>
+            <span id="ammoCounts">Field 0 | Queue 0</span>
+          </div>
+          <div class="ammoSlots">
+            <div id="ammoCurrent" class="ammoSlot current"></div>
+            <div id="ammoNext1" class="ammoSlot"></div>
+            <div id="ammoNext2" class="ammoSlot"></div>
+          </div>
+        </div>
+        <button id="collectBtn" class="btn secondary" type="button">Collect All</button>
+        <button id="shootBtn" class="btn" type="button">Shoot</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    "use strict";
+
+    const CONFIG = {
+      canvas: { width: 540, height: 960 },
+      runDuration: 180,
+      waveInterval: 9,
+      waves: [
+        { time: 0, runner: 3, grunt: 2, tank: 0, shooter: 0 },
+        { time: 9, runner: 4, grunt: 2, tank: 0, shooter: 0 },
+        { time: 18, runner: 5, grunt: 3, tank: 0, shooter: 0 },
+        { time: 27, runner: 6, grunt: 3, tank: 0, shooter: 0 },
+        { time: 36, runner: 6, grunt: 4, tank: 1, shooter: 0 },
+        { time: 45, runner: 7, grunt: 5, tank: 1, shooter: 0 },
+        { time: 54, runner: 8, grunt: 5, tank: 1, shooter: 0 },
+        { time: 63, runner: 8, grunt: 6, tank: 1, shooter: 0 },
+        { time: 72, runner: 9, grunt: 6, tank: 2, shooter: 0 },
+        { time: 81, runner: 10, grunt: 7, tank: 2, shooter: 1 },
+        { time: 90, runner: 10, grunt: 8, tank: 2, shooter: 1 },
+        { time: 99, runner: 11, grunt: 8, tank: 2, shooter: 1 },
+        { time: 108, runner: 12, grunt: 9, tank: 3, shooter: 1 },
+        { time: 117, runner: 12, grunt: 10, tank: 3, shooter: 2 },
+        { time: 126, runner: 13, grunt: 10, tank: 3, shooter: 2 },
+        { time: 135, runner: 14, grunt: 11, tank: 4, shooter: 2 },
+        { time: 144, runner: 15, grunt: 11, tank: 4, shooter: 2 },
+        { time: 153, runner: 16, grunt: 12, tank: 4, shooter: 3 },
+        { time: 162, runner: 17, grunt: 13, tank: 5, shooter: 3 },
+        { time: 171, runner: 18, grunt: 14, tank: 5, shooter: 4 }
+      ],
+      field: {
+        x: 28,
+        y: 72,
+        width: 484,
+        height: 840,
+        wallY: 700,
+        launcherX: 270,
+        launcherY: 792
+      },
+      physics: {
+        shotSpeed: 700,
+        friction60: 0.985,
+        damageSpeedThreshold: 80,
+        sleepingSpeedThreshold: 45,
+        wakeSpeedThreshold: 95,
+        wallBounceKeep: 0.8,
+        enemyHitLossSurvive: [0.25, 0.4],
+        enemyHitLossKill: [0.1, 0.25],
+        spikedLossMultiplier: 0.62,
+        ballTransferKeepFrom: 0.45,
+        ballTransferTo: 0.55,
+        ballTransferTotalLoss: 0.15,
+        mergeRelativeSpeedLimit: 120,
+        mergeAbsoluteSpeedLimit: 220,
+        mergeSleepingDistance: 28,
+        mergeDuration: 0.24,
+        mergeImpulse: 120
+      },
+      ammo: {
+        collectCooldown: 12,
+        returnSpeed: 780
+      },
+      balls: {
+        fire: {
+          name: "Fire",
+          colors: ["#ffb26d", "#ff7a4f", "#ff4f3a"],
+          radius: [18, 23, 29],
+          damage: [35, 80, 175]
+        },
+        ice: {
+          name: "Ice",
+          colors: ["#9ce8ff", "#66cbff", "#39a8ff"],
+          radius: [18, 23, 29],
+          damage: [25, 60, 135],
+          slow: [0.25, 0.4, 0.55],
+          slowDuration: [2, 2.5, 3]
+        },
+        spiked: {
+          name: "Spiked",
+          colors: ["#d6dee8", "#bac6d5", "#9aa9bb"],
+          radius: [18, 23, 29],
+          damage: [25, 55, 125],
+          spikes: [4, 6, 9]
+        },
+        bomb: {
+          name: "Bomb",
+          colors: ["#2d3f4c", "#293742", "#202a33"],
+          radius: [18, 23, 29],
+          damage: [30, 70, 155],
+          splashFactor: 0.7,
+          splashRadius: [54, 65, 80]
+        }
+      },
+      enemies: {
+        runner: { hp: 20, speed: 128, wallDps: 3, gold: 1, xp: 3, radius: 12, color: "#ff7d62" },
+        grunt: { hp: 40, speed: 86, wallDps: 5, gold: 2, xp: 5, radius: 16, color: "#ffbe66" },
+        tank: { hp: 120, speed: 50, wallDps: 12, gold: 5, xp: 12, radius: 22, color: "#9b7aff" },
+        shooter: { hp: 55, speed: 58, wallDps: 4, gold: 3, xp: 8, radius: 15, color: "#63d4ff", range: 146 }
+      },
+      enemyCaps: { soft: 18, hard: 25, resume: 20 },
+      chunks: {
+        lifetime: [0.4, 0.8]
+      },
+      wall: {
+        baseHpDefault: 150
+      },
+      xpThresholds: [15, 30, 50, 75, 105, 140, 180, 225, 275, 330, 390, 455, 525, 600, 680],
+      survivalGoldEvery: 30,
+      survivalGoldBonus: 10,
+      levelGoldBonus: 3,
+      victoryGoldBonus: 100,
+      meta: {
+        wallHpValues: [150, 175, 205, 240, 280, 325, 375],
+        wallHpCosts: [45, 75, 120, 180, 260, 360],
+        ballDmgValues: [1.0, 1.12, 1.25, 1.4, 1.56, 1.73, 1.9],
+        ballDmgCosts: [50, 85, 135, 210, 310, 450],
+        startBallValues: [4, 5, 6, 7, 8],
+        startBallCosts: [160, 280, 460, 700]
+      },
+      ui: {
+        aimDots: 17
+      }
+    };
+
+    const SAVE_KEY = "ball_bastion_save_v1";
+    const BALL_TYPES = ["fire", "ice", "spiked", "bomb"];
+    const BALL_STATE = {
+      FLYING: "FlyingActive",
+      ROLLING: "RollingActive",
+      SLEEPING: "Sleeping",
+      RETURNING: "Returning",
+      MERGING: "Merging"
+    };
+
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const frameEl = document.getElementById("frame");
+    const collectBtn = document.getElementById("collectBtn");
+    const shootBtn = document.getElementById("shootBtn");
+    const debugToggle = document.getElementById("debugToggle");
+    const metaOverlay = document.getElementById("metaOverlay");
+    const metaGold = document.getElementById("metaGold");
+    const metaCards = document.getElementById("metaCards");
+    const startRunBtn = document.getElementById("startRunBtn");
+    const resetSaveBtn = document.getElementById("resetSaveBtn");
+    const addGoldBtn = document.getElementById("addGoldBtn");
+    const levelOverlay = document.getElementById("levelOverlay");
+    const levelCards = document.getElementById("levelCards");
+    const levelContinueBtn = document.getElementById("levelContinueBtn");
+    const resultOverlay = document.getElementById("resultOverlay");
+    const resultTitle = document.getElementById("resultTitle");
+    const resultStats = document.getElementById("resultStats");
+    const resultUpgrades = document.getElementById("resultUpgrades");
+    const toMetaBtn = document.getElementById("toMetaBtn");
+    const playAgainBtn = document.getElementById("playAgainBtn");
+    const ammoCurrentEl = document.getElementById("ammoCurrent");
+    const ammoNext1El = document.getElementById("ammoNext1");
+    const ammoNext2El = document.getElementById("ammoNext2");
+    const ammoCountsEl = document.getElementById("ammoCounts");
+
+    let save = loadSave();
+    let state = null;
+    let lastTime = performance.now();
+    let pointerId = null;
+    const pointer = { x: CONFIG.field.launcherX, y: CONFIG.field.launcherY - 100, aiming: false };
+
+    const UPGRADE_DEFS = [
+      {
+        id: "all_ball_damage",
+        bucket: "general",
+        max: 8,
+        title: "All Ball Damage +6%",
+        desc: "All direct ball damage +6%.",
+        apply: (s) => { s.mods.allBallDamageMult *= 1.06; }
+      },
+      {
+        id: "ball_return_speed",
+        bucket: "general",
+        max: 6,
+        title: "Ball Return Speed +6%",
+        desc: "Faster returns to ammo queue.",
+        apply: (s) => { s.mods.ballReturnSpeedMult *= 1.06; }
+      },
+      {
+        id: "xp_gain",
+        bucket: "general",
+        max: 5,
+        title: "XP Gain +6%",
+        desc: "Gain XP faster.",
+        apply: (s) => { s.mods.xpGainMult *= 1.06; }
+      },
+      {
+        id: "gold_gain",
+        bucket: "general",
+        max: 5,
+        title: "Gold Gain +6%",
+        desc: "Gain more gold from kills and bonuses.",
+        apply: (s) => { s.mods.goldGainMult *= 1.06; }
+      },
+      {
+        id: "wall_max_hp",
+        bucket: "defense",
+        max: 8,
+        title: "Wall Max HP +15",
+        desc: "Increase max wall HP by 15 and heal 15.",
+        apply: (s) => {
+          s.wallMaxHp += 15;
+          s.wallHp = Math.min(s.wallMaxHp, s.wallHp + 15);
+        }
+      },
+      {
+        id: "repair_wall",
+        bucket: "defense",
+        max: 10,
+        title: "Repair Wall +20",
+        desc: "Restore 20 wall HP.",
+        apply: (s) => { s.wallHp = Math.min(s.wallMaxHp, s.wallHp + 20); }
+      },
+      {
+        id: "emergency_repair",
+        bucket: "defense",
+        max: 1,
+        rare: true,
+        title: "Emergency Repair",
+        desc: "Restore 25% wall HP once per run.",
+        apply: (s) => { s.wallHp = Math.min(s.wallMaxHp, s.wallHp + s.wallMaxHp * 0.25); }
+      },
+      {
+        id: "ammo_slot",
+        bucket: "defense",
+        max: 2,
+        title: "+1 Ammo Slot",
+        desc: "Add one extra level 1 ball to queue.",
+        apply: (s) => {
+          s.mods.extraAmmoSlots += 1;
+          const type = BALL_TYPES[(s.mods.extraAmmoSlots - 1) % BALL_TYPES.length];
+          s.ammoQueue.push({ type, level: 1 });
+        }
+      },
+      {
+        id: "spawn_lvl2",
+        bucket: "defense",
+        max: 3,
+        title: "Chance To Spawn Lvl 2 Ball +8%",
+        desc: "Returned balls can upgrade to level 2.",
+        apply: (s) => { s.mods.spawnLevel2Chance = Math.min(0.24, s.mods.spawnLevel2Chance + 0.08); }
+      },
+      {
+        id: "merge_bonus_damage",
+        bucket: "defense",
+        max: 2,
+        title: "Merge Bonus Damage +10%",
+        desc: "Newly merged balls gain stronger impact.",
+        apply: (s) => { s.mods.mergeBonusDamage += 0.1; }
+      },
+      {
+        id: "extra_bounce",
+        bucket: "defense",
+        max: 1,
+        title: "All Balls +1 Bounce",
+        desc: "Slightly lower energy loss on collisions.",
+        apply: (s) => { s.mods.extraBounce = true; }
+      },
+      {
+        id: "fire_burn",
+        bucket: "type",
+        max: 1,
+        title: "Fire: Burn",
+        desc: "Fire balls apply burn (4 dmg/s, 2s).",
+        apply: (s) => { s.mods.fireBurnEnabled = true; }
+      },
+      {
+        id: "fire_burn_damage",
+        bucket: "type",
+        max: 4,
+        title: "Fire: Burn Damage +30%",
+        desc: "Stronger burn damage.",
+        apply: (s) => { s.mods.fireBurnDamageMult *= 1.3; }
+      },
+      {
+        id: "fire_burn_duration",
+        bucket: "type",
+        max: 4,
+        title: "Fire: Burn Duration +0.5s",
+        desc: "Longer burn effect.",
+        apply: (s) => { s.mods.fireBurnDuration += 0.5; }
+      },
+      {
+        id: "fire_impact",
+        bucket: "type",
+        max: 6,
+        title: "Fire: Impact Damage +8%",
+        desc: "Fire hit damage increases.",
+        apply: (s) => { s.mods.fireImpactMult *= 1.08; }
+      },
+      {
+        id: "ice_slow",
+        bucket: "type",
+        max: 8,
+        title: "Ice: Slow +6%",
+        desc: "Ice slowdown is stronger.",
+        apply: (s) => { s.mods.iceSlowBonus = Math.min(0.7, s.mods.iceSlowBonus + 0.06); }
+      },
+      {
+        id: "ice_duration",
+        bucket: "type",
+        max: 6,
+        title: "Ice: Duration +0.4s",
+        desc: "Longer ice debuff.",
+        apply: (s) => { s.mods.iceDurationBonus += 0.4; }
+      },
+      {
+        id: "ice_frozen_bonus",
+        bucket: "type",
+        max: 1,
+        rare: true,
+        title: "Ice: Frozen Takes +8%",
+        desc: "Slowed enemies take bonus damage.",
+        apply: (s) => { s.mods.iceFrozenBonusDamage = 0.08; }
+      },
+      {
+        id: "ice_impact",
+        bucket: "type",
+        max: 6,
+        title: "Ice: Impact Damage +8%",
+        desc: "Ice hit damage increases.",
+        apply: (s) => { s.mods.iceImpactMult *= 1.08; }
+      },
+      {
+        id: "spiked_efficiency",
+        bucket: "type",
+        max: 4,
+        title: "Spiked: Pierce Efficiency +1",
+        desc: "Spiked balls lose less energy per hit.",
+        apply: (s) => { s.mods.spikedEfficiency += 1; }
+      },
+      {
+        id: "spiked_damage",
+        bucket: "type",
+        max: 6,
+        title: "Spiked: Damage +8%",
+        desc: "Spiked impact damage increases.",
+        apply: (s) => { s.mods.spikedImpactMult *= 1.08; }
+      },
+      {
+        id: "spiked_size",
+        bucket: "type",
+        max: 4,
+        title: "Spiked: Size +5%",
+        desc: "Spiked ball radius increases.",
+        apply: (s) => { s.mods.spikedSizeBonus = Math.min(0.2, s.mods.spikedSizeBonus + 0.05); }
+      },
+      {
+        id: "spiked_last_bonus",
+        bucket: "type",
+        max: 1,
+        rare: true,
+        title: "Spiked: Last Pierced +25%",
+        desc: "High-speed spiked hits gain bonus damage.",
+        apply: (s) => { s.mods.spikedLastPierceBonus = 0.25; }
+      },
+      {
+        id: "bomb_radius",
+        bucket: "type",
+        max: 5,
+        title: "Bomb: Radius +7%",
+        desc: "Larger bomb splash radius.",
+        apply: (s) => { s.mods.bombRadiusMult *= 1.07; }
+      },
+      {
+        id: "bomb_splash",
+        bucket: "type",
+        max: 6,
+        title: "Bomb: Splash Damage +8%",
+        desc: "Stronger splash damage.",
+        apply: (s) => { s.mods.bombSplashMult *= 1.08; }
+      },
+      {
+        id: "bomb_impact",
+        bucket: "type",
+        max: 6,
+        title: "Bomb: Impact Damage +8%",
+        desc: "Stronger direct impact.",
+        apply: (s) => { s.mods.bombImpactMult *= 1.08; }
+      },
+      {
+        id: "bomb_fire_zone",
+        bucket: "type",
+        max: 1,
+        rare: true,
+        title: "Bomb: Fire Zone",
+        desc: "Bomb leaves a burning area for 2s.",
+        apply: (s) => { s.mods.bombFireZone = true; }
+      }
+    ];
+
+    function loadSave() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(SAVE_KEY) || "{}");
+        return {
+          gold: Number.isFinite(parsed.gold) ? parsed.gold : 0,
+          wallHpLevel: clampInt(parsed.wallHpLevel, 0, CONFIG.meta.wallHpValues.length - 1),
+          ballDmgLevel: clampInt(parsed.ballDmgLevel, 0, CONFIG.meta.ballDmgValues.length - 1),
+          startBallLevel: clampInt(parsed.startBallLevel, 0, CONFIG.meta.startBallValues.length - 1)
+        };
+      } catch (_err) {
+        return { gold: 0, wallHpLevel: 0, ballDmgLevel: 0, startBallLevel: 0 };
+      }
+    }
+
+    function saveSave() {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+    }
+
+    function resetSave() {
+      save = { gold: 0, wallHpLevel: 0, ballDmgLevel: 0, startBallLevel: 0 };
+      saveSave();
+      refreshMetaUI();
+    }
+
+    function newRunState() {
+      const wallMaxHp = CONFIG.meta.wallHpValues[save.wallHpLevel] || CONFIG.wall.baseHpDefault;
+      const stateObj = {
+        phase: "playing",
+        time: 0,
+        nextSurvivalBonusTime: CONFIG.survivalGoldEvery,
+        waveScheduleIndex: 0,
+        waveReached: 0,
+        spawnQueue: [],
+        enemies: [],
+        balls: [],
+        particles: [],
+        fireZones: [],
+        ammoQueue: [],
+        wallHp: wallMaxHp,
+        wallMaxHp,
+        wallFlash: 0,
+        xp: 0,
+        level: 1,
+        goldRun: 0,
+        kills: 0,
+        merges: 0,
+        shots: 0,
+        maxBallLevel: 1,
+        collectCooldown: 0,
+        cycleIdCounter: 0,
+        launchOrderCounter: 0,
+        enemyIdCounter: 0,
+        ballIdCounter: 0,
+        mergeTasks: [],
+        upgradesChosen: [],
+        upgradeCounts: {},
+        resultApplied: false,
+        screenShake: 0,
+        ammoRecoveryTimer: 0,
+        selectedUpgradeId: null,
+        lastMergeText: null,
+        debugVisible: false,
+        aimAngle: -Math.PI / 2,
+        mods: {
+          allBallDamageMult: CONFIG.meta.ballDmgValues[save.ballDmgLevel],
+          ballReturnSpeedMult: 1,
+          xpGainMult: 1,
+          goldGainMult: 1,
+          mergeBonusDamage: 0,
+          extraBounce: false,
+          extraAmmoSlots: 0,
+          spawnLevel2Chance: 0,
+          fireBurnEnabled: false,
+          fireBurnDamageMult: 1,
+          fireBurnDuration: 0,
+          fireImpactMult: 1,
+          iceSlowBonus: 0,
+          iceDurationBonus: 0,
+          iceFrozenBonusDamage: 0,
+          iceImpactMult: 1,
+          spikedEfficiency: 0,
+          spikedImpactMult: 1,
+          spikedSizeBonus: 0,
+          spikedLastPierceBonus: 0,
+          bombRadiusMult: 1,
+          bombSplashMult: 1,
+          bombImpactMult: 1,
+          bombFireZone: false
+        }
+      };
+
+      setupStartingAmmo(stateObj);
+      return stateObj;
+    }
+
+    function setupStartingAmmo(s) {
+      s.ammoQueue.length = 0;
+      s.ammoQueue.push({ type: "fire", level: 1 });
+      s.ammoQueue.push({ type: "ice", level: 1 });
+      s.ammoQueue.push({ type: "spiked", level: 1 });
+      s.ammoQueue.push({ type: "bomb", level: 1 });
+      const targetCount = CONFIG.meta.startBallValues[save.startBallLevel];
+      for (let i = 4; i < targetCount; i += 1) {
+        s.ammoQueue.push({ type: BALL_TYPES[i % BALL_TYPES.length], level: 1 });
+      }
+    }
+
+    function clampInt(v, min, max) {
+      const n = Number(v);
+      if (!Number.isFinite(n)) return min;
+      return Math.max(min, Math.min(max, Math.floor(n)));
+    }
+
+    function clamp(v, min, max) {
+      return Math.max(min, Math.min(max, v));
+    }
+
+    function rand(min, max) {
+      return min + Math.random() * (max - min);
+    }
+
+    function randInt(min, max) {
+      return Math.floor(rand(min, max + 1));
+    }
+
+    function choice(arr) {
+      return arr[(Math.random() * arr.length) | 0];
+    }
+
+    function addGold(amount) {
+      if (!state || amount <= 0) return;
+      const gain = Math.max(0, Math.round(amount * state.mods.goldGainMult));
+      state.goldRun += gain;
+    }
+
+    function addXP(amount) {
+      if (!state || amount <= 0) return;
+      state.xp += amount * state.mods.xpGainMult;
+      let leveled = false;
+      while (state.level - 1 < CONFIG.xpThresholds.length && state.xp >= CONFIG.xpThresholds[state.level - 1]) {
+        state.level += 1;
+        addGold(CONFIG.levelGoldBonus);
+        leveled = true;
+      }
+      if (leveled && state.phase === "playing") {
+        openLevelUp();
+      }
+    }
+
+    function getBallBase(type, level) {
+      const def = CONFIG.balls[type];
+      return {
+        radius: def.radius[level - 1],
+        damage: def.damage[level - 1],
+        color: def.colors[level - 1]
+      };
+    }
+
+    function ballRadius(type, level) {
+      let r = getBallBase(type, level).radius;
+      if (type === "spiked") r *= (1 + state.mods.spikedSizeBonus);
+      return r;
+    }
+
+    function makeBall(type, level, x, y) {
+      return {
+        id: ++state.ballIdCounter,
+        type,
+        level,
+        x,
+        y,
+        vx: 0,
+        vy: 0,
+        radius: ballRadius(type, level),
+        state: BALL_STATE.SLEEPING,
+        activeCycleId: 0,
+        hitEnemyIdsThisCycle: new Set(),
+        hasExplodedThisCycle: false,
+        age: 0,
+        lastLaunchOrder: -1,
+        mergeLock: false,
+        mergeTimer: 0,
+        mergePartnerId: 0,
+        fromMergeBoost: 0
+      };
+    }
+
+    function activateBall(ball, vx, vy, cycleId) {
+      ball.vx = vx;
+      ball.vy = vy;
+      ball.state = BALL_STATE.FLYING;
+      ball.activeCycleId = cycleId;
+      ball.hitEnemyIdsThisCycle.clear();
+      ball.hasExplodedThisCycle = false;
+      ball.mergeLock = false;
+    }
+
+    function reactivateBall(ball, vx, vy, options = {}) {
+      const { restartCycle = false, preferFlying = false } = options;
+      ball.vx = vx;
+      ball.vy = vy;
+      const speed = Math.hypot(vx, vy);
+      if (speed >= CONFIG.physics.damageSpeedThreshold) {
+        const wasDamageActive = ball.state === BALL_STATE.FLYING || ball.state === BALL_STATE.ROLLING;
+        ball.state = (preferFlying || speed > 180) ? BALL_STATE.FLYING : BALL_STATE.ROLLING;
+        if (restartCycle || !wasDamageActive) {
+          ball.activeCycleId = ++state.cycleIdCounter;
+          ball.hitEnemyIdsThisCycle.clear();
+          ball.hasExplodedThisCycle = false;
+        }
+        ball.mergeLock = false;
+        return true;
+      }
+      if (speed < CONFIG.physics.sleepingSpeedThreshold) {
+        ball.state = BALL_STATE.SLEEPING;
+      }
+      return false;
+    }
+
+    function getLauncherMuzzle() {
+      const len = 56;
+      return {
+        x: CONFIG.field.launcherX + Math.cos(state.aimAngle) * len,
+        y: CONFIG.field.launcherY + Math.sin(state.aimAngle) * len
+      };
+    }
+
+    function shootCurrentBall() {
+      if (!state || state.phase !== "playing" || state.ammoQueue.length === 0) return;
+      const current = state.ammoQueue.shift();
+      const b = makeBall(current.type, current.level, CONFIG.field.launcherX, CONFIG.field.launcherY);
+      const muzzle = getLauncherMuzzle();
+      b.x = muzzle.x;
+      b.y = muzzle.y;
+      const speed = CONFIG.physics.shotSpeed;
+      const dirX = Math.cos(state.aimAngle);
+      const dirY = Math.sin(state.aimAngle);
+      const cycleId = ++state.cycleIdCounter;
+      activateBall(b, dirX * speed, dirY * speed, cycleId);
+      b.lastLaunchOrder = ++state.launchOrderCounter;
+      state.balls.push(b);
+      state.shots += 1;
+      state.maxBallLevel = Math.max(state.maxBallLevel, b.level);
+      spawnHitPixels(b.x, b.y, 5, "#ffe59a", 90, 0.22, 0.4);
+    }
+
+    function forceReturnOldestBall() {
+      let oldest = null;
+      for (const b of state.balls) {
+        if (b.state === BALL_STATE.SLEEPING && b.lastLaunchOrder >= 0 && !b._queuedBack) {
+          if (!oldest || b.lastLaunchOrder < oldest.lastLaunchOrder) oldest = b;
+        }
+      }
+      if (oldest) {
+        queueBallFromField(oldest, false);
+        return true;
+      }
+      return false;
+    }
+
+    function queueBallFromField(ball, instant) {
+      if (!ball || ball._queuedBack) return;
+      ball._queuedBack = true;
+      if (instant) {
+        addAmmoBall({ type: ball.type, level: maybeUpgradeLevel(ball.level) });
+        ball._remove = true;
+        return;
+      }
+      ball.state = BALL_STATE.RETURNING;
+      ball.vx = 0;
+      ball.vy = 0;
+    }
+
+    function maybeUpgradeLevel(level) {
+      if (level === 1 && Math.random() < state.mods.spawnLevel2Chance) return 2;
+      return level;
+    }
+
+    function addAmmoBall(proto) {
+      state.ammoQueue.push(proto);
+    }
+
+    function enforceAmmoSafety(dt) {
+      if (state.phase !== "playing") return;
+      if (state.ammoQueue.length > 0) {
+        state.ammoRecoveryTimer = 0;
+        return;
+      }
+      state.ammoRecoveryTimer -= dt;
+      if (state.ammoRecoveryTimer > 0) return;
+      const returned = forceReturnOldestBall();
+      state.ammoRecoveryTimer = returned ? 0.12 : 0.18;
+    }
+
+    function collectSleepingBalls() {
+      if (!state || state.phase !== "playing" || state.collectCooldown > 0) return;
+      let returned = 0;
+      for (const b of state.balls) {
+        if (b.state === BALL_STATE.SLEEPING) {
+          b._remove = true;
+          addAmmoBall({ type: b.type, level: maybeUpgradeLevel(b.level) });
+          returned += 1;
+        }
+      }
+      if (returned > 0) {
+        state.collectCooldown = CONFIG.ammo.collectCooldown;
+        spawnHitPixels(CONFIG.field.launcherX, CONFIG.field.launcherY, 10, "#b8f5ff", 170, 0.4, 0.7);
+      }
+    }
+
+    function makeEnemy(type) {
+      const def = CONFIG.enemies[type];
+      return {
+        id: ++state.enemyIdCounter,
+        type,
+        x: rand(CONFIG.field.x + 24, CONFIG.field.x + CONFIG.field.width - 24),
+        y: rand(CONFIG.field.y + 8, CONFIG.field.y + 44),
+        vx: 0,
+        vy: 0,
+        radius: def.radius,
+        hp: def.hp,
+        maxHp: def.hp,
+        speed: def.speed,
+        wallDamage: def.wallDps,
+        gold: def.gold,
+        xp: def.xp,
+        color: def.color,
+        slowAmount: 0,
+        slowTimer: 0,
+        burnDps: 0,
+        burnTimer: 0,
+        isAttackingWall: false,
+        hitFlash: 0
+      };
+    }
+
+    function scheduleWave(waveIndex) {
+      const wave = CONFIG.waves[waveIndex];
+      if (!wave) return;
+      const list = [];
+      for (let i = 0; i < wave.runner; i += 1) list.push("runner");
+      for (let i = 0; i < wave.grunt; i += 1) list.push("grunt");
+      for (let i = 0; i < wave.tank; i += 1) list.push("tank");
+      for (let i = 0; i < wave.shooter; i += 1) list.push("shooter");
+      const span = rand(4, 6);
+      for (const type of list) {
+        state.spawnQueue.push({ type, spawnAt: wave.time + rand(0.15, span) });
+      }
+      state.waveReached = waveIndex + 1;
+      spawnHitPixels(CONFIG.field.x + CONFIG.field.width * 0.5, CONFIG.field.y + 6, 14, "#ffe09d", 100, 0.35, 0.6);
+    }
+
+    function updateWaveSpawns() {
+      while (state.waveScheduleIndex < CONFIG.waves.length && state.time >= CONFIG.waves[state.waveScheduleIndex].time) {
+        scheduleWave(state.waveScheduleIndex);
+        state.waveScheduleIndex += 1;
+      }
+
+      if (state.enemies.length >= CONFIG.enemyCaps.hard) return;
+      for (const job of state.spawnQueue) {
+        if (job._done || state.time < job.spawnAt) continue;
+        if (state.enemies.length >= CONFIG.enemyCaps.hard) break;
+        if (state.enemies.length >= CONFIG.enemyCaps.resume) continue;
+        state.enemies.push(makeEnemy(job.type));
+        job._done = true;
+      }
+      state.spawnQueue = state.spawnQueue.filter((job) => !job._done);
+    }
+
+    function updateEnemies(dt) {
+      const wallTop = CONFIG.field.wallY - 12;
+      for (const e of state.enemies) {
+        e.hitFlash = Math.max(0, e.hitFlash - dt * 4);
+        if (e.slowTimer > 0) {
+          e.slowTimer -= dt;
+          if (e.slowTimer <= 0) {
+            e.slowTimer = 0;
+            e.slowAmount = 0;
+          }
+        }
+        if (e.burnTimer > 0) {
+          e.burnTimer -= dt;
+          e.hp -= e.burnDps * dt;
+          if (e.burnTimer <= 0) {
+            e.burnTimer = 0;
+            e.burnDps = 0;
+          }
+        }
+        if (e.hp <= 0) {
+          killEnemy(e, null);
+          e._remove = true;
+          continue;
+        }
+
+        let speedFactor = 1 - e.slowAmount;
+        speedFactor = clamp(speedFactor, 0.12, 1);
+        const effectiveSpeed = e.speed * speedFactor;
+        const shouldRangeAttack = e.type === "shooter" && e.y >= wallTop - CONFIG.enemies.shooter.range;
+        const shouldMeleeAttack = e.y + e.radius >= wallTop;
+        e.isAttackingWall = shouldMeleeAttack || shouldRangeAttack;
+        if (e.isAttackingWall) {
+          state.wallHp -= e.wallDamage * dt;
+          state.wallFlash = 0.2;
+          e.vx *= 0.7;
+          e.vy *= 0.7;
+        } else {
+          let steerX = 0;
+          for (const b of state.balls) {
+            if (b.state !== BALL_STATE.SLEEPING) continue;
+            const dx = e.x - b.x;
+            const dy = e.y - b.y;
+            const dist = Math.hypot(dx, dy) || 1;
+            const avoid = e.radius + b.radius + 26;
+            if (dist < avoid) {
+              const push = (avoid - dist) / avoid;
+              steerX += (dx / dist) * 220 * push;
+            }
+          }
+          e.vx += steerX * dt;
+          e.vx *= 0.85;
+          e.vy = effectiveSpeed;
+          e.x += e.vx * dt;
+          e.y += e.vy * dt;
+        }
+
+        e.x = clamp(e.x, CONFIG.field.x + e.radius, CONFIG.field.x + CONFIG.field.width - e.radius);
+        e.y = clamp(e.y, CONFIG.field.y + e.radius, CONFIG.field.y + CONFIG.field.height - 26);
+      }
+
+      if (state.wallHp <= 0) {
+        state.wallHp = 0;
+        finishRun(false);
+      }
+      state.enemies = state.enemies.filter((e) => !e._remove);
+    }
+
+    function getBallDamageData(ball) {
+      const base = getBallBase(ball.type, ball.level).damage;
+      let multiplier = state.mods.allBallDamageMult;
+      if (ball.fromMergeBoost > 0) multiplier *= (1 + ball.fromMergeBoost);
+      let slow = 0;
+      let slowDuration = 0;
+      let splashRadius = 0;
+      let splashFactor = 0;
+      if (ball.type === "fire") {
+        multiplier *= state.mods.fireImpactMult;
+      } else if (ball.type === "ice") {
+        multiplier *= state.mods.iceImpactMult;
+        slow = clamp(CONFIG.balls.ice.slow[ball.level - 1] + state.mods.iceSlowBonus, 0, 0.7);
+        slowDuration = CONFIG.balls.ice.slowDuration[ball.level - 1] + state.mods.iceDurationBonus;
+      } else if (ball.type === "spiked") {
+        multiplier *= state.mods.spikedImpactMult;
+      } else if (ball.type === "bomb") {
+        multiplier *= state.mods.bombImpactMult;
+        splashRadius = CONFIG.balls.bomb.splashRadius[ball.level - 1] * state.mods.bombRadiusMult;
+        splashFactor = CONFIG.balls.bomb.splashFactor * state.mods.bombSplashMult;
+      }
+      return {
+        damage: base * multiplier,
+        slow,
+        slowDuration,
+        splashRadius,
+        splashFactor
+      };
+    }
+
+    function applyBallHit(ball, enemy, nx, ny) {
+      if (ball.hitEnemyIdsThisCycle.has(enemy.id)) return;
+      const speed = Math.hypot(ball.vx, ball.vy);
+      if (speed < CONFIG.physics.damageSpeedThreshold) return;
+      ball.hitEnemyIdsThisCycle.add(enemy.id);
+
+      const data = getBallDamageData(ball);
+      let damage = data.damage;
+      if (enemy.slowTimer > 0 && state.mods.iceFrozenBonusDamage > 0) {
+        damage *= 1 + state.mods.iceFrozenBonusDamage;
+      }
+      if (ball.type === "spiked" && state.mods.spikedLastPierceBonus > 0 && speed > 240) {
+        damage *= 1 + state.mods.spikedLastPierceBonus;
+      }
+
+      enemy.hp -= damage;
+      enemy.hitFlash = 1;
+      enemy.vx += nx * 140;
+      enemy.vy += ny * 110;
+
+      if (ball.type === "ice") {
+        enemy.slowAmount = Math.max(enemy.slowAmount, data.slow);
+        enemy.slowTimer = Math.max(enemy.slowTimer, data.slowDuration);
+      }
+      if (ball.type === "fire" && state.mods.fireBurnEnabled) {
+        const burnDps = 4 * state.mods.fireBurnDamageMult;
+        enemy.burnDps = Math.max(enemy.burnDps, burnDps);
+        enemy.burnTimer = Math.max(enemy.burnTimer, 2 + state.mods.fireBurnDuration);
+      }
+
+      spawnHitPixels(enemy.x, enemy.y, randInt(2, 4), enemy.color, 200, 0.22, 0.45, 3, 5, 0.08);
+
+      if (ball.type === "bomb" && !ball.hasExplodedThisCycle) {
+        ball.hasExplodedThisCycle = true;
+        bombExplode(ball, enemy.x, enemy.y, data.damage, data.splashRadius, data.splashFactor, enemy.id);
+        queueBallFromField(ball, false);
+        return;
+      }
+
+      const died = enemy.hp <= 0;
+      if (died) {
+        killEnemy(enemy, ball);
+        enemy._remove = true;
+      }
+
+      const lossRange = died ? CONFIG.physics.enemyHitLossKill : CONFIG.physics.enemyHitLossSurvive;
+      let loss = rand(lossRange[0], lossRange[1]);
+      if (ball.type === "spiked") {
+        loss *= CONFIG.physics.spikedLossMultiplier * (1 - state.mods.spikedEfficiency * 0.05);
+      }
+      if (state.mods.extraBounce) loss *= 0.9;
+      loss = clamp(loss, 0.06, 0.7);
+      const keep = 1 - loss;
+      const dot = ball.vx * nx + ball.vy * ny;
+      if (!died) {
+        ball.vx = (ball.vx - 2 * dot * nx) * keep;
+        ball.vy = (ball.vy - 2 * dot * ny) * keep;
+      } else {
+        ball.vx *= keep;
+        ball.vy *= keep;
+      }
+    }
+
+    function bombExplode(ball, x, y, directDamage, radius, splashFactor, skipEnemyId) {
+      const splashDamage = directDamage * splashFactor;
+      for (const e of state.enemies) {
+        if (e.id === skipEnemyId) continue;
+        const d = Math.hypot(e.x - x, e.y - y);
+        if (d <= radius + e.radius) {
+          const falloff = 1 - clamp(d / (radius + e.radius), 0, 1) * 0.45;
+          e.hp -= splashDamage * falloff;
+          e.hitFlash = 1;
+          const nx = (e.x - x) / (d || 1);
+          const ny = (e.y - y) / (d || 1);
+          e.vx += nx * 180;
+          e.vy += ny * 120;
+          if (e.hp <= 0) {
+            killEnemy(e, ball);
+            e._remove = true;
+          }
+        }
+      }
+      if (state.mods.bombFireZone) {
+        state.fireZones.push({ x, y, radius: radius * 0.65, time: 2, maxTime: 2 });
+      }
+      for (let i = 0; i < 24; i += 1) {
+        const angle = rand(0, Math.PI * 2);
+        const speed = rand(120, 360);
+        state.particles.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          size: rand(4, 7),
+          color: i % 2 ? "#ff633d" : "#ffbc5f",
+          life: rand(0.32, 0.56),
+          maxLife: 0.56,
+          shrink: 0.95,
+          gravity: 70,
+          rot: rand(0, Math.PI * 2),
+          vr: rand(-7, 7)
+        });
+      }
+      state.screenShake = Math.max(state.screenShake, 7);
+    }
+
+    function killEnemy(enemy, ball) {
+      state.kills += 1;
+      addGold(enemy.gold);
+      addXP(enemy.xp);
+      const chunks = enemy.type === "tank"
+        ? randInt(18, 24)
+        : (enemy.type === "grunt" || enemy.type === "shooter")
+          ? randInt(12, 16)
+          : randInt(8, 10);
+      spawnHitPixels(enemy.x, enemy.y, chunks, enemy.color, enemy.type === "tank" ? 310 : 240, 1.0, 1.5, 6, 10, 0.55);
+      if (enemy.type === "tank") {
+        state.screenShake = Math.max(state.screenShake, 8);
+      }
+      if (ball && ball.type === "spiked") {
+        ball.vx *= 1.02;
+        ball.vy *= 1.02;
+      }
+    }
+
+    function spawnHitPixels(x, y, count, color, force, lifeMin, lifeMax, sizeMin = 3, sizeMax = 6, fadeAfter = 0.18) {
+      for (let i = 0; i < count; i += 1) {
+        const angle = rand(0, Math.PI * 2);
+        const speed = rand(force * 0.4, force);
+        const bright = i < 3 ? "rgba(255,245,220,.92)" : color;
+        const life = rand(lifeMin, lifeMax);
+        state.particles.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          size: rand(sizeMin, sizeMax),
+          color: bright,
+          life,
+          maxLife: life,
+          age: 0,
+          fadeAfter,
+          shrink: 0.985,
+          gravity: 120,
+          rot: rand(0, Math.PI * 2),
+          vr: rand(-10, 10)
+        });
+      }
+      if (state.particles.length > 1400) {
+        state.particles.splice(0, state.particles.length - 1400);
+      }
+    }
+
+    function updateFireZones(dt) {
+      for (const zone of state.fireZones) {
+        zone.time -= dt;
+        for (const e of state.enemies) {
+          const d = Math.hypot(e.x - zone.x, e.y - zone.y);
+          if (d <= zone.radius + e.radius) {
+            e.hp -= 4.8 * dt;
+            e.hitFlash = 0.35;
+          }
+        }
+      }
+      state.fireZones = state.fireZones.filter((z) => z.time > 0);
+    }
+
+    function updateBalls(dt) {
+      const drag = Math.pow(CONFIG.physics.friction60, dt * 60);
+      for (const b of state.balls) {
+        b.age += dt;
+        if (b.state === BALL_STATE.MERGING) continue;
+        if (b.state === BALL_STATE.RETURNING) {
+          const tx = CONFIG.field.launcherX;
+          const ty = CONFIG.field.launcherY;
+          const dx = tx - b.x;
+          const dy = ty - b.y;
+          const dist = Math.hypot(dx, dy) || 1;
+          const speed = CONFIG.ammo.returnSpeed * state.mods.ballReturnSpeedMult;
+          const step = Math.min(dist, speed * dt);
+          b.x += (dx / dist) * step;
+          b.y += (dy / dist) * step;
+          if (dist < 14) {
+            addAmmoBall({ type: b.type, level: maybeUpgradeLevel(b.level) });
+            b._remove = true;
+          }
+          continue;
+        }
+
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+        b.vx *= drag;
+        b.vy *= drag;
+
+        if (b.x - b.radius < CONFIG.field.x) {
+          b.x = CONFIG.field.x + b.radius;
+          b.vx = Math.abs(b.vx) * CONFIG.physics.wallBounceKeep;
+        }
+        if (b.x + b.radius > CONFIG.field.x + CONFIG.field.width) {
+          b.x = CONFIG.field.x + CONFIG.field.width - b.radius;
+          b.vx = -Math.abs(b.vx) * CONFIG.physics.wallBounceKeep;
+        }
+        if (b.y - b.radius < CONFIG.field.y) {
+          b.y = CONFIG.field.y + b.radius;
+          b.vy = Math.abs(b.vy) * CONFIG.physics.wallBounceKeep;
+        }
+        if (b.y + b.radius > CONFIG.field.y + CONFIG.field.height) {
+          b.y = CONFIG.field.y + CONFIG.field.height - b.radius;
+          b.vy = -Math.abs(b.vy) * CONFIG.physics.wallBounceKeep;
+        }
+
+        const speed = Math.hypot(b.vx, b.vy);
+        if (b.state !== BALL_STATE.SLEEPING && speed < CONFIG.physics.sleepingSpeedThreshold) {
+          b.state = BALL_STATE.SLEEPING;
+          b.vx *= 0.5;
+          b.vy *= 0.5;
+        } else if (b.state === BALL_STATE.SLEEPING && speed > CONFIG.physics.wakeSpeedThreshold) {
+          b.state = BALL_STATE.ROLLING;
+        } else if (b.state === BALL_STATE.FLYING && speed < 180) {
+          b.state = BALL_STATE.ROLLING;
+        }
+
+        if (b.state !== BALL_STATE.SLEEPING && speed > 90) {
+          spawnTrail(b);
+        }
+      }
+      state.balls = state.balls.filter((b) => !b._remove);
+    }
+
+    function spawnTrail(ball) {
+      let color = "#ffffff";
+      if (ball.type === "fire") color = "rgba(255,141,84,.6)";
+      if (ball.type === "ice") color = "rgba(142,222,255,.62)";
+      if (ball.type === "spiked") color = "rgba(210,220,234,.5)";
+      if (ball.type === "bomb") color = "rgba(255,160,120,.55)";
+      state.particles.push({
+        x: ball.x + rand(-2, 2),
+        y: ball.y + rand(-2, 2),
+        vx: rand(-25, 25),
+        vy: rand(-25, 25),
+        size: rand(2, 4),
+        color,
+        life: rand(0.14, 0.24),
+        maxLife: 0.24,
+        shrink: 0.9,
+        gravity: 0,
+        rot: 0,
+        vr: 0
+      });
+    }
+
+    function resolveBallEnemyCollisions() {
+      for (const b of state.balls) {
+        if (b.state === BALL_STATE.SLEEPING || b.state === BALL_STATE.RETURNING || b.state === BALL_STATE.MERGING) continue;
+        for (const e of state.enemies) {
+          if (e._remove) continue;
+          const dx = e.x - b.x;
+          const dy = e.y - b.y;
+          const dist = Math.hypot(dx, dy) || 0.0001;
+          const sum = b.radius + e.radius;
+          if (dist > sum) continue;
+          const nx = dx / dist;
+          const ny = dy / dist;
+          const overlap = sum - dist;
+          b.x -= nx * overlap * 0.5;
+          b.y -= ny * overlap * 0.5;
+          e.x += nx * overlap * 0.5;
+          e.y += ny * overlap * 0.5;
+          applyBallHit(b, e, -nx, -ny);
+        }
+      }
+      state.enemies = state.enemies.filter((e) => !e._remove);
+    }
+
+    function checkMergeEligible(a, b) {
+      if (a.type !== b.type) return false;
+      if (a.level !== b.level || a.level >= 3) return false;
+      if (a.mergeLock || b.mergeLock) return false;
+      if (a.state === BALL_STATE.RETURNING || b.state === BALL_STATE.RETURNING) return false;
+      const rvx = a.vx - b.vx;
+      const rvy = a.vy - b.vy;
+      const relSpeed = Math.hypot(rvx, rvy);
+      const as = Math.hypot(a.vx, a.vy);
+      const bs = Math.hypot(b.vx, b.vy);
+      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+      const closeSleep = a.state === BALL_STATE.SLEEPING && b.state === BALL_STATE.SLEEPING && dist <= (a.radius + b.radius + CONFIG.physics.mergeSleepingDistance);
+      if (closeSleep) return true;
+      if (relSpeed > CONFIG.physics.mergeRelativeSpeedLimit) return false;
+      if (as > CONFIG.physics.mergeAbsoluteSpeedLimit || bs > CONFIG.physics.mergeAbsoluteSpeedLimit) return false;
+      return true;
+    }
+
+    function startMerge(a, b) {
+      a.mergeLock = true;
+      b.mergeLock = true;
+      a.state = BALL_STATE.MERGING;
+      b.state = BALL_STATE.MERGING;
+      a.mergeTimer = 0;
+      b.mergeTimer = 0;
+      a.mergePartnerId = b.id;
+      b.mergePartnerId = a.id;
+      state.mergeTasks.push({ aId: a.id, bId: b.id, time: 0 });
+      spawnHitPixels((a.x + b.x) * 0.5, (a.y + b.y) * 0.5, 8, "#f8fcff", 110, 0.18, 0.32);
+    }
+
+    function mergeMagnetPass(dt) {
+      const arr = state.balls;
+      for (let i = 0; i < arr.length; i += 1) {
+        const a = arr[i];
+        if (a.state === BALL_STATE.RETURNING || a.state === BALL_STATE.MERGING) continue;
+        for (let j = i + 1; j < arr.length; j += 1) {
+          const b = arr[j];
+          if (b.state === BALL_STATE.RETURNING || b.state === BALL_STATE.MERGING) continue;
+          if (a.type !== b.type || a.level !== b.level || a.level >= 3 || a.mergeLock || b.mergeLock) continue;
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const dist = Math.hypot(dx, dy) || 1;
+          const target = a.radius + b.radius + CONFIG.physics.mergeSleepingDistance;
+          if (dist > target) continue;
+          const rvx = a.vx - b.vx;
+          const rvy = a.vy - b.vy;
+          const rel = Math.hypot(rvx, rvy);
+          const bothSlow = Math.hypot(a.vx, a.vy) < 95 && Math.hypot(b.vx, b.vy) < 95;
+          if (rel < CONFIG.physics.mergeRelativeSpeedLimit || bothSlow) {
+            const pull = (target - dist) * 0.9;
+            const nx = dx / dist;
+            const ny = dy / dist;
+            a.x += nx * pull * dt;
+            a.y += ny * pull * dt;
+            b.x -= nx * pull * dt;
+            b.y -= ny * pull * dt;
+            if (dist <= a.radius + b.radius + 2) startMerge(a, b);
+          }
+        }
+      }
+    }
+
+    function resolveBallBallCollisions() {
+      const arr = state.balls;
+      for (let i = 0; i < arr.length; i += 1) {
+        const a = arr[i];
+        if (a.state === BALL_STATE.RETURNING || a.state === BALL_STATE.MERGING) continue;
+        for (let j = i + 1; j < arr.length; j += 1) {
+          const b = arr[j];
+          if (b.state === BALL_STATE.RETURNING || b.state === BALL_STATE.MERGING) continue;
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const dist = Math.hypot(dx, dy) || 0.0001;
+          const minDist = a.radius + b.radius;
+          if (dist > minDist) continue;
+          const nx = dx / dist;
+          const ny = dy / dist;
+          const overlap = minDist - dist;
+          a.x -= nx * overlap * 0.5;
+          a.y -= ny * overlap * 0.5;
+          b.x += nx * overlap * 0.5;
+          b.y += ny * overlap * 0.5;
+
+          if (checkMergeEligible(a, b)) {
+            startMerge(a, b);
+            continue;
+          }
+
+          const rvx = b.vx - a.vx;
+          const rvy = b.vy - a.vy;
+          const relAlongN = rvx * nx + rvy * ny;
+          if (relAlongN >= 0) continue;
+
+          const impulse = -relAlongN * (1 - CONFIG.physics.ballTransferTotalLoss);
+          a.vx -= impulse * nx * 0.5;
+          a.vy -= impulse * ny * 0.5;
+          b.vx += impulse * nx * 0.5;
+          b.vy += impulse * ny * 0.5;
+
+          const speedA = Math.hypot(a.vx, a.vy);
+          const speedB = Math.hypot(b.vx, b.vy);
+          let from = a;
+          let to = b;
+          if (speedB > speedA) {
+            from = b;
+            to = a;
+          }
+          const fromWasSleeping = from.state === BALL_STATE.SLEEPING;
+          const toWasSleeping = to.state === BALL_STATE.SLEEPING;
+          const toWasDamageActive = to.state === BALL_STATE.FLYING || to.state === BALL_STATE.ROLLING;
+          const transferVX = from.vx * CONFIG.physics.ballTransferTo;
+          const transferVY = from.vy * CONFIG.physics.ballTransferTo;
+          from.vx *= CONFIG.physics.ballTransferKeepFrom;
+          from.vy *= CONFIG.physics.ballTransferKeepFrom;
+          to.vx += transferVX;
+          to.vy += transferVY;
+          from.vx *= 0.92;
+          from.vy *= 0.92;
+          to.vx *= 0.92;
+          to.vy *= 0.92;
+
+          reactivateBall(from, from.vx, from.vy, { restartCycle: fromWasSleeping, preferFlying: true });
+          reactivateBall(to, to.vx, to.vy, { restartCycle: toWasSleeping || !toWasDamageActive });
+        }
+      }
+    }
+
+    function updateMerges(dt) {
+      for (const task of state.mergeTasks) {
+        task.time += dt;
+        const a = state.balls.find((b) => b.id === task.aId);
+        const b = state.balls.find((c) => c.id === task.bId);
+        if (!a || !b) {
+          task._done = true;
+          continue;
+        }
+        const t = clamp(task.time / CONFIG.physics.mergeDuration, 0, 1);
+        const midX = (a.x + b.x) * 0.5;
+        const midY = (a.y + b.y) * 0.5;
+        a.x += (midX - a.x) * 0.32;
+        a.y += (midY - a.y) * 0.32;
+        b.x += (midX - b.x) * 0.32;
+        b.y += (midY - b.y) * 0.32;
+        a.vx *= 0.6;
+        a.vy *= 0.6;
+        b.vx *= 0.6;
+        b.vy *= 0.6;
+        if (t >= 1) {
+          const level = a.level + 1;
+          const merged = makeBall(a.type, level, midX, midY);
+          const angle = rand(-2.4, -0.8);
+          const push = CONFIG.physics.mergeImpulse;
+          activateBall(merged, Math.cos(angle) * push, Math.sin(angle) * push, state.cycleIdCounter);
+          merged.fromMergeBoost = state.mods.mergeBonusDamage;
+          state.balls.push(merged);
+          a._remove = true;
+          b._remove = true;
+          state.merges += 1;
+          state.maxBallLevel = Math.max(state.maxBallLevel, level);
+          state.lastMergeText = { x: midX, y: midY - 12, life: 0.7, maxLife: 0.7 };
+          spawnHitPixels(midX, midY, 14, "#f8ffff", 170, 0.24, 0.5);
+          task._done = true;
+        }
+      }
+      state.mergeTasks = state.mergeTasks.filter((t) => !t._done);
+      state.balls = state.balls.filter((b) => !b._remove);
+    }
+
+    function updateParticles(dt) {
+      for (const p of state.particles) {
+        if (!Number.isFinite(p.age)) p.age = 0;
+        if (!Number.isFinite(p.maxLife) || p.maxLife <= 0) p.maxLife = Math.max(0.1, p.life || 0.1);
+        if (!Number.isFinite(p.fadeAfter)) p.fadeAfter = Math.min(0.2, p.maxLife * 0.45);
+        p.age += dt;
+        p.life -= dt;
+        p.vy += p.gravity * dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vx *= 0.985;
+        p.vy *= 0.985;
+        p.size *= p.shrink;
+        p.rot += p.vr * dt;
+      }
+      if (state.lastMergeText) {
+        state.lastMergeText.life -= dt;
+        state.lastMergeText.y -= 16 * dt;
+      }
+      state.particles = state.particles.filter((p) => p.life > 0.01 && p.size > 0.5 && p.age < p.maxLife + 0.02);
+    }
+
+    function updateGameplay(dt) {
+      state.time += dt;
+      state.collectCooldown = Math.max(0, state.collectCooldown - dt);
+      state.wallFlash = Math.max(0, state.wallFlash - dt);
+      state.screenShake = Math.max(0, state.screenShake - dt * 20);
+
+      updateWaveSpawns();
+      updateFireZones(dt);
+      updateEnemies(dt);
+      updateBalls(dt);
+      mergeMagnetPass(dt);
+      resolveBallBallCollisions();
+      updateMerges(dt);
+      resolveBallEnemyCollisions();
+      updateParticles(dt);
+      enforceAmmoSafety(dt);
+
+      if (state.time >= state.nextSurvivalBonusTime) {
+        state.nextSurvivalBonusTime += CONFIG.survivalGoldEvery;
+        addGold(CONFIG.survivalGoldBonus);
+      }
+
+      if (state.time >= CONFIG.runDuration) {
+        finishRun(true);
+      }
+    }
+
+    function finishRun(victory) {
+      if (state.phase === "result") return;
+      state.phase = "result";
+      if (!state.resultApplied) {
+        if (victory) addGold(CONFIG.victoryGoldBonus);
+        save.gold += state.goldRun;
+        saveSave();
+        state.resultApplied = true;
+      }
+      showResult(victory);
+    }
+
+    function getLevelProgress() {
+      const idx = state.level - 1;
+      if (idx >= CONFIG.xpThresholds.length) return 1;
+      const prev = idx <= 0 ? 0 : CONFIG.xpThresholds[idx - 1];
+      const next = CONFIG.xpThresholds[idx];
+      return clamp((state.xp - prev) / (next - prev), 0, 1);
+    }
+
+    function updateAimFromPoint(px, py) {
+      const lx = CONFIG.field.launcherX;
+      const ly = CONFIG.field.launcherY;
+      const dx = px - lx;
+      const dy = py - ly;
+      let angle = Math.atan2(dy, dx);
+      const up = -Math.PI / 2;
+      const span = (160 * Math.PI / 180) / 2;
+      angle = clamp(angle, up - span, up + span);
+      state.aimAngle = angle;
+    }
+
+    function localCanvasPoint(event) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = CONFIG.canvas.width / rect.width;
+      const scaleY = CONFIG.canvas.height / rect.height;
+      return {
+        x: (event.clientX - rect.left) * scaleX,
+        y: (event.clientY - rect.top) * scaleY
+      };
+    }
+
+    function openLevelUp() {
+      if (state.phase !== "playing") return;
+      state.phase = "levelup";
+      state.selectedUpgradeId = null;
+      const general = pickUpgrade("general", []);
+      const type = pickUpgrade("type", general ? [general.id] : []);
+      const defense = pickUpgrade("defense", [general && general.id, type && type.id].filter(Boolean));
+      const cards = [general, type, defense].filter(Boolean);
+      while (cards.length < 3) {
+        const fallback = pickAnyUpgrade(cards.map((u) => u.id));
+        if (!fallback) break;
+        cards.push(fallback);
+      }
+      state.levelChoices = cards;
+      renderLevelChoices();
+      levelContinueBtn.disabled = true;
+      levelOverlay.classList.add("show");
+    }
+
+    function pickUpgrade(bucket, excludeIds) {
+      const pool = UPGRADE_DEFS.filter((u) => {
+        if (u.bucket !== bucket) return false;
+        if (excludeIds.includes(u.id)) return false;
+        const count = state.upgradeCounts[u.id] || 0;
+        if (count >= u.max) return false;
+        if (u.rare && Math.random() > 0.28) return false;
+        return true;
+      });
+      if (!pool.length) return null;
+      return choice(pool);
+    }
+
+    function pickAnyUpgrade(excludeIds) {
+      const pool = UPGRADE_DEFS.filter((u) => {
+        if (excludeIds.includes(u.id)) return false;
+        const count = state.upgradeCounts[u.id] || 0;
+        if (count >= u.max) return false;
+        if (u.rare && Math.random() > 0.26) return false;
+        return true;
+      });
+      if (!pool.length) return null;
+      return choice(pool);
+    }
+
+    function renderLevelChoices() {
+      levelCards.innerHTML = "";
+      for (const up of state.levelChoices) {
+        const btn = document.createElement("button");
+        btn.className = "card levelCard";
+        btn.type = "button";
+        btn.dataset.upgradeId = up.id;
+        btn.innerHTML = `
+          <div class="row"><strong>${up.title}</strong><span class="chip">${up.bucket.toUpperCase()}</span></div>
+          <small>${up.desc}</small>
+        `;
+        btn.addEventListener("click", () => selectUpgrade(up.id));
+        levelCards.appendChild(btn);
+      }
+    }
+
+    function selectUpgrade(id) {
+      if (state.phase !== "levelup") return;
+      state.selectedUpgradeId = id;
+      const cards = levelCards.querySelectorAll(".levelCard");
+      cards.forEach((el) => el.classList.toggle("selected", el.dataset.upgradeId === id));
+      levelContinueBtn.disabled = false;
+    }
+
+    function chooseUpgrade(id) {
+      const up = UPGRADE_DEFS.find((u) => u.id === id);
+      if (!up || state.phase !== "levelup") return;
+      up.apply(state);
+      state.upgradeCounts[id] = (state.upgradeCounts[id] || 0) + 1;
+      state.upgradesChosen.push(up.title);
+      state.selectedUpgradeId = null;
+      levelContinueBtn.disabled = true;
+      state.phase = "playing";
+      levelOverlay.classList.remove("show");
+    }
+
+    function showResult(victory) {
+      resultTitle.textContent = victory ? "Victory" : "Defeat";
+      const survived = formatTime(state.time);
+      const stats = [
+        `Survived: ${survived} / 3:00`,
+        `Wave: ${state.waveReached}`,
+        `Kills: ${state.kills}`,
+        `Merges: ${state.merges}`,
+        `Level: ${state.level}`,
+        `Gold Earned: ${state.goldRun}`
+      ];
+      resultStats.innerHTML = stats.map((s) => `<div>${s}</div>`).join("");
+      const list = state.upgradesChosen.length ? state.upgradesChosen.join(", ") : "No run upgrades chosen.";
+      resultUpgrades.textContent = `Upgrades Collected: ${list}`;
+      resultOverlay.classList.add("show");
+    }
+
+    function formatTime(t) {
+      const total = Math.max(0, Math.floor(t));
+      const min = Math.floor(total / 60);
+      const sec = total % 60;
+      return `${min}:${String(sec).padStart(2, "0")}`;
+    }
+
+    function drawBackground() {
+      const g = ctx.createLinearGradient(0, CONFIG.field.y, 0, CONFIG.field.y + CONFIG.field.height);
+      g.addColorStop(0, "#6f9f7a");
+      g.addColorStop(1, "#4b7e66");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, CONFIG.canvas.width, CONFIG.canvas.height);
+
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,.06)";
+      for (let y = CONFIG.field.y; y <= CONFIG.field.y + CONFIG.field.height; y += 36) {
+        ctx.fillRect(CONFIG.field.x, y, CONFIG.field.width, 1);
+      }
+      for (let x = CONFIG.field.x; x <= CONFIG.field.x + CONFIG.field.width; x += 44) {
+        ctx.fillRect(x, CONFIG.field.y, 1, CONFIG.field.height);
+      }
+      ctx.restore();
+
+      ctx.fillStyle = "rgba(8,25,22,.24)";
+      ctx.fillRect(0, CONFIG.field.wallY + 18, CONFIG.canvas.width, CONFIG.canvas.height - (CONFIG.field.wallY + 18));
+    }
+
+    function drawWall() {
+      const w = CONFIG.field;
+      const hpRatio = clamp(state.wallHp / state.wallMaxHp, 0, 1);
+      const flash = state.wallFlash > 0 ? `rgba(255,110,110,${state.wallFlash * 2})` : "rgba(255,255,255,.08)";
+
+      ctx.fillStyle = "rgba(17,39,53,.78)";
+      ctx.fillRect(w.x - 6, w.wallY - 10, w.width + 12, 24);
+      ctx.fillStyle = "#96a9b6";
+      ctx.fillRect(w.x - 4, w.wallY - 8, w.width + 8, 20);
+      ctx.fillStyle = "#7e8f9a";
+      ctx.fillRect(w.x - 4, w.wallY + 8, w.width + 8, 4);
+      ctx.fillStyle = flash;
+      ctx.fillRect(w.x - 4, w.wallY - 8, w.width + 8, 20);
+
+      const crackCount = (1 - hpRatio) * 9;
+      ctx.strokeStyle = "rgba(57,64,73,.55)";
+      ctx.lineWidth = 2;
+      for (let i = 0; i < crackCount; i += 1) {
+        const cx = w.x + 30 + i * 48 + ((i % 2) * 12);
+        ctx.beginPath();
+        ctx.moveTo(cx, w.wallY - 5);
+        ctx.lineTo(cx + 6, w.wallY + 4);
+        ctx.lineTo(cx - 4, w.wallY + 10);
+        ctx.stroke();
+      }
+
+      const barW = w.width - 24;
+      const barH = 12;
+      const barX = w.x + 12;
+      const barY = w.wallY - 24;
+      const hpColor = hpRatio > 0.5 ? "#79ebb1" : hpRatio > 0.25 ? "#ffd46b" : "#ff7474";
+      ctx.fillStyle = "rgba(4,12,16,.58)";
+      ctx.fillRect(barX, barY, barW, barH);
+      ctx.fillStyle = hpColor;
+      ctx.fillRect(barX + 1, barY + 1, (barW - 2) * hpRatio, barH - 2);
+      if (state.wallFlash > 0) {
+        ctx.fillStyle = `rgba(255,140,140,${Math.min(0.5, state.wallFlash * 1.8)})`;
+        ctx.fillRect(barX, barY, barW, barH);
+      }
+      ctx.strokeStyle = "rgba(177,225,245,.55)";
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(barX, barY, barW, barH);
+      ctx.fillStyle = "#e7f8ff";
+      ctx.font = "bold 12px Trebuchet MS";
+      const txt = `Wall HP: ${Math.ceil(state.wallHp)} / ${state.wallMaxHp}`;
+      ctx.fillText(txt, barX + (barW - ctx.measureText(txt).width) * 0.5, barY - 4);
+    }
+
+    function drawLauncher() {
+      const x = CONFIG.field.launcherX;
+      const y = CONFIG.field.launcherY;
+
+      // Base pivot (center) stays fixed; barrel is drawn along local +X then rotated by aimAngle.
+      ctx.fillStyle = "#1e2f3d";
+      ctx.beginPath();
+      ctx.ellipse(x, y + 10, 28, 16, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(state.aimAngle);
+      ctx.fillStyle = "#243f52";
+      ctx.fillRect(0, -10, 56, 20);
+      ctx.fillStyle = "#6b89a3";
+      ctx.fillRect(10, -8, 42, 16);
+      ctx.fillStyle = "#b7d8eb";
+      ctx.fillRect(48, -4, 12, 8);
+      ctx.restore();
+
+      ctx.fillStyle = "#2f4d62";
+      ctx.beginPath();
+      ctx.arc(x, y, 16, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawAimLine() {
+      if (state.phase !== "playing" || state.ammoQueue.length === 0) return;
+      const x = CONFIG.field.launcherX;
+      const y = CONFIG.field.launcherY;
+      const dirX = Math.cos(state.aimAngle);
+      const dirY = Math.sin(state.aimAngle);
+      ctx.save();
+      for (let i = 1; i <= CONFIG.ui.aimDots; i += 1) {
+        const d = i * 32;
+        const px = x + dirX * d;
+        const py = y + dirY * d;
+        if (px < CONFIG.field.x || px > CONFIG.field.x + CONFIG.field.width || py < CONFIG.field.y || py > CONFIG.field.y + CONFIG.field.height) break;
+        const alpha = 0.2 + (1 - i / CONFIG.ui.aimDots) * 0.55;
+        ctx.fillStyle = `rgba(255,255,255,${alpha.toFixed(3)})`;
+        ctx.beginPath();
+        ctx.arc(px, py, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawEnemy(e) {
+      ctx.save();
+      ctx.translate(e.x, e.y);
+      const s = e.radius * 2;
+      const flash = e.hitFlash > 0 ? e.hitFlash : 0;
+      const color = flash > 0 ? "#ffffff" : e.color;
+      ctx.fillStyle = "rgba(0,0,0,.2)";
+      ctx.fillRect(-s * 0.45, -s * 0.36, s * 0.9, s * 0.9);
+      ctx.fillStyle = color;
+      ctx.fillRect(-s * 0.5, -s * 0.5, s, s);
+      ctx.fillStyle = "rgba(10,20,30,.35)";
+      ctx.fillRect(-s * 0.26, -s * 0.2, s * 0.18, s * 0.18);
+      ctx.fillRect(s * 0.08, -s * 0.2, s * 0.18, s * 0.18);
+      if (e.type === "tank") {
+        ctx.fillStyle = "rgba(255,255,255,.26)";
+        ctx.fillRect(-s * 0.45, -s * 0.45, s * 0.9, s * 0.16);
+      }
+      if (e.type === "shooter") {
+        ctx.fillStyle = "#132c3a";
+        ctx.fillRect(s * 0.2, -s * 0.07, s * 0.42, s * 0.14);
+      }
+      ctx.restore();
+
+      const hpRatio = clamp(e.hp / e.maxHp, 0, 1);
+      const bw = e.radius * 2;
+      ctx.fillStyle = "rgba(0,0,0,.32)";
+      ctx.fillRect(e.x - bw * 0.5, e.y - e.radius - 10, bw, 4);
+      ctx.fillStyle = hpRatio > 0.5 ? "#74efb2" : hpRatio > 0.25 ? "#ffd36a" : "#ff7d7d";
+      ctx.fillRect(e.x - bw * 0.5, e.y - e.radius - 10, bw * hpRatio, 4);
+    }
+
+    function drawBall(ball) {
+      const base = getBallBase(ball.type, ball.level);
+      const speed = Math.hypot(ball.vx, ball.vy);
+      const active = ball.state !== BALL_STATE.SLEEPING && ball.state !== BALL_STATE.RETURNING && speed >= CONFIG.physics.damageSpeedThreshold * 0.7;
+      const alpha = ball.state === BALL_STATE.SLEEPING ? 0.35 : ball.state === BALL_STATE.RETURNING ? 0.6 : 1;
+      const glow = active ? (ball.level >= 3 ? 26 : 14 + ball.level * 3) : 0;
+      const rot = (ball.age * (speed * 0.008 + 1.5)) % (Math.PI * 2);
+
+      ctx.save();
+      ctx.translate(ball.x, ball.y);
+      ctx.rotate(rot);
+      if (glow > 0) {
+        ctx.shadowBlur = glow;
+        ctx.shadowColor = base.color;
+      }
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = base.color;
+      ctx.beginPath();
+      ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.lineWidth = 2 + ball.level;
+      ctx.strokeStyle = ball.type === "bomb" ? "rgba(255,108,88,.85)" : ball.state === BALL_STATE.SLEEPING ? "rgba(20,33,44,.65)" : "rgba(255,255,255,.62)";
+      ctx.stroke();
+
+      if (ball.type === "fire") {
+        ctx.fillStyle = "rgba(255,240,180,.95)";
+        ctx.beginPath();
+        ctx.moveTo(0, -ball.radius * 0.55);
+        ctx.lineTo(ball.radius * 0.3, ball.radius * 0.15);
+        ctx.lineTo(0, ball.radius * 0.05);
+        ctx.lineTo(-ball.radius * 0.26, ball.radius * 0.5);
+        ctx.lineTo(-ball.radius * 0.12, -ball.radius * 0.1);
+        ctx.closePath();
+        ctx.fill();
+      } else if (ball.type === "ice") {
+        ctx.strokeStyle = "rgba(228,246,255,.98)";
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 3; i += 1) {
+          ctx.save();
+          ctx.rotate((Math.PI / 3) * i);
+          ctx.beginPath();
+          ctx.moveTo(0, -ball.radius * 0.48);
+          ctx.lineTo(0, ball.radius * 0.48);
+          ctx.stroke();
+          ctx.restore();
+        }
+      } else if (ball.type === "spiked") {
+        const spikes = CONFIG.balls.spiked.spikes[ball.level - 1];
+        ctx.fillStyle = "#cfd8e6";
+        for (let i = 0; i < spikes; i += 1) {
+          const a = (i / spikes) * Math.PI * 2;
+          const r1 = ball.radius;
+          const r2 = ball.radius + (ball.level * 2.2);
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(a - 0.12) * r1, Math.sin(a - 0.12) * r1);
+          ctx.lineTo(Math.cos(a) * r2, Math.sin(a) * r2);
+          ctx.lineTo(Math.cos(a + 0.12) * r1, Math.sin(a + 0.12) * r1);
+          ctx.closePath();
+          ctx.fill();
+        }
+      } else if (ball.type === "bomb") {
+        ctx.fillStyle = "#ff4b47";
+        ctx.beginPath();
+        ctx.arc(ball.radius * 0.25, -ball.radius * 0.25, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#ffb26d";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(ball.radius * 0.24, -ball.radius * 0.7);
+        ctx.lineTo(ball.radius * 0.42, -ball.radius * 0.95);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawParticles() {
+      for (const p of state.particles) {
+        const fadeAfter = Number.isFinite(p.fadeAfter) ? p.fadeAfter : Math.min(0.2, p.maxLife * 0.45);
+        const age = Number.isFinite(p.age) ? p.age : 0;
+        const fadeSpan = Math.max(0.05, p.maxLife - fadeAfter);
+        const a = age <= fadeAfter ? 1 : clamp(1 - (age - fadeAfter) / fadeSpan, 0, 1);
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot || 0);
+        ctx.globalAlpha = a;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size * 0.5, -p.size * 0.5, p.size, p.size);
+        ctx.restore();
+      }
+    }
+
+    function drawFireZones() {
+      for (const z of state.fireZones) {
+        const a = clamp(z.time / z.maxTime, 0, 1);
+        ctx.fillStyle = `rgba(255,123,64,${(0.26 * a).toFixed(3)})`;
+        ctx.beginPath();
+        ctx.arc(z.x, z.y, z.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function drawHUD() {
+      const timer = `${formatTime(state.time)} / 3:00`;
+      const waveText = `Wave ${state.waveReached}/20`;
+      const xpRatio = getLevelProgress();
+
+      ctx.fillStyle = "rgba(7,17,24,.55)";
+      ctx.fillRect(12, 10, 516, 52);
+      ctx.fillStyle = "#f2f9ff";
+      ctx.font = "bold 18px Trebuchet MS";
+      ctx.fillText(`Time ${timer}`, 20, 31);
+      ctx.fillText(waveText, 195, 31);
+      ctx.fillText(`Lv ${state.level}`, 352, 31);
+      ctx.fillStyle = "#ffd98e";
+      ctx.fillText(`Gold ${state.goldRun}`, 432, 31);
+
+      ctx.fillStyle = "rgba(7,17,24,.7)";
+      ctx.fillRect(18, 40, 504, 12);
+      ctx.fillStyle = "#7cd8ff";
+      ctx.fillRect(18, 40, 504 * xpRatio, 12);
+      ctx.font = "12px Trebuchet MS";
+      ctx.fillStyle = "#d6ecf9";
+      ctx.fillText(`XP ${Math.floor(state.xp)}`, 22, 50);
+
+      drawAmmoQueue();
+    }
+
+    function drawAmmoQueue() {
+      const lastMerge = state.lastMergeText;
+      if (lastMerge && lastMerge.life > 0) {
+        ctx.globalAlpha = clamp(lastMerge.life / lastMerge.maxLife, 0, 1);
+        ctx.fillStyle = "#ecfdff";
+        ctx.font = "bold 22px Trebuchet MS";
+        ctx.fillText("MERGE!", lastMerge.x - 38, lastMerge.y);
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    function drawDebugOverlay() {
+      if (!state.debugVisible) return;
+      const lines = [
+        `time: ${formatTime(state.time)}`,
+        `wave: ${state.waveReached}`,
+        `active enemies: ${state.enemies.length}`,
+        `wall hp: ${Math.ceil(state.wallHp)}/${state.wallMaxHp}`,
+        `level/xp: ${state.level} / ${Math.floor(state.xp)}`,
+        `gold run: ${state.goldRun}`,
+        `balls field: ${state.balls.length}`,
+        `queue: ${state.ammoQueue.length}`,
+        `shots: ${state.shots}`,
+        `kills: ${state.kills}`,
+        `merges: ${state.merges}`,
+        `max ball level: ${state.maxBallLevel}`,
+        `upgrades: ${state.upgradesChosen.length}`,
+        `damage mult: x${state.mods.allBallDamageMult.toFixed(2)}`,
+        `enemy cap: ${state.enemies.length >= CONFIG.enemyCaps.hard ? "HARD" : state.enemies.length >= CONFIG.enemyCaps.soft ? "SOFT" : "OK"}`
+      ];
+      const h = 16 * lines.length + 12;
+      ctx.fillStyle = "rgba(2,8,12,.7)";
+      ctx.fillRect(16, 78, 228, h);
+      ctx.fillStyle = "#c9e8f6";
+      ctx.font = "12px Consolas, monospace";
+      for (let i = 0; i < lines.length; i += 1) {
+        ctx.fillText(lines[i], 24, 96 + i * 16);
+      }
+    }
+
+    function render() {
+      ctx.save();
+      if (state && state.screenShake > 0) {
+        const s = state.screenShake * 0.45;
+        ctx.translate(rand(-s, s), rand(-s, s));
+      }
+
+      drawBackground();
+      if (state) {
+        drawFireZones();
+        drawAimLine();
+        for (const e of state.enemies) drawEnemy(e);
+        for (const b of state.balls) drawBall(b);
+        drawParticles();
+        drawWall();
+        drawLauncher();
+        drawHUD();
+        drawDebugOverlay();
+      }
+      ctx.restore();
+    }
+
+    function frame(now) {
+      const dt = clamp((now - lastTime) / 1000, 0, 0.033);
+      lastTime = now;
+      if (state && state.phase === "playing") {
+        updateGameplay(dt);
+      } else if (state) {
+        updateParticles(dt);
+      }
+      updateButtons();
+      render();
+      requestAnimationFrame(frame);
+    }
+
+    function updateButtons() {
+      if (!state) return;
+      if (state.phase === "playing") {
+        if (state.collectCooldown > 0) {
+          collectBtn.textContent = `Collect ${state.collectCooldown.toFixed(1)}s`;
+          collectBtn.disabled = true;
+        } else {
+          collectBtn.textContent = "Collect All";
+          const hasSleeping = state.balls.some((b) => b.state === BALL_STATE.SLEEPING);
+          collectBtn.disabled = !hasSleeping;
+        }
+        const waitingAmmo = state.ammoQueue.length === 0;
+        shootBtn.disabled = waitingAmmo;
+        shootBtn.textContent = waitingAmmo ? "Reloading..." : "Shoot";
+        updateAmmoPanel();
+      } else {
+        collectBtn.disabled = true;
+        shootBtn.disabled = true;
+        shootBtn.textContent = "Shoot";
+      }
+    }
+
+    function updateAmmoPanel() {
+      const slots = [state.ammoQueue[0], state.ammoQueue[1], state.ammoQueue[2]];
+      renderAmmoSlot(ammoCurrentEl, slots[0], true);
+      renderAmmoSlot(ammoNext1El, slots[1], false);
+      renderAmmoSlot(ammoNext2El, slots[2], false);
+      const waiting = state.phase === "playing" && state.ammoQueue.length === 0;
+      ammoCountsEl.textContent = waiting ? `Waiting | Field ${state.balls.length}` : `Field ${state.balls.length} | Queue ${state.ammoQueue.length}`;
+    }
+
+    function renderAmmoSlot(el, slot, isCurrent) {
+      if (!slot) {
+        el.style.background = "rgba(255,255,255,.08)";
+        el.textContent = isCurrent ? "…" : "";
+        return;
+      }
+      const base = getBallBase(slot.type, slot.level);
+      el.style.background = base.color;
+      el.textContent = slot.level;
+      el.style.transform = isCurrent ? "scale(1)" : "scale(0.9)";
+    }
+
+    function refreshMetaUI() {
+      metaGold.textContent = `Gold: ${save.gold}`;
+      metaCards.innerHTML = "";
+      const cards = [
+        {
+          id: "wallHpLevel",
+          label: "Base Wall HP",
+          values: CONFIG.meta.wallHpValues,
+          costs: CONFIG.meta.wallHpCosts
+        },
+        {
+          id: "ballDmgLevel",
+          label: "Base Ball Damage",
+          values: CONFIG.meta.ballDmgValues.map((v) => `${Math.round(v * 100)}%`),
+          costs: CONFIG.meta.ballDmgCosts
+        },
+        {
+          id: "startBallLevel",
+          label: "Start Ball Count",
+          values: CONFIG.meta.startBallValues,
+          costs: CONFIG.meta.startBallCosts
+        }
+      ];
+      for (const c of cards) {
+        const level = save[c.id];
+        const maxLevel = c.values.length - 1;
+        const nextLevel = level + 1;
+        const canUpgrade = level < maxLevel;
+        const cost = canUpgrade ? c.costs[level] : null;
+
+        const row = document.createElement("div");
+        row.className = "card";
+        const currentValue = c.values[level];
+        const nextValue = canUpgrade ? c.values[nextLevel] : "MAX";
+        row.innerHTML = `
+          <div class="row"><strong>${c.label}</strong><span class="chip">Lv ${level}</span></div>
+          <small>Current: ${currentValue} | Next: ${nextValue}</small>
+        `;
+        const buy = document.createElement("button");
+        buy.type = "button";
+        buy.className = "btn";
+        buy.style.marginTop = "8px";
+        if (canUpgrade) {
+          buy.textContent = `Buy (${cost}g)`;
+          buy.disabled = save.gold < cost;
+          buy.addEventListener("click", () => {
+            if (save.gold < cost) return;
+            save.gold -= cost;
+            save[c.id] += 1;
+            saveSave();
+            refreshMetaUI();
+          });
+        } else {
+          buy.textContent = "Maxed";
+          buy.disabled = true;
+        }
+        row.appendChild(buy);
+        metaCards.appendChild(row);
+      }
+    }
+
+    function startRun() {
+      state = newRunState();
+      resultOverlay.classList.remove("show");
+      levelOverlay.classList.remove("show");
+      metaOverlay.classList.remove("show");
+      pointer.aiming = false;
+      updateAmmoPanel();
+    }
+
+    function openMeta() {
+      metaOverlay.classList.add("show");
+      levelOverlay.classList.remove("show");
+      resultOverlay.classList.remove("show");
+      refreshMetaUI();
+      if (state) state.phase = "meta";
+      updateButtons();
+    }
+
+    function attachEvents() {
+      canvas.addEventListener("pointerdown", (ev) => {
+        if (!state || state.phase !== "playing") return;
+        pointerId = ev.pointerId;
+        pointer.aiming = true;
+        const p = localCanvasPoint(ev);
+        pointer.x = p.x;
+        pointer.y = p.y;
+        updateAimFromPoint(pointer.x, pointer.y);
+      });
+
+      canvas.addEventListener("pointermove", (ev) => {
+        if (!state || state.phase !== "playing") return;
+        if (pointerId !== null && ev.pointerId !== pointerId) return;
+        const p = localCanvasPoint(ev);
+        pointer.x = p.x;
+        pointer.y = p.y;
+        updateAimFromPoint(pointer.x, pointer.y);
+      });
+
+      canvas.addEventListener("pointerup", (ev) => {
+        if (!state || state.phase !== "playing") return;
+        if (pointerId !== null && ev.pointerId !== pointerId) return;
+        pointer.aiming = false;
+        pointerId = null;
+        shootCurrentBall();
+      });
+
+      canvas.addEventListener("pointercancel", () => {
+        pointer.aiming = false;
+        pointerId = null;
+      });
+
+      collectBtn.addEventListener("click", collectSleepingBalls);
+      shootBtn.addEventListener("click", shootCurrentBall);
+      levelContinueBtn.addEventListener("click", () => {
+        if (!state || !state.selectedUpgradeId) return;
+        chooseUpgrade(state.selectedUpgradeId);
+      });
+      debugToggle.addEventListener("click", () => {
+        if (state) state.debugVisible = !state.debugVisible;
+      });
+      document.addEventListener("keydown", (ev) => {
+        if (!state) return;
+        if (ev.key === "d" || ev.key === "D") {
+          state.debugVisible = !state.debugVisible;
+        } else if (ev.key === " ") {
+          ev.preventDefault();
+          shootCurrentBall();
+        }
+      });
+
+      startRunBtn.addEventListener("click", startRun);
+      resetSaveBtn.addEventListener("click", resetSave);
+      addGoldBtn.addEventListener("click", () => {
+        save.gold += 100;
+        saveSave();
+        refreshMetaUI();
+      });
+      toMetaBtn.addEventListener("click", () => {
+        openMeta();
+      });
+      playAgainBtn.addEventListener("click", () => {
+        startRun();
+      });
+    }
+
+    function boot() {
+      state = newRunState();
+      state.phase = "meta";
+      refreshMetaUI();
+      attachEvents();
+      requestAnimationFrame(frame);
+    }
+
+    boot();
+  </script>
+</body>
+</html>

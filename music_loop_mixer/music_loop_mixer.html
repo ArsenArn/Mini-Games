@@ -213,6 +213,8 @@
     .slot.active .performer{background:linear-gradient(180deg,color-mix(in srgb,var(--sound-color),white 16%),color-mix(in srgb,var(--sound-color),black 45%));animation:beatPulse .6s ease-in-out infinite}
     .slot.queuedStop{border-color:rgba(255,209,102,.78);background:rgba(255,209,102,.08);opacity:.82}
     .slot.queuedStop .performer{filter:saturate(.6);animation:waitingRing 1.4s linear infinite}
+    .slot.muted{filter:saturate(.62)}
+    .slot.muted .performer{opacity:.72}
     .badge{
       position:absolute;
       right:8px;
@@ -225,6 +227,26 @@
       font-size:10px;
       font-weight:900;
       text-transform:uppercase;
+    }
+    .muteBtn{
+      position:absolute;
+      left:8px;
+      top:8px;
+      min-width:42px;
+      min-height:26px;
+      border:1px solid rgba(255,255,255,.16);
+      border-radius:999px;
+      background:rgba(0,0,0,.34);
+      color:var(--text);
+      font-size:10px;
+      font-weight:900;
+      text-transform:uppercase;
+      cursor:pointer;
+      z-index:2;
+    }
+    .muteBtn.isMuted{
+      background:rgba(255,95,109,.22);
+      border-color:rgba(255,95,109,.44);
     }
     @keyframes waitingRing{
       0%{box-shadow:0 0 0 0 rgba(84,224,255,.36),0 12px 22px rgba(0,0,0,.22)}
@@ -317,7 +339,7 @@
       <div class="titleRow">
         <div>
           <h1>Loop Crew Mixer</h1>
-          <p class="meta">100 BPM &middot; 4/4 &middot; 4-bar synchronized cycle</p>
+          <p class="meta" id="packMeta">Cycle loading from MP3 metadata</p>
         </div>
       </div>
       <div class="transport" id="transportControls"></div>
@@ -325,7 +347,7 @@
         <div class="cycleDial" id="cycleDial"><span id="cycleCount">0%</span></div>
         <div class="statusText">
           <strong id="statusTitle">Transport stopped</strong>
-          <small id="statusDetail">Press Play, pick a loop, then tap a performer slot. Starts wait for the next 4-bar cycle.</small>
+          <small id="statusDetail">Press Play, pick a loop, then tap a performer slot. Starts wait for the next loop cycle.</small>
         </div>
       </div>
       <div class="error" id="errorBox"></div>
@@ -352,9 +374,9 @@
     const PACK_CONFIG = {
       id: "pack_01",
       title: "Pack 01",
-      bpm: 100,
+      bpm: 130,
       timeSignature: [4, 4],
-      cycleLength: "4m",
+      loopCycleSeconds: 7.3925,
       basePath: "audio/pack_01/"
     };
 
@@ -413,7 +435,8 @@
       name: slot.name,
       state: "empty",
       soundId: null,
-      queuedSoundId: null
+      queuedSoundId: null,
+      muted: false
     }));
     const queuedStarts = new Map();
     const queuedStops = new Set();
@@ -451,11 +474,9 @@
         this.loadPlayers();
 
         // Musical synchronization core:
-        // queued starts and stops are only applied inside this 4-bar repeat.
+        // queued starts and stops are only applied inside this loop-length repeat.
         // Click handlers mutate queuedStarts/queuedStops, but never start audio directly.
-        this.boundaryEventId = Tone.Transport.scheduleRepeat((time) => {
-          this.applyQueuedActions(time);
-        }, PACK_CONFIG.cycleLength, 0);
+        this.scheduleCycleBoundary();
 
         this.initialized = true;
         return true;
@@ -464,6 +485,7 @@
       async startTransport() {
         const ready = await this.init();
         if (!ready) return false;
+        await this.detectLoopDuration();
         await Tone.start();
         if (Tone.Transport.state !== "started") {
           Tone.Transport.start("+0.05");
@@ -489,7 +511,53 @@
         queuedStops.delete(characterId);
         character.state = "queuedStart";
         character.queuedSoundId = soundId;
+        character.muted = false;
         renderAll();
+      },
+
+      scheduleCycleBoundary() {
+        if (this.boundaryEventId !== null) {
+          Tone.Transport.clear(this.boundaryEventId);
+        }
+        this.boundaryEventId = Tone.Transport.scheduleRepeat((time) => {
+          this.applyQueuedActions(time);
+        }, PACK_CONFIG.loopCycleSeconds, 0);
+      },
+
+      async detectLoopDuration() {
+        const reference = mediaElements.get("drums_1");
+        if (!reference) return;
+        const audio = reference.audio;
+        if (Number.isFinite(audio.duration) && audio.duration > 1) {
+          this.setLoopCycleSeconds(audio.duration / 2);
+          return;
+        }
+        await new Promise((resolve) => {
+          let settled = false;
+          const done = () => {
+            if (settled) return;
+            settled = true;
+            audio.removeEventListener("loadedmetadata", done);
+            audio.removeEventListener("error", done);
+            resolve();
+          };
+          audio.addEventListener("loadedmetadata", done, { once: true });
+          audio.addEventListener("error", done, { once: true });
+          window.setTimeout(done, 1200);
+          audio.load();
+        });
+        if (Number.isFinite(audio.duration) && audio.duration > 1) {
+          this.setLoopCycleSeconds(audio.duration / 2);
+        }
+      },
+
+      setLoopCycleSeconds(duration) {
+        const rounded = Math.round(duration * 1000) / 1000;
+        if (!Number.isFinite(rounded) || rounded <= 1) return;
+        if (Math.abs(PACK_CONFIG.loopCycleSeconds - rounded) < 0.001) return;
+        PACK_CONFIG.loopCycleSeconds = rounded;
+        this.scheduleCycleBoundary();
+        renderPackMeta();
       },
 
       queueStop(characterId) {
@@ -524,6 +592,7 @@
           character.state = "empty";
           character.soundId = null;
           character.queuedSoundId = null;
+          character.muted = false;
         });
         currentCycle = 0;
         isPlaying = false;
@@ -534,7 +603,7 @@
         currentCycle += 1;
 
         // Stops are applied at the cycle edge first, so removed loops do not
-        // leak into the next 4-bar phrase.
+        // leak into the next loop-length phrase.
         queuedStops.forEach((characterId) => {
           const character = getCharacter(characterId);
           if (!character || !character.soundId) return;
@@ -542,6 +611,7 @@
           character.soundId = null;
           character.queuedSoundId = null;
           character.state = "empty";
+          character.muted = false;
         });
         queuedStops.clear();
 
@@ -557,7 +627,7 @@
 
         characters.forEach((character) => {
           if (character.state === "active" && character.soundId) {
-            this.startSound(character.soundId, time);
+            this.startSound(character.soundId, time, character.muted);
           }
         });
 
@@ -566,9 +636,9 @@
 
       getCycleProgress() {
         if (!window.Tone || !this.initialized || Tone.Transport.state !== "started") return 0;
-        const cycleTicks = Tone.Time(PACK_CONFIG.cycleLength).toTicks();
-        if (!cycleTicks) return 0;
-        return (Tone.Transport.ticks % cycleTicks) / cycleTicks;
+        const cycleSeconds = PACK_CONFIG.loopCycleSeconds;
+        if (!cycleSeconds) return 0;
+        return (Tone.Transport.seconds % cycleSeconds) / cycleSeconds;
       },
 
       loadPlayers() {
@@ -629,20 +699,37 @@
         });
       },
 
-      startSound(soundId, time) {
+      startSound(soundId, time, muted = false) {
         const loaded = loadedPlayers.get(soundId);
         if (loaded && loaded.loaded && loaded.player) {
           this.stopFallbackSound(soundId, time);
           this.stopMediaSound(soundId);
+          loaded.player.volume.value = muted ? -Infinity : 0;
           loaded.player.stop(time);
-          loaded.player.start(time, 0, Tone.Time(PACK_CONFIG.cycleLength).toSeconds());
+          loaded.player.start(time, 0, PACK_CONFIG.loopCycleSeconds);
           return;
         }
-        if (this.startMediaSound(soundId)) {
+        if (this.startMediaSound(soundId, muted)) {
           this.stopFallbackSound(soundId, time);
           return;
         }
-        this.startFallbackSound(soundId, time);
+        this.startFallbackSound(soundId, time, muted);
+      },
+
+      setSoundMuted(soundId, muted) {
+        if (!soundId) return;
+        const loaded = loadedPlayers.get(soundId);
+        if (loaded && loaded.player) {
+          loaded.player.volume.value = muted ? -Infinity : 0;
+        }
+        const media = mediaElements.get(soundId);
+        if (media) media.audio.muted = muted;
+        const hasRealAudio = (loaded && loaded.loaded) || (media && !media.failed);
+        if (muted) {
+          this.stopFallbackSound(soundId);
+        } else if (!hasRealAudio && Tone.Transport.state === "started") {
+          this.startFallbackSound(soundId, null, false);
+        }
       },
 
       stopSound(soundId, time) {
@@ -669,12 +756,13 @@
         });
       },
 
-      startMediaSound(soundId) {
+      startMediaSound(soundId, muted = false) {
         const media = mediaElements.get(soundId);
         if (!media || media.failed) return false;
         const { audio } = media;
         try {
           audio.pause();
+          audio.muted = muted;
           if (audio.readyState > 0) audio.currentTime = 0;
           const playPromise = audio.play();
           if (playPromise && typeof playPromise.catch === "function") {
@@ -709,7 +797,8 @@
         this.activeFallbacks.clear();
       },
 
-      startFallbackSound(soundId, time) {
+      startFallbackSound(soundId, time, muted = false) {
+        if (muted) return;
         if (this.activeFallbacks.has(soundId)) return;
         const sound = getSound(soundId);
         if (!sound) return;
@@ -732,7 +821,7 @@
           this.triggerPlaceholderEvent(sound.category, event, time);
         }, this.createFallbackEvents(sound));
         part.loop = true;
-        part.loopEnd = PACK_CONFIG.cycleLength;
+        part.loopEnd = PACK_CONFIG.loopCycleSeconds;
         part.humanize = false;
         this.fallbackParts.set(sound.id, part);
         return part;
@@ -791,20 +880,37 @@
       characters.forEach((character) => {
         const soundId = character.queuedSoundId || character.soundId;
         const sound = getSound(soundId);
-        const slot = document.createElement("button");
-        slot.type = "button";
+        const slot = document.createElement("div");
         slot.className = `slot ${character.state}`;
+        if (character.muted) slot.classList.add("muted");
         slot.dataset.characterId = character.id;
+        slot.tabIndex = 0;
+        slot.setAttribute("role", "button");
         slot.style.setProperty("--sound-color", sound ? sound.color : "#54e0ff");
         if (selectedSoundId && character.state === "empty") slot.classList.add("selectedTarget");
-        const stateLabel = character.state === "queuedStart" ? "Queued" : character.state === "queuedStop" ? "Leaving" : character.state === "active" ? "Active" : "Empty";
+        const stateLabel = character.muted && character.state === "active" ? "Muted" : character.state === "queuedStart" ? "Queued" : character.state === "queuedStop" ? "Leaving" : character.state === "active" ? "Active" : "Empty";
+        const muteButton = character.soundId && (character.state === "active" || character.state === "queuedStop") ? `<button class="muteBtn${character.muted ? " isMuted" : ""}" type="button" data-mute-character="${character.id}">${character.muted ? "Off" : "On"}</button>` : "";
         slot.innerHTML = `
+          ${muteButton}
           <span class="badge">${stateLabel}</span>
           <div class="performer" aria-hidden="true"></div>
           <div class="slotLabel">${sound ? sound.shortLabel : character.name}</div>
           <div class="slotMeta">${sound ? `${sound.code} &middot; ${sound.displayName}` : ""}</div>
         `;
         slot.addEventListener("click", () => handleCharacterClick(character.id));
+        slot.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            handleCharacterClick(character.id);
+          }
+        });
+        const mute = slot.querySelector(".muteBtn");
+        if (mute) {
+          mute.addEventListener("click", (event) => {
+            event.stopPropagation();
+            handleMuteToggle(character.id);
+          });
+        }
         grid.appendChild(slot);
       });
     }
@@ -881,10 +987,16 @@
         return;
       }
       const progress = AudioEngine.getCycleProgress();
-      const cycleSeconds = window.Tone ? Tone.Time(PACK_CONFIG.cycleLength).toSeconds() : 0;
+      const cycleSeconds = PACK_CONFIG.loopCycleSeconds;
       const secondsLeft = Math.max(0, cycleSeconds - progress * cycleSeconds);
       byId("statusTitle").textContent = pendingStarts || pendingStops ? `Next drop in ${secondsLeft.toFixed(1)}s` : `Cycle ${currentCycle}`;
-      byId("statusDetail").textContent = pendingStarts || pendingStops ? "Queued actions will enter together at the next 4-bar boundary." : "All active loops are locked to the same 4-bar Transport grid.";
+      byId("statusDetail").textContent = pendingStarts || pendingStops ? "Queued actions will enter together at the next loop boundary." : "All active loops are locked to the same MP3-length cycle.";
+    }
+
+    function renderPackMeta() {
+      const meta = byId("packMeta");
+      if (!meta) return;
+      meta.textContent = `${PACK_CONFIG.bpm} BPM / ${PACK_CONFIG.loopCycleSeconds.toFixed(3)}s half-loop cycle`;
     }
 
     function renderAll() {
@@ -892,6 +1004,7 @@
       renderCategoryTabs();
       renderSoundLibrary();
       renderStatusText();
+      renderPackMeta();
     }
 
     // 5. Event handlers
@@ -944,6 +1057,14 @@
         AudioEngine.queueStart(characterId, selectedSoundId);
         selectedSoundId = null;
       }
+    }
+
+    function handleMuteToggle(characterId) {
+      const character = getCharacter(characterId);
+      if (!character || !character.soundId) return;
+      character.muted = !character.muted;
+      AudioEngine.setSoundMuted(character.soundId, character.muted);
+      renderAll();
     }
 
     function handleBackToLauncher() {
