@@ -183,7 +183,6 @@
       overflow:hidden;
       transition:transform .16s ease, border-color .16s ease, background .16s ease;
     }
-    .slot:nth-child(7){grid-column:1 / -1;min-height:104px}
     .slot:hover{transform:translateY(-1px);border-color:rgba(255,255,255,.2)}
     .slot.selectedTarget{border-color:var(--cyan)}
     .performer{
@@ -323,7 +322,6 @@
       .stage{min-height:520px}
       .library{align-self:stretch}
       .crewGrid{grid-template-columns:repeat(3,minmax(0,1fr))}
-      .slot:nth-child(7){grid-column:2 / 3}
       .padGrid{grid-template-columns:repeat(2,minmax(0,1fr));max-height:none}
     }
     @media (max-width:380px){
@@ -414,7 +412,12 @@
       { id: "slot_4", name: "Crew 4" },
       { id: "slot_5", name: "Crew 5" },
       { id: "slot_6", name: "Crew 6" },
-      { id: "slot_7", name: "Crew 7" }
+      { id: "slot_7", name: "Crew 7" },
+      { id: "slot_8", name: "Crew 8" },
+      { id: "slot_9", name: "Crew 9" },
+      { id: "slot_10", name: "Crew 10" },
+      { id: "slot_11", name: "Crew 11" },
+      { id: "slot_12", name: "Crew 12" }
     ];
 
     const CATEGORY_CONFIG = [
