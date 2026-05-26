@@ -1595,7 +1595,8 @@
             pointerStepCooldown: 0,
             keyDirection: null,
             keyboardStepCooldown: 0,
-            campaignRemoveCompletedWorms: !!Save.data.campaignRemoveCompletedWorms
+            campaignRemoveCompletedWorms: !!Save.data.campaignRemoveCompletedWorms,
+            manualSelectionRequired: false
           };
           this.time = 0;
           this.lastTime = performance.now();
@@ -1863,6 +1864,7 @@
         selectFirstActiveWorm() {
           const first = this.getActiveWorms()[0] || null;
           this.state.selection = first ? { id: first.id } : null;
+          this.state.manualSelectionRequired = false;
         }
         ensureSelectableSelection(lostWormId = null) {
           if (!this.board) {
@@ -1871,6 +1873,10 @@
           }
           const current = this.board.worms.find((worm) => worm.id === this.state.selection?.id) || null;
           if (current && this.isWormSelectable(current)) return;
+          if (this.state.manualSelectionRequired) {
+            this.state.selection = null;
+            return;
+          }
           const activeIndexes = this.board.worms
             .map((worm, index) => (this.isWormSelectable(worm) ? index : -1))
             .filter((index) => index >= 0);
@@ -1888,6 +1894,21 @@
           }
           this.state.selection = { id: this.board.worms[pickIndex].id };
         }
+        clearSelectionAfterCompletedRemoval() {
+          if (this.state.pointer?.id !== null && this.state.pointer?.id !== undefined) {
+            try { this.refs.canvas.releasePointerCapture(this.state.pointer.id); } catch (error) {}
+          }
+          this.state.selection = null;
+          this.state.selectedEnd = "head";
+          this.state.pointer = null;
+          this.state.pointerBoard = null;
+          this.state.dragging = false;
+          this.state.dragDistance = 0;
+          this.state.keyDirection = null;
+          this.state.pointerStepCooldown = 0;
+          this.state.keyboardStepCooldown = 0;
+          this.state.manualSelectionRequired = true;
+        }
         resetInput() {
           if (this.state.pointer?.id !== null && this.state.pointer?.id !== undefined) {
             try { this.refs.canvas.releasePointerCapture(this.state.pointer.id); } catch (error) {}
@@ -1899,6 +1920,7 @@
           this.state.pointerStepCooldown = 0;
           this.state.keyDirection = null;
           this.state.keyboardStepCooldown = 0;
+          this.state.manualSelectionRequired = false;
         }
         generateSandbox() {
           this.readDesignerInputs();
@@ -2050,6 +2072,7 @@
             const selectionBefore = this.state.selection?.id || null;
             this.state.selection = { id: worm.id };
             this.state.selectedEnd = this.pickEndForCell(worm, cell);
+            this.state.manualSelectionRequired = false;
             this.state.pointer = {
               id: event.pointerId,
               startX: event.clientX,
@@ -2087,6 +2110,7 @@
             if (worm) {
               if (pointer.selectionBefore === worm.id) this.state.selectedEnd = this.state.selectedEnd === "head" ? "tail" : "head";
               else this.state.selection = { id: worm.id };
+              this.state.manualSelectionRequired = false;
               this.updateUI();
             } else {
               this.ensureSelectableSelection(pointer.hitId || null);
@@ -2151,6 +2175,7 @@
           const next = active[(current + 1 + active.length) % active.length];
           this.state.selection = { id: next.id };
           this.state.selectedEnd = "head";
+          this.state.manualSelectionRequired = false;
           this.updateUI();
         }
         stepSelected(direction, options = {}) {
@@ -2194,6 +2219,7 @@
         refreshCompletion(skipVictory) {
           if (!this.board) return;
           const removeCompletedWorms = !!this.board.settings?.removeCompletedWorms;
+          let keepSelectionCleared = false;
           const previousCompletedPipeIds = new Set(this.board.pipes.filter((pipe) => pipe.completed).map((pipe) => pipe.id));
           for (const worm of this.board.worms) {
             if (worm.hidden || worm.removing) worm.completed = true;
@@ -2251,7 +2277,12 @@
               }
               const selectedId = this.state.selection?.id || null;
               const selectedRemoved = selectedId && fresh.some((pipe) => pipe.connectedWormId === selectedId);
-              this.ensureSelectableSelection(selectedRemoved ? selectedId : null);
+              if (selectedRemoved) {
+                this.clearSelectionAfterCompletedRemoval();
+                keepSelectionCleared = true;
+              } else {
+                this.ensureSelectableSelection();
+              }
               this.toast("Worm cleared.", "success");
             } else {
               this.toast("Worm placed.", "success");
@@ -2264,7 +2295,7 @@
             this.emitVictoryField();
             this.toast("Perfect placement.", "success");
           }
-          this.ensureSelectableSelection();
+          if (!keepSelectionCleared) this.ensureSelectableSelection();
           this.updateUI();
         }
         addPlacementBurst(pipe) {
