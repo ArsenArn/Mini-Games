@@ -566,7 +566,7 @@
 
       <section class="panel tipsCard">
         <h2>Signals</h2>
-        <p class="muted">Completed worms glow on target and can still be moved by default. Enable "Remove completed worms" to clear solved worms and pipes. Wrong color or length can touch a socket, but it will not count.</p>
+        <p class="muted">Completed worms glow on target and can still be moved by default. Some targets are sockets-only (no line): connect both sockets with matching color and length. Enable "Remove completed worms" to clear solved worms and pipes.</p>
         <div id="toastStack" class="toastStack"></div>
       </section>
     </aside>
@@ -655,6 +655,7 @@
           <label class="field"><span>Field height</span><input id="fieldHeightInput" data-setting="fieldHeight" type="number" min="5" max="30" step="1"></label>
           <label class="field"><span>Start worms</span><input id="startWormsInput" data-setting="startWorms" type="number" min="1" max="40" step="1"></label>
           <label class="field"><span>Pipe pairs</span><input id="pipePairsInput" data-setting="pipePairs" type="number" min="1" max="40" step="1"></label>
+          <label class="field"><span>Pipes without lines</span><input id="freeRoutePipePairsInput" data-setting="freeRoutePipePairs" type="number" min="0" max="40" step="1"></label>
           <label class="field"><span>Worm length min</span><input id="lengthMinInput" data-setting="lengthMin" type="number" min="2" max="12" step="1"></label>
           <label class="field"><span>Worm length max</span><input id="lengthMaxInput" data-setting="lengthMax" type="number" min="2" max="12" step="1"></label>
           <label class="field"><span>Colors</span><input id="colorCountInput" data-setting="colorCount" type="number" min="1" max="7" step="1"></label>
@@ -709,6 +710,7 @@
           colorCount: 3,
           obstaclePercent: 4,
           seed: "worm-jam",
+          freeRoutePipePairs: 0,
           removeCompletedWorms: false
         },
         INPUT: {
@@ -912,6 +914,15 @@
       };
 
       const Campaign = {
+        freeRouteCount(level, pipePairs) {
+          const safeLevel = Helpers.clamp(Number(level) || 1, 1, CONFIG.MAX_LEVEL);
+          const pairs = Math.max(0, Math.round(Number(pipePairs) || 0));
+          if (safeLevel < 20 || pairs <= 0) return 0;
+          const t = Helpers.clamp((safeLevel - 20) / 80, 0, 1);
+          const ratio = Helpers.lerp(0.10, 0.50, t);
+          const count = Math.round(pairs * ratio);
+          return Helpers.clamp(Math.max(1, count), 0, pairs);
+        },
         getSettings(level) {
           const safeLevel = Helpers.clamp(Number(level) || 1, 1, CONFIG.MAX_LEVEL);
           if (safeLevel === 1) {
@@ -925,7 +936,8 @@
               colorCount: 1,
               obstaclePercent: 0,
               colorOffset: 0,
-              seed: "campaign-001"
+              seed: "campaign-001",
+              freeRoutePipePairs: 0
             };
           }
           if (safeLevel <= 5) {
@@ -937,7 +949,12 @@
               { fieldWidth: 6, fieldHeight: 6, startWorms: 3, pipePairs: 3, lengthMin: 2, lengthMax: 3, colorCount: 2, obstaclePercent: 0 },
               { fieldWidth: 6, fieldHeight: 7, startWorms: 4, pipePairs: 4, lengthMin: 2, lengthMax: 4, colorCount: 3, obstaclePercent: 0 }
             ][safeLevel];
-            return { ...early, colorOffset: safeLevel - 1, seed: `campaign-${String(safeLevel).padStart(3, "0")}` };
+            return {
+              ...early,
+              colorOffset: safeLevel - 1,
+              seed: `campaign-${String(safeLevel).padStart(3, "0")}`,
+              freeRoutePipePairs: 0
+            };
           }
 
           const t = safeLevel - 6;
@@ -978,17 +995,19 @@
             colorCount += 1;
           }
 
+          const pipePairs = Helpers.clamp(count, 2, 22);
           return {
             fieldWidth: Helpers.clamp(width, 5, 20),
             fieldHeight: Helpers.clamp(height, 5, 30),
-            startWorms: Helpers.clamp(count, 2, 22),
-            pipePairs: Helpers.clamp(count, 2, 22),
+            startWorms: pipePairs,
+            pipePairs,
             lengthMin: Helpers.clamp(lengthMin, 2, 12),
             lengthMax: Helpers.clamp(Math.max(lengthMin, lengthMax), 2, 12),
             colorCount: Helpers.clamp(Math.max(colorCount, Math.ceil(count / 2)), 1, 7),
             obstaclePercent: safeLevel < 8 ? 0 : Helpers.clamp(5 + Math.floor((safeLevel - 8) / 7) + (band === 3 ? 2 : 0), 0, 15),
             colorOffset: safeLevel - 1,
-            seed: `campaign-${String(safeLevel).padStart(3, "0")}`
+            seed: `campaign-${String(safeLevel).padStart(3, "0")}`,
+            freeRoutePipePairs: Campaign.freeRouteCount(safeLevel, pipePairs)
           };
         },
         hint(level) {
@@ -997,6 +1016,7 @@
           if (level === 3) return "Colors matter: each worm belongs on the matching colored line.";
           if (level === 4) return "Length matters: the worm body must cover every cell of the line.";
           if (level === 5) return "Completed worms glow on target. You can still move them if you need to rearrange.";
+          if (level === 20) return "New: some targets have sockets only. Connect matching sockets with the correct color and length.";
           return "Place every worm on its matching pipe path.";
         }
       };
@@ -1014,6 +1034,7 @@
             obstaclePercent: Helpers.clamp(Number(settings.obstaclePercent) || 0, 0, 18),
             colorOffset: Math.max(0, Math.round(Number(settings.colorOffset) || 0)),
             seed: String(settings.seed || "worm-jam"),
+            freeRoutePipePairs: Math.max(0, Math.round(Number(settings.freeRoutePipePairs) || 0)),
             removeCompletedWorms: !!settings.removeCompletedWorms
           };
           if (repaired.lengthMax < repaired.lengthMin) repaired.lengthMax = repaired.lengthMin;
@@ -1033,6 +1054,7 @@
           count = Helpers.clamp(count, mode === "campaign" && Number(settings.level) > 1 ? 2 : 1, maxByArea);
           repaired.startWorms = count;
           repaired.pipePairs = count;
+          repaired.freeRoutePipePairs = Helpers.clamp(repaired.freeRoutePipePairs, 0, repaired.pipePairs);
           return repaired;
         },
         build(level, mode, inputSettings) {
@@ -1085,6 +1107,7 @@
               path: targetPath,
               a: { ...targetPath[0] },
               b: { ...targetPath[targetPath.length - 1] },
+              freeRoute: false,
               completed: false,
               removing: false,
               disappearT: 0,
@@ -1122,11 +1145,44 @@
             };
             const specs = LevelGenerator.buildSpecs(settings, rng);
             if (!LevelGenerator.placeTargets(board, specs, rng)) continue;
+            LevelGenerator.assignFreeRouteTargets(board, settings.freeRoutePipePairs, rng);
             LevelGenerator.placeWalls(board, settings, rng);
             if (!LevelGenerator.placeWorms(board, specs, rng)) continue;
             return board;
           }
           return null;
+        },
+        assignFreeRouteTargets(board, count, rng) {
+          const safeCount = Helpers.clamp(Math.round(Number(count) || 0), 0, board.pipes.length);
+          board.pipes.forEach((pipe) => { pipe.freeRoute = false; });
+          if (safeCount <= 0) return;
+          const grouped = new Map();
+          for (const pipe of board.pipes) {
+            const key = `${pipe.color}|${pipe.requiredLength}`;
+            if (!grouped.has(key)) grouped.set(key, []);
+            grouped.get(key).push(pipe);
+          }
+          let groups = Array.from(grouped.values());
+          rng.shuffle(groups);
+          groups.forEach((group) => rng.shuffle(group));
+          const picked = [];
+          while (picked.length < safeCount && groups.length) {
+            const nextGroups = [];
+            for (const group of groups) {
+              const pipe = group.pop();
+              if (pipe) picked.push(pipe);
+              if (picked.length >= safeCount) break;
+              if (group.length) nextGroups.push(group);
+            }
+            groups = nextGroups;
+          }
+          if (picked.length < safeCount) {
+            const left = board.pipes.filter((pipe) => !picked.includes(pipe));
+            rng.shuffle(left);
+            while (picked.length < safeCount && left.length) picked.push(left.pop());
+          }
+          const selected = new Set(picked.map((pipe) => pipe.id));
+          board.pipes.forEach((pipe) => { pipe.freeRoute = selected.has(pipe.id); });
         },
         buildSpecs(settings, rng) {
           const lengths = [];
@@ -1166,6 +1222,7 @@
               path,
               a: { ...path[0] },
               b: { ...path[path.length - 1] },
+              freeRoute: false,
               completed: false,
               removing: false,
               disappearT: 0,
@@ -1273,6 +1330,7 @@
               path,
               a: { ...path[0] },
               b: { ...path[path.length - 1] },
+              freeRoute: Helpers.clamp(Math.round(Number(settings.freeRoutePipePairs) || 0), 0, 1) > 0,
               completed: false,
               removing: false,
               disappearT: 0,
@@ -1389,18 +1447,24 @@
             ctx.save();
             ctx.lineCap = "round";
             ctx.lineJoin = "round";
-            ctx.strokeStyle = pipe.completed ? "rgba(54,184,123,.52)" : palette.pipe;
-            ctx.lineWidth = Math.max(10, this.view.cell * 0.34);
-            ctx.globalAlpha = (pipe.completed ? 0.9 : 0.72) * fade;
-            this.strokePath(ctx, points);
-            ctx.strokeStyle = pipe.completed ? "rgba(255,255,255,.88)" : palette.fill;
-            ctx.lineWidth = Math.max(3, this.view.cell * 0.1);
-            ctx.globalAlpha = (pipe.completed ? 0.95 : 0.42 + pulse * 0.16) * fade;
-            this.strokePath(ctx, points);
+            if (!pipe.freeRoute) {
+              ctx.strokeStyle = pipe.completed ? "rgba(54,184,123,.52)" : palette.pipe;
+              ctx.lineWidth = Math.max(10, this.view.cell * 0.34);
+              ctx.globalAlpha = (pipe.completed ? 0.9 : 0.72) * fade;
+              this.strokePath(ctx, points);
+              ctx.strokeStyle = pipe.completed ? "rgba(255,255,255,.88)" : palette.fill;
+              ctx.lineWidth = Math.max(3, this.view.cell * 0.1);
+              ctx.globalAlpha = (pipe.completed ? 0.95 : 0.42 + pulse * 0.16) * fade;
+              this.strokePath(ctx, points);
+            }
             ctx.globalAlpha = fade;
             this.drawSocket(ctx, pipe.a, palette, pipe.completed, pulse);
             this.drawSocket(ctx, pipe.b, palette, pipe.completed, pulse);
-            this.drawLengthLabel(ctx, points, pipe.requiredLength, palette, pipe.completed);
+            if (pipe.freeRoute) {
+              this.drawFreeRouteMarker(ctx, pipe.a, palette, pipe.completed, pulse);
+              this.drawFreeRouteMarker(ctx, pipe.b, palette, pipe.completed, pulse);
+            }
+            this.drawLengthLabel(ctx, pipe.freeRoute ? [this.cellCenter(pipe.a), this.cellCenter(pipe.b)] : points, pipe.requiredLength, palette, pipe.completed);
             ctx.restore();
           }
         }
@@ -1444,6 +1508,20 @@
           ctx.beginPath();
           ctx.arc(p.x, p.y, r * 0.42, 0, Math.PI * 2);
           ctx.fill();
+          ctx.restore();
+        }
+        drawFreeRouteMarker(ctx, cell, palette, completed, pulse) {
+          const p = this.cellCenter(cell);
+          const r = Math.max(11, this.view.cell * 0.39);
+          ctx.save();
+          ctx.globalAlpha = completed ? 0.6 : 0.45 + pulse * 0.2;
+          ctx.strokeStyle = completed ? "#36b87b" : palette.fill;
+          ctx.lineWidth = Math.max(1.5, this.view.cell * 0.04);
+          ctx.setLineDash([3, 4]);
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
           ctx.restore();
         }
         drawWorms(ctx, board) {
@@ -1837,6 +1915,7 @@
             }
           }
           for (const pipe of board.pipes) {
+            pipe.freeRoute = !!pipe.freeRoute;
             pipe.completed = !!pipe.completed;
             pipe.removing = !!pipe.removing;
             pipe.hidden = !!pipe.hidden;
@@ -1848,6 +1927,13 @@
               pipe.disappearT = 1;
             }
           }
+          const freeRouteCount = board.pipes.reduce((sum, pipe) => sum + (pipe.freeRoute ? 1 : 0), 0);
+          const settingsFreeRoute = Number(board.settings.freeRoutePipePairs);
+          board.settings.freeRoutePipePairs = Helpers.clamp(
+            Number.isFinite(settingsFreeRoute) ? settingsFreeRoute : freeRouteCount,
+            0,
+            board.pipes.length
+          );
           board.moves = Math.max(0, Math.round(Number(board.moves) || 0));
           board.completedCount = Math.max(0, Math.round(Number(board.completedCount) || 0));
           board.won = !!board.won;
@@ -1934,6 +2020,8 @@
             if (input.type === "checkbox") input.checked = !!this.sandboxSettings[key];
             else input.value = this.sandboxSettings[key] ?? "";
           }
+          const freeRouteInput = this.settingInputs.find((input) => input.dataset.setting === "freeRoutePipePairs");
+          if (freeRouteInput) freeRouteInput.max = String(this.sandboxSettings.pipePairs);
         }
         readDesignerInputs() {
           const next = {};
@@ -1949,7 +2037,9 @@
             if (input.type === "checkbox") input.checked = !!this.sandboxSettings[key];
             else input.value = this.sandboxSettings[key] ?? "";
           }
-          this.refs.designerNote.textContent = `Validated: ${this.sandboxSettings.fieldWidth}x${this.sandboxSettings.fieldHeight}, ${this.sandboxSettings.startWorms} worms, length ${this.sandboxSettings.lengthMin}-${this.sandboxSettings.lengthMax}, ${this.sandboxSettings.colorCount} colors, ${this.sandboxSettings.obstaclePercent}% obstacles, remove completed ${this.sandboxSettings.removeCompletedWorms ? "on" : "off"}.`;
+          const freeRouteInput = this.settingInputs.find((input) => input.dataset.setting === "freeRoutePipePairs");
+          if (freeRouteInput) freeRouteInput.max = String(this.sandboxSettings.pipePairs);
+          this.refs.designerNote.textContent = `Validated: ${this.sandboxSettings.fieldWidth}x${this.sandboxSettings.fieldHeight}, ${this.sandboxSettings.startWorms} worms, length ${this.sandboxSettings.lengthMin}-${this.sandboxSettings.lengthMax}, ${this.sandboxSettings.colorCount} colors, ${this.sandboxSettings.obstaclePercent}% obstacles, free-route ${this.sandboxSettings.freeRoutePipePairs}/${this.sandboxSettings.pipePairs}, remove completed ${this.sandboxSettings.removeCompletedWorms ? "on" : "off"}.`;
         }
         toggleDesigner(force) {
           const open = typeof force === "boolean" ? force : !this.state.designerOpen;
@@ -1977,6 +2067,7 @@
               ...Helpers.deepClone(CONFIG.DEFAULT_SANDBOX),
               ...(parsed.settings || {}),
               ...(board.settings || {}),
+              freeRoutePipePairs: Number((parsed.settings || {}).freeRoutePipePairs ?? (board.settings || {}).freeRoutePipePairs ?? 0) || 0,
               removeCompletedWorms: !!((parsed.settings || {}).removeCompletedWorms ?? (board.settings || {}).removeCompletedWorms ?? false)
             }, "sandbox");
             this.sandboxSettings = { ...importedSettings };
@@ -2216,6 +2307,22 @@
           }
           return !occupied.has(Helpers.cellKey(next.x, next.y));
         }
+        checkExactPathCompletion(worm, pipe) {
+          return BoardUtils.pathsEqual(worm.cells, pipe.path);
+        }
+        checkFreeRouteCompletion(worm, pipe) {
+          const tail = worm.cells[0];
+          const head = worm.cells[worm.cells.length - 1];
+          return (
+            (Helpers.sameCell(tail, pipe.a) && Helpers.sameCell(head, pipe.b)) ||
+            (Helpers.sameCell(tail, pipe.b) && Helpers.sameCell(head, pipe.a))
+          );
+        }
+        wormMatchesPipe(worm, pipe) {
+          if (worm.length !== pipe.requiredLength) return false;
+          if (worm.color !== pipe.color) return false;
+          return pipe.freeRoute ? this.checkFreeRouteCompletion(worm, pipe) : this.checkExactPathCompletion(worm, pipe);
+        }
         refreshCompletion(skipVictory) {
           if (!this.board) return;
           const removeCompletedWorms = !!this.board.settings?.removeCompletedWorms;
@@ -2240,9 +2347,7 @@
             const worm = this.board.worms.find((candidate) => {
               if (usedWorms.has(candidate.id)) return false;
               if (candidate.hidden || candidate.removing) return false;
-              if (candidate.length !== pipe.requiredLength) return false;
-              if (candidate.color !== pipe.color) return false;
-              return BoardUtils.pathsEqual(candidate.cells, pipe.path);
+              return this.wormMatchesPipe(candidate, pipe);
             });
             if (!worm) continue;
             pipe.completed = true;
@@ -2261,7 +2366,7 @@
           const fresh = this.board.pipes.filter((pipe) => pipe.completed && !previousCompletedPipeIds.has(pipe.id));
           if (completed > previous) {
             for (const pipe of fresh) {
-              this.emitParticles(pipe.path, pipe.color);
+              this.emitParticles(pipe.freeRoute ? [pipe.a, pipe.b] : pipe.path, pipe.color);
               this.addPlacementBurst(pipe);
             }
             if (removeCompletedWorms) {
@@ -2300,7 +2405,10 @@
         }
         addPlacementBurst(pipe) {
           const palette = CONFIG.COLORS[pipe.color] || CONFIG.COLORS.yellow;
-          const cells = [pipe.a, pipe.b, pipe.path[Math.floor(pipe.path.length / 2)]];
+          const middle = pipe.freeRoute
+            ? { x: (pipe.a.x + pipe.b.x) / 2, y: (pipe.a.y + pipe.b.y) / 2 }
+            : pipe.path[Math.floor(pipe.path.length / 2)];
+          const cells = [pipe.a, pipe.b, middle];
           for (const cell of cells) {
             this.bursts.push({
               cell: { ...cell },
@@ -2312,7 +2420,9 @@
         }
         emitVictoryField() {
           if (!this.board) return;
-          for (const pipe of this.board.pipes) this.emitParticles(pipe.path, pipe.color, 2.4);
+          for (const pipe of this.board.pipes) {
+            this.emitParticles(pipe.freeRoute ? [pipe.a, pipe.b] : pipe.path, pipe.color, 2.4);
+          }
         }
         emitParticles(path, colorKey, power = 1) {
           const palette = CONFIG.COLORS[colorKey] || CONFIG.COLORS.yellow;
@@ -2376,8 +2486,9 @@
             const palette = CONFIG.COLORS[pipe.color] || CONFIG.COLORS.yellow;
             const status = pipe.hidden ? "Removed" : pipe.removing ? "Removing..." : pipe.completed ? "Completed" : "Needs matching worm";
             const done = pipe.completed || pipe.hidden || pipe.removing;
+            const typeTag = pipe.freeRoute ? `<span class="tag">Free</span>` : "";
             return `<div class="targetItem ${done ? "done" : ""}">
-              <div class="targetTop"><span><i class="colorDot" style="background:${palette.fill}"></i>Target ${index + 1}</span><span class="tag">${pipe.requiredLength} cells</span></div>
+              <div class="targetTop"><span><i class="colorDot" style="background:${palette.fill}"></i>Target ${index + 1}</span><span class="tag">${pipe.requiredLength} cells</span>${typeTag}</div>
               <div class="muted">${status}</div>
             </div>`;
           }).join("");
