@@ -345,6 +345,26 @@
       font-weight:700;
       box-shadow:0 10px 20px rgba(24,49,79,.06);
     }
+    .menuOption{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:14px;
+      background:rgba(255,255,255,.62);
+      border:1px solid rgba(24,49,79,.07);
+      font-size:13px;
+      color:var(--text);
+      font-weight:700;
+    }
+    .menuOption input[type="checkbox"]{
+      width:18px;
+      height:18px;
+      accent-color:var(--accent);
+      margin:0;
+      flex:none;
+      cursor:pointer;
+    }
 
     .designerDrawer{
       position:fixed;
@@ -411,6 +431,31 @@
       font-family:Consolas,"SFMono-Regular","Liberation Mono",monospace;
       font-size:12px;
       line-height:1.35;
+    }
+    .field.checkField{
+      grid-column:1 / -1;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:15px;
+      background:rgba(255,255,255,.9);
+      border:1px solid rgba(24,49,79,.1);
+    }
+    .field.checkField span{
+      font-size:12px;
+      letter-spacing:.03em;
+      text-transform:none;
+      color:var(--text);
+      font-weight:700;
+    }
+    .field.checkField input[type="checkbox"]{
+      width:18px;
+      height:18px;
+      margin:0;
+      accent-color:var(--accent);
+      cursor:pointer;
+      flex:none;
     }
     .drawerNote,.toast{font-size:12px;color:var(--muted);line-height:1.45}
     .toast{background:rgba(36,77,130,.08);color:var(--accent);font-weight:700}
@@ -521,7 +566,7 @@
 
       <section class="panel tipsCard">
         <h2>Signals</h2>
-        <p class="muted">Completed worms glow on target but can still be moved. Wrong color or length can touch a socket, but it will not count.</p>
+        <p class="muted">Completed worms glow on target and can still be moved by default. Enable "Remove completed worms" to clear solved worms and pipes. Wrong color or length can touch a socket, but it will not count.</p>
         <div id="toastStack" class="toastStack"></div>
       </section>
     </aside>
@@ -549,6 +594,10 @@
             </label>
             <input id="campaignLevelInput" type="number" min="1" max="100" step="1" value="1" aria-label="Campaign start level">
           </div>
+          <label class="menuOption" for="campaignRemoveCompletedInput">
+            <input id="campaignRemoveCompletedInput" type="checkbox">
+            Remove completed worms
+          </label>
           <div class="screenButtons">
             <button id="campaignButton" class="actionButton accent" type="button">Campaign</button>
           </div>
@@ -611,6 +660,7 @@
           <label class="field"><span>Colors</span><input id="colorCountInput" data-setting="colorCount" type="number" min="1" max="7" step="1"></label>
           <label class="field"><span>Obstacles %</span><input id="obstaclePercentInput" data-setting="obstaclePercent" type="number" min="0" max="18" step="1"></label>
           <label class="field"><span>Seed</span><input id="seedInput" data-setting="seed" type="text"></label>
+          <label class="field checkField" for="removeCompletedWormsInput"><input id="removeCompletedWormsInput" data-setting="removeCompletedWorms" type="checkbox"><span>Remove completed worms</span></label>
         </div>
         <div class="drawerNote" id="designerNote">Pipe pairs are normalized to the worm count so every worm has one valid target.</div>
         <div class="buttonRow">
@@ -658,7 +708,8 @@
           lengthMax: 5,
           colorCount: 3,
           obstaclePercent: 4,
-          seed: "worm-jam"
+          seed: "worm-jam",
+          removeCompletedWorms: false
         },
         INPUT: {
           dragThreshold: 18,
@@ -668,6 +719,7 @@
         },
         ANIM: {
           wormMoveDuration: 0.09,
+          removeDuration: 0.42,
           toastDuration: 2.2,
           victoryDelay: 1
         }
@@ -758,7 +810,8 @@
       const Save = {
         data: {
           unlockedLevel: 1,
-          sandbox: Helpers.deepClone(CONFIG.DEFAULT_SANDBOX)
+          sandbox: Helpers.deepClone(CONFIG.DEFAULT_SANDBOX),
+          campaignRemoveCompletedWorms: false
         },
         load() {
           try {
@@ -767,8 +820,9 @@
             const parsed = JSON.parse(raw);
             this.data.unlockedLevel = Helpers.clamp(Number(parsed.unlockedLevel) || 1, 1, CONFIG.MAX_LEVEL);
             this.data.sandbox = { ...Helpers.deepClone(CONFIG.DEFAULT_SANDBOX), ...(parsed.sandbox || {}) };
+            this.data.campaignRemoveCompletedWorms = !!parsed.campaignRemoveCompletedWorms;
           } catch (error) {
-            this.data = { unlockedLevel: 1, sandbox: Helpers.deepClone(CONFIG.DEFAULT_SANDBOX) };
+            this.data = { unlockedLevel: 1, sandbox: Helpers.deepClone(CONFIG.DEFAULT_SANDBOX), campaignRemoveCompletedWorms: false };
           }
         },
         commit() {
@@ -780,6 +834,10 @@
         },
         saveSandbox(settings) {
           this.data.sandbox = Helpers.deepClone(settings);
+          this.commit();
+        },
+        saveCampaignOptions(options = {}) {
+          this.data.campaignRemoveCompletedWorms = !!options.removeCompletedWorms;
           this.commit();
         }
       };
@@ -955,7 +1013,8 @@
             colorCount: Helpers.clamp(Math.round(Number(settings.colorCount) || 1), 1, COLOR_KEYS.length),
             obstaclePercent: Helpers.clamp(Number(settings.obstaclePercent) || 0, 0, 18),
             colorOffset: Math.max(0, Math.round(Number(settings.colorOffset) || 0)),
-            seed: String(settings.seed || "worm-jam")
+            seed: String(settings.seed || "worm-jam"),
+            removeCompletedWorms: !!settings.removeCompletedWorms
           };
           if (repaired.lengthMax < repaired.lengthMin) repaired.lengthMax = repaired.lengthMin;
           let count = Math.max(repaired.startWorms, repaired.pipePairs);
@@ -1013,6 +1072,9 @@
               prevCells: startPath.map((cell) => ({ ...cell })),
               moveT: 1,
               completed: false,
+              removing: false,
+              disappearT: 0,
+              hidden: false,
               pulseSeed: 0
             }],
             pipes: [{
@@ -1024,6 +1086,9 @@
               a: { ...targetPath[0] },
               b: { ...targetPath[targetPath.length - 1] },
               completed: false,
+              removing: false,
+              disappearT: 0,
+              hidden: false,
               pulseSeed: 0,
               connectedWormId: null
             }],
@@ -1102,6 +1167,9 @@
               a: { ...path[0] },
               b: { ...path[path.length - 1] },
               completed: false,
+              removing: false,
+              disappearT: 0,
+              hidden: false,
               connectedWormId: null,
               pulseSeed: rng.range(0, 100)
             });
@@ -1160,6 +1228,9 @@
               prevCells: chosen.map((cell) => ({ ...cell })),
               moveT: 1,
               completed: false,
+              removing: false,
+              disappearT: 0,
+              hidden: false,
               pulseSeed: rng.range(0, 100)
             });
           }
@@ -1189,6 +1260,9 @@
               prevCells: start.map((cell) => ({ ...cell })),
               moveT: 1,
               completed: false,
+              removing: false,
+              disappearT: 0,
+              hidden: false,
               pulseSeed: 0
             }],
             pipes: [{
@@ -1200,6 +1274,9 @@
               a: { ...path[0] },
               b: { ...path[path.length - 1] },
               completed: false,
+              removing: false,
+              disappearT: 0,
+              hidden: false,
               pulseSeed: 0,
               connectedWormId: null
             }],
@@ -1303,21 +1380,24 @@
         drawPipes(ctx, board) {
           const now = this.game.time;
           for (const pipe of board.pipes) {
+            if (pipe.hidden) continue;
             const palette = CONFIG.COLORS[pipe.color] || CONFIG.COLORS.yellow;
             const points = pipe.path.map((cell) => this.cellCenter(cell));
             const pulse = 0.5 + Math.sin(now * 2.1 + pipe.pulseSeed) * 0.5;
+            const fade = pipe.removing ? Math.max(0, 1 - Helpers.clamp(pipe.disappearT ?? 0, 0, 1)) : 1;
+            if (fade <= 0) continue;
             ctx.save();
             ctx.lineCap = "round";
             ctx.lineJoin = "round";
             ctx.strokeStyle = pipe.completed ? "rgba(54,184,123,.52)" : palette.pipe;
             ctx.lineWidth = Math.max(10, this.view.cell * 0.34);
-            ctx.globalAlpha = pipe.completed ? 0.9 : 0.72;
+            ctx.globalAlpha = (pipe.completed ? 0.9 : 0.72) * fade;
             this.strokePath(ctx, points);
             ctx.strokeStyle = pipe.completed ? "rgba(255,255,255,.88)" : palette.fill;
             ctx.lineWidth = Math.max(3, this.view.cell * 0.1);
-            ctx.globalAlpha = pipe.completed ? 0.95 : 0.42 + pulse * 0.16;
+            ctx.globalAlpha = (pipe.completed ? 0.95 : 0.42 + pulse * 0.16) * fade;
             this.strokePath(ctx, points);
-            ctx.globalAlpha = 1;
+            ctx.globalAlpha = fade;
             this.drawSocket(ctx, pipe.a, palette, pipe.completed, pulse);
             this.drawSocket(ctx, pipe.b, palette, pipe.completed, pulse);
             this.drawLengthLabel(ctx, points, pipe.requiredLength, palette, pipe.completed);
@@ -1368,8 +1448,11 @@
         }
         drawWorms(ctx, board) {
           for (const worm of board.worms) {
+            if (worm.hidden) continue;
             const palette = CONFIG.COLORS[worm.color] || CONFIG.COLORS.yellow;
             const points = this.getWormPoints(worm);
+            const fade = worm.removing ? Math.max(0, 1 - Helpers.clamp(worm.disappearT ?? 0, 0, 1)) : 1;
+            if (fade <= 0) continue;
             ctx.save();
             ctx.lineCap = "round";
             ctx.lineJoin = "round";
@@ -1378,10 +1461,10 @@
               ctx.shadowBlur = 18;
             }
             ctx.strokeStyle = worm.completed ? "#36b87b" : palette.dark;
-            ctx.globalAlpha = worm.completed ? 0.38 : 0.2;
+            ctx.globalAlpha = (worm.completed ? 0.38 : 0.2) * fade;
             ctx.lineWidth = Math.max(22, this.view.cell * 0.58);
             this.strokePath(ctx, points);
-            ctx.globalAlpha = 1;
+            ctx.globalAlpha = fade;
             ctx.strokeStyle = palette.fill;
             ctx.lineWidth = Math.max(16, this.view.cell * 0.44);
             this.strokePath(ctx, points);
@@ -1511,7 +1594,8 @@
             dragDistance: 0,
             pointerStepCooldown: 0,
             keyDirection: null,
-            keyboardStepCooldown: 0
+            keyboardStepCooldown: 0,
+            campaignRemoveCompletedWorms: !!Save.data.campaignRemoveCompletedWorms
           };
           this.time = 0;
           this.lastTime = performance.now();
@@ -1519,6 +1603,7 @@
           this.particles = [];
           this.bursts = [];
           this.sandboxSettings = Helpers.deepClone(Save.data.sandbox);
+          this.campaignOptions = { removeCompletedWorms: !!Save.data.campaignRemoveCompletedWorms };
           this.bindRefs();
           this.renderer = new Renderer(this, this.refs.canvas);
           this.bindEvents();
@@ -1529,6 +1614,7 @@
         bindRefs() {
           const ids = [
             "gameCanvas","menuScreen","victoryScreen","designerDrawer","designerCloseButton","campaignButton","campaignLevelInput",
+            "campaignRemoveCompletedInput",
             "sandboxButton","sandboxDesignerButton","restartButton","menuButton","debugButton","targetBadge","targetList","wormBadge","wormList",
             "hudMode","hudLevel","hudPlaced","hudMoves","hintLine","selectionMeta","selectedBox","tailButton","headButton","cycleButton",
             "switchEndButton","toastStack","menuUnlocked","victoryTitle","victoryText","resultLevel","resultPlaced","resultMoves",
@@ -1540,9 +1626,15 @@
           this.settingInputs = Array.from(document.querySelectorAll("[data-setting]"));
         }
         bindEvents() {
-          this.refs.campaignButton.addEventListener("click", () => this.startCampaign(this.getSelectedCampaignLevel()));
+          this.refs.campaignButton.addEventListener("click", () => this.startCampaign(this.getSelectedCampaignLevel(), {
+            removeCompletedWorms: !!this.refs.campaignRemoveCompletedInput.checked
+          }));
           this.refs.campaignLevelInput.addEventListener("change", () => this.normalizeCampaignLevelInput());
           this.refs.campaignLevelInput.addEventListener("blur", () => this.normalizeCampaignLevelInput());
+          this.refs.campaignRemoveCompletedInput.addEventListener("change", () => {
+            this.campaignOptions.removeCompletedWorms = !!this.refs.campaignRemoveCompletedInput.checked;
+            Save.saveCampaignOptions(this.campaignOptions);
+          });
           this.refs.sandboxButton.addEventListener("click", () => this.startSandbox(false));
           this.refs.sandboxDesignerButton.addEventListener("click", () => this.startSandbox(true));
           this.refs.restartButton.addEventListener("click", () => this.restart());
@@ -1564,7 +1656,8 @@
             button.addEventListener("click", () => this.stepSelected(button.dataset.dir));
           });
           this.settingInputs.forEach((input) => {
-            input.addEventListener("input", () => this.readDesignerInputs());
+            const evt = input.type === "checkbox" ? "change" : "input";
+            input.addEventListener(evt, () => this.readDesignerInputs());
           });
           this.refs.canvas.addEventListener("pointerdown", (event) => this.onPointerDown(event));
           this.refs.canvas.addEventListener("pointermove", (event) => this.onPointerMove(event));
@@ -1581,6 +1674,29 @@
           if (this.board) {
             for (const worm of this.board.worms) {
               if (worm.moveT < 1) worm.moveT = Math.min(1, worm.moveT + dt / CONFIG.ANIM.wormMoveDuration);
+            }
+            let removedChanged = false;
+            for (const worm of this.board.worms) {
+              if (!worm.removing || worm.hidden) continue;
+              worm.disappearT = Math.min(1, (worm.disappearT || 0) + dt / CONFIG.ANIM.removeDuration);
+              if (worm.disappearT >= 1) {
+                worm.removing = false;
+                worm.hidden = true;
+                removedChanged = true;
+              }
+            }
+            for (const pipe of this.board.pipes) {
+              if (!pipe.removing || pipe.hidden) continue;
+              pipe.disappearT = Math.min(1, (pipe.disappearT || 0) + dt / CONFIG.ANIM.removeDuration);
+              if (pipe.disappearT >= 1) {
+                pipe.removing = false;
+                pipe.hidden = true;
+                removedChanged = true;
+              }
+            }
+            if (removedChanged) {
+              this.ensureSelectableSelection();
+              this.updateUI();
             }
             if (this.board.victoryFlash > 0) this.board.victoryFlash = Math.max(0, this.board.victoryFlash - dt / CONFIG.ANIM.victoryDelay);
             if (this.board.victoryPending > 0) {
@@ -1602,14 +1718,23 @@
           this.renderToasts();
           requestAnimationFrame((next) => this.tick(next));
         }
-        startCampaign(level) {
+        startCampaign(level, options = {}) {
           const safeLevel = Helpers.clamp(Number(level) || 1, 1, CONFIG.MAX_LEVEL);
+          const removeCompletedWorms = typeof options.removeCompletedWorms === "boolean"
+            ? !!options.removeCompletedWorms
+            : !!this.state.campaignRemoveCompletedWorms;
+          this.state.campaignRemoveCompletedWorms = removeCompletedWorms;
+          this.campaignOptions.removeCompletedWorms = removeCompletedWorms;
+          Save.saveCampaignOptions(this.campaignOptions);
           this.state.mode = "campaign";
           this.state.level = safeLevel;
-          this.board = LevelGenerator.build(safeLevel, "campaign", Campaign.getSettings(safeLevel));
+          this.board = this.prepareBoard(LevelGenerator.build(safeLevel, "campaign", {
+            ...Campaign.getSettings(safeLevel),
+            removeCompletedWorms
+          }), "campaign");
           this.resetInput();
           this.state.screen = "gameplay";
-          this.state.selection = this.board.worms[0] ? { id: this.board.worms[0].id } : null;
+          this.selectFirstActiveWorm();
           this.state.selectedEnd = "head";
           this.refs.menuScreen.classList.add("hidden");
           this.refs.victoryScreen.classList.add("hidden");
@@ -1628,10 +1753,10 @@
         startSandbox(openDesigner) {
           this.state.mode = "sandbox";
           this.state.level = 0;
-          this.board = LevelGenerator.build(0, "sandbox", this.sandboxSettings);
+          this.board = this.prepareBoard(LevelGenerator.build(0, "sandbox", this.sandboxSettings), "sandbox");
           this.resetInput();
           this.state.screen = "gameplay";
-          this.state.selection = this.board.worms[0] ? { id: this.board.worms[0].id } : null;
+          this.selectFirstActiveWorm();
           this.state.selectedEnd = "head";
           this.refs.menuScreen.classList.add("hidden");
           this.refs.victoryScreen.classList.add("hidden");
@@ -1640,7 +1765,7 @@
           this.toast("Sandbox board generated.", "success");
         }
         restart() {
-          if (this.state.mode === "campaign") this.startCampaign(this.state.level);
+          if (this.state.mode === "campaign") this.startCampaign(this.state.level, { removeCompletedWorms: !!this.state.campaignRemoveCompletedWorms });
           else if (this.state.mode === "sandbox") this.startSandbox(this.state.designerOpen);
           else this.openMenu();
         }
@@ -1650,7 +1775,7 @@
             return;
           }
           const next = Helpers.clamp(this.state.level + 1, 1, CONFIG.MAX_LEVEL);
-          this.startCampaign(next);
+          this.startCampaign(next, { removeCompletedWorms: !!this.state.campaignRemoveCompletedWorms });
         }
         openMenu() {
           this.state.screen = "menu";
@@ -1676,6 +1801,93 @@
           this.refs.victoryScreen.classList.remove("hidden");
           this.updateUI();
         }
+        prepareBoard(board, modeHint = "sandbox", importedSettings = null) {
+          if (!board || typeof board !== "object") return board;
+          const fallback = modeHint === "campaign"
+            ? Campaign.getSettings(Helpers.clamp(Number(board.level) || 1, 1, CONFIG.MAX_LEVEL))
+            : this.sandboxSettings;
+          const mergedSettings = {
+            ...fallback,
+            ...(importedSettings || {}),
+            ...(board.settings || {})
+          };
+          const removeCompletedWorms = !!mergedSettings.removeCompletedWorms;
+          board.settings = LevelGenerator.normalizeSettings({
+            ...mergedSettings,
+            removeCompletedWorms
+          }, modeHint);
+          board.walls = Array.isArray(board.walls) ? board.walls : [];
+          board.worms = Array.isArray(board.worms) ? board.worms : [];
+          board.pipes = Array.isArray(board.pipes) ? board.pipes : [];
+          for (const worm of board.worms) {
+            worm.completed = !!worm.completed;
+            worm.removing = !!worm.removing;
+            worm.hidden = !!worm.hidden;
+            worm.disappearT = Helpers.clamp(Number(worm.disappearT) || (worm.hidden ? 1 : 0), 0, 1);
+            if (worm.hidden) {
+              worm.removing = false;
+              worm.completed = true;
+              worm.disappearT = 1;
+            }
+            worm.moveT = Helpers.clamp(Number(worm.moveT), 0, 1);
+            if (!Number.isFinite(worm.moveT)) worm.moveT = 1;
+            if (!Array.isArray(worm.prevCells) || worm.prevCells.length !== worm.cells.length) {
+              worm.prevCells = worm.cells.map((cell) => ({ ...cell }));
+            }
+          }
+          for (const pipe of board.pipes) {
+            pipe.completed = !!pipe.completed;
+            pipe.removing = !!pipe.removing;
+            pipe.hidden = !!pipe.hidden;
+            pipe.disappearT = Helpers.clamp(Number(pipe.disappearT) || (pipe.hidden ? 1 : 0), 0, 1);
+            pipe.connectedWormId = pipe.connectedWormId || null;
+            if (pipe.hidden) {
+              pipe.removing = false;
+              pipe.completed = true;
+              pipe.disappearT = 1;
+            }
+          }
+          board.moves = Math.max(0, Math.round(Number(board.moves) || 0));
+          board.completedCount = Math.max(0, Math.round(Number(board.completedCount) || 0));
+          board.won = !!board.won;
+          board.victoryPending = Math.max(0, Number(board.victoryPending) || 0);
+          board.victoryFlash = Math.max(0, Number(board.victoryFlash) || 0);
+          return board;
+        }
+        isWormSelectable(worm) {
+          return !!worm && !worm.hidden && !worm.removing;
+        }
+        getActiveWorms() {
+          return this.board?.worms.filter((worm) => this.isWormSelectable(worm)) || [];
+        }
+        selectFirstActiveWorm() {
+          const first = this.getActiveWorms()[0] || null;
+          this.state.selection = first ? { id: first.id } : null;
+        }
+        ensureSelectableSelection(lostWormId = null) {
+          if (!this.board) {
+            this.state.selection = null;
+            return;
+          }
+          const current = this.board.worms.find((worm) => worm.id === this.state.selection?.id) || null;
+          if (current && this.isWormSelectable(current)) return;
+          const activeIndexes = this.board.worms
+            .map((worm, index) => (this.isWormSelectable(worm) ? index : -1))
+            .filter((index) => index >= 0);
+          if (!activeIndexes.length) {
+            this.state.selection = null;
+            return;
+          }
+          let pickIndex = activeIndexes[0];
+          if (lostWormId) {
+            const lostIndex = this.board.worms.findIndex((worm) => worm.id === lostWormId);
+            if (lostIndex >= 0) {
+              const after = activeIndexes.find((idx) => idx > lostIndex);
+              if (after !== undefined) pickIndex = after;
+            }
+          }
+          this.state.selection = { id: this.board.worms[pickIndex].id };
+        }
         resetInput() {
           if (this.state.pointer?.id !== null && this.state.pointer?.id !== undefined) {
             try { this.refs.canvas.releasePointerCapture(this.state.pointer.id); } catch (error) {}
@@ -1697,21 +1909,25 @@
           this.sandboxSettings = { ...Helpers.deepClone(CONFIG.DEFAULT_SANDBOX), ...Save.data.sandbox };
           for (const input of this.settingInputs) {
             const key = input.dataset.setting;
-            input.value = this.sandboxSettings[key] ?? "";
+            if (input.type === "checkbox") input.checked = !!this.sandboxSettings[key];
+            else input.value = this.sandboxSettings[key] ?? "";
           }
         }
         readDesignerInputs() {
           const next = {};
           for (const input of this.settingInputs) {
             const key = input.dataset.setting;
-            next[key] = input.type === "number" ? Number(input.value) : input.value;
+            if (input.type === "checkbox") next[key] = !!input.checked;
+            else next[key] = input.type === "number" ? Number(input.value) : input.value;
           }
           this.sandboxSettings = LevelGenerator.normalizeSettings(next, "sandbox");
           for (const input of this.settingInputs) {
             const key = input.dataset.setting;
-            if (document.activeElement !== input) input.value = this.sandboxSettings[key] ?? "";
+            if (document.activeElement === input) continue;
+            if (input.type === "checkbox") input.checked = !!this.sandboxSettings[key];
+            else input.value = this.sandboxSettings[key] ?? "";
           }
-          this.refs.designerNote.textContent = `Validated: ${this.sandboxSettings.fieldWidth}x${this.sandboxSettings.fieldHeight}, ${this.sandboxSettings.startWorms} worms, length ${this.sandboxSettings.lengthMin}-${this.sandboxSettings.lengthMax}, ${this.sandboxSettings.colorCount} colors, ${this.sandboxSettings.obstaclePercent}% obstacles.`;
+          this.refs.designerNote.textContent = `Validated: ${this.sandboxSettings.fieldWidth}x${this.sandboxSettings.fieldHeight}, ${this.sandboxSettings.startWorms} worms, length ${this.sandboxSettings.lengthMin}-${this.sandboxSettings.lengthMax}, ${this.sandboxSettings.colorCount} colors, ${this.sandboxSettings.obstaclePercent}% obstacles, remove completed ${this.sandboxSettings.removeCompletedWorms ? "on" : "off"}.`;
         }
         toggleDesigner(force) {
           const open = typeof force === "boolean" ? force : !this.state.designerOpen;
@@ -1735,13 +1951,24 @@
             const parsed = JSON.parse(this.refs.jsonBox.value);
             const board = parsed.board || parsed;
             if (!this.validateBoard(board)) throw new Error("Invalid board schema.");
-            this.board = Helpers.deepClone(board);
+            const importedSettings = LevelGenerator.normalizeSettings({
+              ...Helpers.deepClone(CONFIG.DEFAULT_SANDBOX),
+              ...(parsed.settings || {}),
+              ...(board.settings || {}),
+              removeCompletedWorms: !!((parsed.settings || {}).removeCompletedWorms ?? (board.settings || {}).removeCompletedWorms ?? false)
+            }, "sandbox");
+            this.sandboxSettings = { ...importedSettings };
+            Save.saveSandbox(this.sandboxSettings);
+            this.board = this.prepareBoard(Helpers.deepClone(board), "sandbox", importedSettings);
             this.state.mode = "sandbox";
             this.state.level = 0;
             this.state.screen = "gameplay";
-            this.state.selection = this.board.worms[0] ? { id: this.board.worms[0].id } : null;
+            this.selectFirstActiveWorm();
+            this.state.selectedEnd = "head";
             this.refs.menuScreen.classList.add("hidden");
             this.refs.victoryScreen.classList.add("hidden");
+            this.toggleDesigner(false);
+            this.loadDesignerInputs();
             this.refreshCompletion(true);
             this.toast("Board imported.", "success");
           } catch (error) {
@@ -1856,10 +2083,13 @@
           this.state.dragging = false;
           this.state.dragDistance = 0;
           if (!wasDragging && this.board && this.state.screen === "gameplay") {
-            const worm = this.board.worms.find((candidate) => candidate.id === pointer.hitId);
+            const worm = this.board.worms.find((candidate) => candidate.id === pointer.hitId && this.isWormSelectable(candidate));
             if (worm) {
               if (pointer.selectionBefore === worm.id) this.state.selectedEnd = this.state.selectedEnd === "head" ? "tail" : "head";
               else this.state.selection = { id: worm.id };
+              this.updateUI();
+            } else {
+              this.ensureSelectableSelection(pointer.hitId || null);
               this.updateUI();
             }
           }
@@ -1889,10 +2119,11 @@
           if (map[key] && this.state.keyDirection === map[key]) this.state.keyDirection = null;
         }
         findWormAt(cell) {
-          return this.board?.worms.find((worm) => worm.cells.some((part) => Helpers.sameCell(part, cell))) || null;
+          return this.board?.worms.find((worm) => this.isWormSelectable(worm) && worm.cells.some((part) => Helpers.sameCell(part, cell))) || null;
         }
         getSelectedWorm() {
-          return this.board?.worms.find((worm) => worm.id === this.state.selection?.id) || null;
+          const worm = this.board?.worms.find((candidate) => candidate.id === this.state.selection?.id) || null;
+          return this.isWormSelectable(worm) ? worm : null;
         }
         pickEndForCell(worm, cell) {
           const tail = worm.cells[0];
@@ -1905,13 +2136,19 @@
           this.updateUI();
         }
         switchEnd() {
+          if (!this.getSelectedWorm()) return;
           this.state.selectedEnd = this.state.selectedEnd === "head" ? "tail" : "head";
           this.updateUI();
         }
         cycleWorm() {
-          if (!this.board?.worms.length) return;
-          const current = this.state.selection ? this.board.worms.findIndex((worm) => worm.id === this.state.selection.id) : -1;
-          const next = this.board.worms[(current + 1 + this.board.worms.length) % this.board.worms.length];
+          const active = this.getActiveWorms();
+          if (!active.length) {
+            this.state.selection = null;
+            this.updateUI();
+            return;
+          }
+          const current = this.state.selection ? active.findIndex((worm) => worm.id === this.state.selection.id) : -1;
+          const next = active[(current + 1 + active.length) % active.length];
           this.state.selection = { id: next.id };
           this.state.selectedEnd = "head";
           this.updateUI();
@@ -1946,6 +2183,7 @@
           const ignoreIndex = end === "head" ? 0 : worm.cells.length - 1;
           const occupied = new Set();
           for (const other of this.board.worms) {
+            if (other.hidden || other.removing) continue;
             other.cells.forEach((cell, index) => {
               if (other.id === worm.id && index === ignoreIndex) return;
               occupied.add(Helpers.cellKey(cell.x, cell.y));
@@ -1955,17 +2193,27 @@
         }
         refreshCompletion(skipVictory) {
           if (!this.board) return;
+          const removeCompletedWorms = !!this.board.settings?.removeCompletedWorms;
           const previousCompletedPipeIds = new Set(this.board.pipes.filter((pipe) => pipe.completed).map((pipe) => pipe.id));
-          for (const worm of this.board.worms) worm.completed = false;
-          for (const pipe of this.board.pipes) {
-            pipe.completed = false;
-            pipe.connectedWormId = null;
+          for (const worm of this.board.worms) {
+            if (worm.hidden || worm.removing) worm.completed = true;
+            else worm.completed = false;
           }
-          const usedWorms = new Set();
+          for (const pipe of this.board.pipes) {
+            if (pipe.hidden || pipe.removing) pipe.completed = true;
+            else pipe.completed = false;
+            if (!pipe.hidden && !pipe.removing) pipe.connectedWormId = null;
+          }
+          const usedWorms = new Set(this.board.worms.filter((worm) => worm.hidden || worm.removing).map((worm) => worm.id));
           let completed = 0;
           for (const pipe of this.board.pipes) {
+            if (pipe.hidden || pipe.removing) {
+              completed++;
+              continue;
+            }
             const worm = this.board.worms.find((candidate) => {
               if (usedWorms.has(candidate.id)) return false;
+              if (candidate.hidden || candidate.removing) return false;
               if (candidate.length !== pipe.requiredLength) return false;
               if (candidate.color !== pipe.color) return false;
               return BoardUtils.pathsEqual(candidate.cells, pipe.path);
@@ -1979,26 +2227,44 @@
           }
           const previous = this.board.completedCount || 0;
           this.board.completedCount = completed;
-          if (completed < this.board.worms.length) {
+          if (completed < this.board.pipes.length) {
             this.board.won = false;
             this.board.victoryPending = 0;
             this.board.victoryFlash = 0;
           }
+          const fresh = this.board.pipes.filter((pipe) => pipe.completed && !previousCompletedPipeIds.has(pipe.id));
           if (completed > previous) {
-            const fresh = this.board.pipes.filter((pipe) => pipe.completed && !previousCompletedPipeIds.has(pipe.id));
             for (const pipe of fresh) {
               this.emitParticles(pipe.path, pipe.color);
               this.addPlacementBurst(pipe);
             }
-            this.toast("Worm placed.", "success");
+            if (removeCompletedWorms) {
+              for (const pipe of fresh) {
+                if (pipe.hidden || pipe.removing) continue;
+                pipe.removing = true;
+                pipe.disappearT = 0;
+                const worm = this.board.worms.find((candidate) => candidate.id === pipe.connectedWormId);
+                if (worm && !worm.hidden && !worm.removing) {
+                  worm.removing = true;
+                  worm.disappearT = 0;
+                }
+              }
+              const selectedId = this.state.selection?.id || null;
+              const selectedRemoved = selectedId && fresh.some((pipe) => pipe.connectedWormId === selectedId);
+              this.ensureSelectableSelection(selectedRemoved ? selectedId : null);
+              this.toast("Worm cleared.", "success");
+            } else {
+              this.toast("Worm placed.", "success");
+            }
           }
-          if (!skipVictory && completed === this.board.worms.length && !this.board.won) {
+          if (!skipVictory && completed === this.board.pipes.length && !this.board.won) {
             this.board.won = true;
             this.board.victoryPending = CONFIG.ANIM.victoryDelay;
             this.board.victoryFlash = 1;
             this.emitVictoryField();
             this.toast("Perfect placement.", "success");
           }
+          this.ensureSelectableSelection();
           this.updateUI();
         }
         addPlacementBurst(pipe) {
@@ -2065,6 +2331,9 @@
           const input = this.refs.campaignLevelInput;
           input.max = String(CONFIG.MAX_LEVEL);
           if (!input.value) input.value = String(Save.data.unlockedLevel);
+          if (this.refs.campaignRemoveCompletedInput) {
+            this.refs.campaignRemoveCompletedInput.checked = !!this.campaignOptions.removeCompletedWorms;
+          }
         }
         renderLists() {
           if (!this.board) {
@@ -2074,17 +2343,21 @@
           }
           this.refs.targetList.innerHTML = this.board.pipes.map((pipe, index) => {
             const palette = CONFIG.COLORS[pipe.color] || CONFIG.COLORS.yellow;
-            return `<div class="targetItem ${pipe.completed ? "done" : ""}">
+            const status = pipe.hidden ? "Removed" : pipe.removing ? "Removing..." : pipe.completed ? "Completed" : "Needs matching worm";
+            const done = pipe.completed || pipe.hidden || pipe.removing;
+            return `<div class="targetItem ${done ? "done" : ""}">
               <div class="targetTop"><span><i class="colorDot" style="background:${palette.fill}"></i>Target ${index + 1}</span><span class="tag">${pipe.requiredLength} cells</span></div>
-              <div class="muted">${pipe.completed ? "Completed" : "Needs matching worm"}</div>
+              <div class="muted">${status}</div>
             </div>`;
           }).join("");
           this.refs.wormList.innerHTML = this.board.worms.map((worm, index) => {
             const palette = CONFIG.COLORS[worm.color] || CONFIG.COLORS.yellow;
             const selected = this.state.selection?.id === worm.id ? " Selected" : "";
-            return `<div class="wormItem ${worm.completed ? "done" : ""}">
+            const status = worm.hidden ? "Removed" : worm.removing ? "Removing..." : worm.completed ? "On target" : "Free to move";
+            const done = worm.completed || worm.hidden || worm.removing;
+            return `<div class="wormItem ${done ? "done" : ""}">
               <div class="wormTop"><span><i class="colorDot" style="background:${palette.fill}"></i>Worm ${index + 1}${selected}</span><span class="tag">${worm.length} cells</span></div>
-              <div class="muted">${worm.completed ? "On target" : "Free to move"}</div>
+              <div class="muted">${status}</div>
             </div>`;
           }).join("");
         }
@@ -2093,6 +2366,8 @@
           if (!worm) {
             this.refs.selectionMeta.textContent = "No worm selected";
             this.refs.selectedBox.innerHTML = `<p class="muted">Tap a worm, then drag an end or use the arrows.</p>`;
+            this.refs.tailButton.classList.remove("accent");
+            this.refs.headButton.classList.remove("accent");
             return;
           }
           const palette = CONFIG.COLORS[worm.color] || CONFIG.COLORS.yellow;

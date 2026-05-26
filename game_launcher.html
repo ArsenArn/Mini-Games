@@ -133,6 +133,13 @@
         linear-gradient(180deg,rgba(255,255,255,.08) 0 1px,transparent 1px);
       background-size:100% 100%,28px 28px,28px 28px;
     }
+    .preview.comboDropLab{
+      background:
+        linear-gradient(180deg,rgba(170,200,230,.9) 0 28%, rgba(228,236,245,.94) 28% 76%, rgba(88,112,144,.95) 76% 100%),
+        linear-gradient(90deg,rgba(255,255,255,.12) 0 1px,transparent 1px),
+        linear-gradient(180deg,rgba(255,255,255,.12) 0 1px,transparent 1px);
+      background-size:100% 100%,24px 24px,24px 24px;
+    }
     .wall{
       position:absolute;
       left:14px;
@@ -482,6 +489,86 @@
       background:#ffb46f;
       opacity:.85;
     }
+    .comboArenaFrame,.comboMiniCar,.comboMiniBumper,.comboMiniRamp,.comboMiniArrow,.comboMiniPad,.comboMiniText{
+      position:absolute;
+    }
+    .comboArenaFrame{
+      left:44px;
+      right:44px;
+      top:12px;
+      bottom:14px;
+      border-radius:18px;
+      border:3px solid rgba(40,73,108,.35);
+      box-shadow:inset 0 0 0 2px rgba(255,255,255,.42);
+    }
+    .comboMiniCar{
+      width:26px;
+      height:14px;
+      border-radius:8px 9px 6px 6px;
+      background:linear-gradient(180deg,#ff5d5d,#cf3345);
+      border:1px solid rgba(255,255,255,.7);
+      box-shadow:0 8px 12px rgba(20,48,84,.2);
+    }
+    .comboMiniCar::before,.comboMiniCar::after{
+      content:"";
+      position:absolute;
+      width:7px;
+      height:7px;
+      border-radius:50%;
+      background:#1e2d43;
+      bottom:-3px;
+    }
+    .comboMiniCar::before{left:3px}
+    .comboMiniCar::after{right:3px}
+    .comboMiniBumper{
+      width:18px;
+      height:18px;
+      border-radius:50%;
+      background:radial-gradient(circle at 30% 30%,#fff7c8,#f7b749 68%);
+      border:2px solid rgba(197,124,37,.8);
+      box-shadow:0 8px 12px rgba(197,124,37,.24);
+    }
+    .comboMiniRamp{
+      width:30px;
+      height:12px;
+      border-radius:999px;
+      background:linear-gradient(180deg,#d8e5f3,#8ea4c2);
+      box-shadow:0 6px 10px rgba(46,66,94,.2);
+    }
+    .comboMiniArrow{
+      width:24px;
+      height:10px;
+      border-radius:999px;
+      background:linear-gradient(90deg,#a4efff,#43c7ff);
+      box-shadow:0 0 10px rgba(67,199,255,.42);
+    }
+    .comboMiniArrow::after{
+      content:"";
+      position:absolute;
+      right:-7px;
+      top:-4px;
+      border-style:solid;
+      border-width:9px 0 9px 10px;
+      border-color:transparent transparent transparent #43c7ff;
+    }
+    .comboMiniPad{
+      width:26px;
+      height:8px;
+      border-radius:999px;
+      background:#394f8a;
+      box-shadow:0 6px 10px rgba(22,36,66,.24);
+    }
+    .comboMiniText{
+      right:20px;
+      top:20px;
+      padding:4px 8px;
+      border-radius:10px;
+      background:rgba(255,255,255,.7);
+      color:#1f5082;
+      font-size:17px;
+      font-weight:900;
+      letter-spacing:.02em;
+    }
     .titleRow{
       display:flex;
       justify-content:space-between;
@@ -673,6 +760,14 @@
         tag: "Music Mixer",
         description: "Synchronized loop-based music mixer with character slots, queued sound activation, category pads, and cycle-based playback.",
         preview: "musicMixer"
+      },
+      {
+        id: "combo_drop_lab",
+        title: "Combo Drop Lab",
+        file: "combo_drop_lab.html",
+        tag: "Physics Combo",
+        description: "Drop a toy car into a garage arena, place bumpers and ramps, create chain reactions, earn coins, and build bigger combos.",
+        preview: "comboDropLab"
       }
     ];
 
@@ -813,6 +908,19 @@
           <div class="bastionChunk" style="left:118px;top:62px"></div>
           <div class="bastionChunk" style="left:126px;top:54px"></div>
           <div class="bastionChunk" style="left:132px;top:66px"></div>
+        `;
+        return;
+      }
+      if (type === "comboDropLab") {
+        previewEl.innerHTML = `
+          <div class="comboArenaFrame"></div>
+          <div class="comboMiniCar" style="left:112px;top:28px"></div>
+          <div class="comboMiniBumper" style="left:70px;top:82px"></div>
+          <div class="comboMiniBumper" style="left:168px;top:112px"></div>
+          <div class="comboMiniRamp" style="left:118px;top:92px;transform:rotate(-25deg)"></div>
+          <div class="comboMiniPad" style="left:84px;top:132px;transform:rotate(90deg)"></div>
+          <div class="comboMiniArrow" style="left:144px;top:56px;transform:rotate(68deg)"></div>
+          <div class="comboMiniText">x12</div>
         `;
         return;
       }

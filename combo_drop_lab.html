@@ -1,0 +1,1873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Combo Drop Lab</title>
+  <style>
+    :root{
+      --text:#1c3554;
+      --muted:#54708f;
+      --accent:#2d8dff;
+      --danger:#d85767;
+      --good:#26a56f;
+      --panel:#f5f9ff;
+    }
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;
+      height:100%;
+      min-height:100%;
+      overflow:hidden;
+      font-family:"Trebuchet MS","Segoe UI",sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(130,172,222,.28), transparent 35%),
+        radial-gradient(circle at 90% 90%, rgba(255,198,129,.24), transparent 33%),
+        linear-gradient(180deg,#cfddea,#eef4f9);
+    }
+    body{
+      min-height:100dvh;
+      display:grid;
+      place-items:center;
+      padding:0;
+    }
+    .app{
+      width:min(100%,470px);
+      height:min(100dvh,840px);
+      max-height:100dvh;
+      background:linear-gradient(180deg,#f8fbff,#e9f0f8);
+      border:1px solid rgba(31,74,120,.18);
+      border-radius:26px;
+      box-shadow:0 26px 46px rgba(22,47,76,.24);
+      overflow:hidden;
+      display:grid;
+      grid-template-rows:auto minmax(0,1fr) auto;
+    }
+    .topbar{
+      padding:8px 10px 7px;
+      border-bottom:1px solid rgba(31,74,120,.14);
+      background:linear-gradient(180deg,#f8fbff,#eef5ff);
+      display:grid;
+      gap:8px;
+    }
+    .headRow{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+    }
+    .title{
+      margin:0;
+      font-size:18px;
+      line-height:1;
+      letter-spacing:.01em;
+    }
+    .backLink{
+      font-size:12px;
+      font-weight:700;
+      color:#245587;
+      text-decoration:none;
+      padding:6px 9px;
+      border-radius:10px;
+      border:1px solid rgba(36,85,135,.2);
+      background:#fff;
+    }
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:5px;
+    }
+    .stat{
+      background:#fff;
+      border:1px solid rgba(30,64,102,.12);
+      border-radius:11px;
+      padding:6px 5px 5px;
+      text-align:center;
+      box-shadow:0 6px 14px rgba(22,47,76,.08);
+    }
+    .stat .label{
+      display:block;
+      font-size:10px;
+      color:var(--muted);
+      line-height:1;
+      margin-bottom:4px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+    }
+    .stat .value{
+      font-size:15px;
+      font-weight:900;
+      line-height:1;
+    }
+    .arenaWrap{
+      padding:6px 8px;
+      min-height:0;
+      overflow:hidden;
+      display:grid;
+    }
+    .arena{
+      position:relative;
+      height:100%;
+      border-radius:22px;
+      border:1px solid rgba(27,61,98,.16);
+      background:
+        radial-gradient(circle at 50% -20%, rgba(255,255,255,.75), transparent 48%),
+        linear-gradient(180deg,#d7e4f1 0%,#e4edf7 24%,#d5e0ed 76%,#a8b8ce 100%);
+      overflow:hidden;
+      min-height:0;
+      box-shadow:inset 0 0 0 2px rgba(255,255,255,.25), inset 0 -18px 32px rgba(27,61,98,.12);
+      touch-action:none;
+      user-select:none;
+    }
+    .spawnBand{
+      position:absolute;
+      left:0;
+      right:0;
+      top:0;
+      height:56px;
+      border-bottom:1px dashed rgba(24,64,104,.28);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:12px;
+      font-weight:700;
+      letter-spacing:.12em;
+      color:#47688c;
+      text-transform:uppercase;
+      background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,.12));
+      z-index:1;
+    }
+    .wall{
+      position:absolute;
+      z-index:2;
+      background:linear-gradient(180deg,#c8d5e4,#a5b8cd);
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.4);
+    }
+    .wall.left,.wall.right{
+      width:12px;
+      border-radius:9px;
+    }
+    .wall.top{
+      height:10px;
+      border-radius:9px;
+    }
+    .floor{
+      position:absolute;
+      left:0;
+      right:0;
+      bottom:0;
+      height:46px;
+      border-radius:16px 16px 0 0;
+      background:
+        linear-gradient(180deg,rgba(103,130,164,.8),rgba(66,89,120,.92)),
+        repeating-linear-gradient(90deg,rgba(255,255,255,.18) 0 20px, rgba(255,255,255,.08) 20px 40px);
+      border-top:1px solid rgba(15,34,58,.45);
+      box-shadow:inset 0 3px 0 rgba(255,255,255,.2);
+      z-index:1;
+    }
+    .floorLabel{
+      position:absolute;
+      font-size:11px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color:#eaf4ff;
+      text-shadow:0 1px 2px rgba(0,0,0,.35);
+      z-index:2;
+    }
+    .deviceLayer,.carLayer,.effectLayer,.floats{
+      position:absolute;
+      inset:0;
+    }
+    .device{
+      position:absolute;
+      border-radius:14px;
+      border:1px solid rgba(17,42,71,.18);
+      box-shadow:0 8px 14px rgba(16,42,73,.2);
+      cursor:grab;
+      transition:transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+      transform-origin:center;
+      z-index:4;
+    }
+    .device.selected{
+      outline:2px solid #fff;
+      box-shadow:0 0 0 3px rgba(45,141,255,.42),0 10px 16px rgba(16,42,73,.26);
+    }
+    .device.dragging{
+      cursor:grabbing;
+      opacity:.94;
+      z-index:8;
+      pointer-events:none;
+    }
+    .device.hit{
+      transform:translate(-50%,-50%) scale(.9);
+    }
+    .device.disabled{
+      opacity:.35;
+      filter:saturate(.5);
+    }
+    .device.spring{
+      background:linear-gradient(180deg,#fff3ba,#f2b446);
+      border-radius:13px;
+    }
+    .device.spring::before{
+      content:"";
+      position:absolute;
+      left:9px;
+      right:9px;
+      top:9px;
+      bottom:9px;
+      border-radius:10px;
+      border:3px solid rgba(255,255,255,.72);
+    }
+    .device.spring .springArrow{
+      position:absolute;
+      left:50%;
+      top:50%;
+      width:24px;
+      height:8px;
+      border-radius:999px;
+      background:#205f99;
+      transform:translate(-50%,-50%);
+    }
+    .device.spring .springArrow::after{
+      content:"";
+      position:absolute;
+      right:-8px;
+      top:-5px;
+      border-style:solid;
+      border-width:9px 0 9px 10px;
+      border-color:transparent transparent transparent #205f99;
+    }
+    .device.cannon{
+      background:linear-gradient(180deg,#dce8f7,#94a9c0);
+      border-radius:11px;
+    }
+    .device.cannon::before{
+      content:"";
+      position:absolute;
+      top:15px;
+      width:26px;
+      height:10px;
+      border-radius:999px;
+      background:#2f4f74;
+      box-shadow:0 4px 6px rgba(10,22,38,.24);
+    }
+    .device.cannon.left::before{
+      left:16px;
+    }
+    .device.cannon.right::before{
+      left:2px;
+    }
+    .device.cannon.flash::after{
+      content:"";
+      position:absolute;
+      top:11px;
+      width:12px;
+      height:12px;
+      border-radius:50%;
+      background:radial-gradient(circle,#fff8d6 0,#ffd676 60%,transparent 100%);
+      box-shadow:0 0 14px rgba(255,220,131,.75);
+      animation:flashOut .14s linear;
+    }
+    .device.cannon.left.flash::after{right:-2px}
+    .device.cannon.right.flash::after{left:-2px}
+    .device.bumper{
+      border-radius:50%;
+      background:radial-gradient(circle at 28% 28%, #fff5c7 0, #ff9d4f 62%, #d2572e 100%);
+    }
+    .device.bumper::before{
+      content:"";
+      position:absolute;
+      inset:9px;
+      border-radius:50%;
+      border:3px solid rgba(255,255,255,.75);
+    }
+    .device.gate{
+      border-radius:12px;
+      background:linear-gradient(180deg,#d7f4ff,#9cd7ff);
+      border:1px solid rgba(42,114,169,.35);
+      box-shadow:0 8px 14px rgba(16,42,73,.18), inset 0 0 0 1px rgba(255,255,255,.5);
+    }
+    .device.gate::before,.device.gate::after{
+      content:"";
+      position:absolute;
+      top:5px;
+      bottom:5px;
+      width:8px;
+      border-radius:999px;
+      background:linear-gradient(180deg,#83b9e2,#4d80b2);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.45);
+    }
+    .device.gate::before{left:8px}
+    .device.gate::after{right:8px}
+    .device.gate .gateCore{
+      position:absolute;
+      left:50%;
+      top:50%;
+      width:24px;
+      height:32px;
+      border-radius:10px;
+      transform:translate(-50%,-50%);
+      background:linear-gradient(180deg,rgba(116,226,255,.65),rgba(64,159,236,.35));
+      border:1px solid rgba(255,255,255,.6);
+      display:grid;
+      place-items:center;
+      font-size:11px;
+      font-weight:900;
+      color:#165f9f;
+      text-shadow:0 1px 0 rgba(255,255,255,.6);
+    }
+    .cannonRange{
+      position:absolute;
+      border-radius:50%;
+      border:1px dashed rgba(45,141,255,.35);
+      background:rgba(45,141,255,.08);
+      pointer-events:none;
+      z-index:3;
+    }
+    .ghost{
+      position:absolute;
+      border-radius:14px;
+      border:2px dashed rgba(45,141,255,.8);
+      background:rgba(112,177,255,.18);
+      transform:translate(-50%,-50%);
+      pointer-events:none;
+      z-index:7;
+    }
+    .ghost.blocked{
+      border-color:rgba(216,87,103,.85);
+      background:rgba(216,87,103,.2);
+    }
+    .car{
+      position:absolute;
+      width:32px;
+      height:18px;
+      margin-left:-16px;
+      margin-top:-9px;
+      border-radius:10px 11px 7px 7px;
+      background:linear-gradient(180deg,#ff6060,#d93a50);
+      border:1px solid rgba(255,255,255,.75);
+      box-shadow:0 8px 12px rgba(16,42,73,.28);
+      z-index:5;
+    }
+    .car::before,.car::after{
+      content:"";
+      position:absolute;
+      width:8px;
+      height:8px;
+      border-radius:50%;
+      background:#1f2e43;
+      bottom:-4px;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.35);
+    }
+    .car::before{left:4px}
+    .car::after{right:4px}
+    .car .roof{
+      position:absolute;
+      left:7px;
+      right:7px;
+      top:3px;
+      height:7px;
+      border-radius:5px;
+      background:rgba(255,255,255,.74);
+    }
+    .car.drive{
+      box-shadow:0 4px 7px rgba(16,42,73,.22);
+    }
+    .floats{
+      pointer-events:none;
+      z-index:10;
+    }
+    .floatText{
+      position:absolute;
+      color:#fffcf3;
+      font-size:17px;
+      font-weight:900;
+      text-shadow:0 2px 4px rgba(0,0,0,.3);
+      transform:translate(-50%,-50%);
+      animation:floatUp .55s ease-out forwards;
+    }
+    .shot{
+      position:absolute;
+      height:3px;
+      border-radius:999px;
+      background:linear-gradient(90deg,#fff6cc,#79c8ff);
+      box-shadow:0 0 10px rgba(121,200,255,.8);
+      transform-origin:left center;
+      animation:shotOut .18s ease-out forwards;
+      z-index:6;
+    }
+    .blast{
+      position:absolute;
+      width:18px;
+      height:18px;
+      border-radius:50%;
+      border:2px solid rgba(255,223,160,.95);
+      box-shadow:0 0 10px rgba(255,162,185,.6);
+      transform:translate(-50%,-50%);
+      animation:blastOut .42s ease-out forwards;
+      z-index:6;
+    }
+    @keyframes floatUp{
+      from{opacity:1;transform:translate(-50%,-46%) scale(1)}
+      to{opacity:0;transform:translate(-50%,-130%) scale(1.15)}
+    }
+    @keyframes shotOut{
+      from{opacity:1}
+      to{opacity:0}
+    }
+    @keyframes blastOut{
+      from{opacity:1;transform:translate(-50%,-50%) scale(1)}
+      to{opacity:0;transform:translate(-50%,-50%) scale(3)}
+    }
+    @keyframes flashOut{
+      from{opacity:1}
+      to{opacity:0}
+    }
+    .summary{
+      position:absolute;
+      left:50%;
+      top:52%;
+      transform:translate(-50%,-50%);
+      width:min(84%,308px);
+      background:rgba(255,255,255,.95);
+      border:1px solid rgba(30,64,102,.2);
+      border-radius:16px;
+      box-shadow:0 18px 26px rgba(14,38,68,.26);
+      padding:12px;
+      z-index:12;
+      display:none;
+    }
+    .summary.active{display:grid;gap:9px}
+    .summary h3{
+      margin:0;
+      font-size:19px;
+      line-height:1;
+    }
+    .summaryLine{
+      display:flex;
+      justify-content:space-between;
+      font-size:15px;
+      color:#2b4c70;
+    }
+    .summaryLine strong{color:#133a67}
+    .summary .record{
+      color:var(--good);
+      font-weight:900;
+      font-size:13px;
+      min-height:16px;
+    }
+    .bottom{
+      border-top:1px solid rgba(31,74,120,.14);
+      background:linear-gradient(180deg,#edf4ff,#e6eef8);
+      padding:5px 6px 6px;
+      display:grid;
+      gap:5px;
+      position:relative;
+      z-index:10;
+    }
+    .shop{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:5px;
+    }
+    .buyBtn{
+      border:1px solid rgba(28,68,107,.2);
+      border-radius:12px;
+      background:#fff;
+      color:#20456e;
+      font:inherit;
+      font-size:11px;
+      font-weight:700;
+      padding:5px 4px;
+      display:grid;
+      gap:2px;
+      line-height:1.15;
+      cursor:pointer;
+    }
+    .buyBtn .price{
+      font-size:10px;
+      color:#53749a;
+      font-weight:800;
+    }
+    .buyBtn.selected{
+      border-color:#2d8dff;
+      box-shadow:0 0 0 2px rgba(45,141,255,.24);
+      background:#f0f7ff;
+    }
+    .buyBtn:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+    }
+    .controls{
+      display:grid;
+      grid-template-columns:1fr 1fr 1fr;
+      gap:4px;
+    }
+    .carsCtl{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:4px;
+      border:1px solid rgba(28,68,107,.2);
+      border-radius:12px;
+      background:#fff;
+      color:#20456e;
+      font-size:11px;
+      font-weight:800;
+      padding:3px 4px;
+    }
+    .carStepBtn{
+      border:1px solid rgba(28,68,107,.2);
+      border-radius:8px;
+      width:21px;
+      height:21px;
+      background:#f7fbff;
+      color:#20456e;
+      font:inherit;
+      font-weight:900;
+      cursor:pointer;
+      line-height:1;
+    }
+    .carsVal{
+      min-width:66px;
+      text-align:center;
+      font-size:10px;
+    }
+    .ctrlBtn{
+      border:1px solid rgba(28,68,107,.2);
+      border-radius:12px;
+      padding:7px 5px;
+      font:inherit;
+      font-size:11px;
+      font-weight:800;
+      background:#fff;
+      color:#20456e;
+      cursor:pointer;
+    }
+    .ctrlBtn.drop{
+      background:linear-gradient(180deg,#34a8ff,#1378d8);
+      color:#fff;
+      border-color:rgba(17,89,161,.55);
+    }
+    .ctrlBtn.warn{
+      color:#7b2e3a;
+      background:#fff4f5;
+      border-color:rgba(139,55,66,.24);
+    }
+    .ctrlBtn:disabled,.carStepBtn:disabled{
+      opacity:.45;
+      cursor:not-allowed;
+    }
+    .statusRow{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:5px;
+      font-size:10px;
+      color:#4d6f94;
+      min-height:14px;
+      padding:0 2px;
+      white-space:nowrap;
+    }
+    #statusText{
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .debug{
+      display:flex;
+      gap:4px;
+      justify-content:flex-end;
+      flex:0 0 auto;
+    }
+    .debugBtn{
+      border:1px solid rgba(33,73,113,.24);
+      border-radius:10px;
+      background:#fff;
+      color:#245485;
+      font:inherit;
+      font-size:9px;
+      font-weight:700;
+      padding:4px 6px;
+      cursor:pointer;
+    }
+    @media (max-width:430px){
+      .shop{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @media (max-height:760px){
+      .topbar{padding:6px 8px 6px;gap:6px}
+      .title{font-size:16px}
+      .stat{padding:5px 4px 4px}
+      .stat .label{font-size:9px}
+      .stat .value{font-size:14px}
+      .arenaWrap{padding:5px 6px}
+      .bottom{padding:4px 5px 5px;gap:4px}
+      .buyBtn .price{display:none}
+      .statusRow{display:none}
+      .ctrlBtn{padding:6px 5px}
+      .carsCtl{padding:2px 4px}
+    }
+    @media (max-width:540px){
+      body{padding:0}
+      .app{
+        width:100vw;
+        height:100dvh;
+        max-height:100dvh;
+        border-radius:0;
+      }
+      .topbar{padding:7px 8px}
+      .bottom{padding:6px;gap:5px}
+      .buyBtn{padding:6px;font-size:11px}
+      .ctrlBtn{padding:8px 6px;font-size:12px}
+      .stats .value{font-size:15px}
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="headRow">
+        <h1 class="title">Combo Drop Lab</h1>
+        <a class="backLink" href="game_launcher.html">Launcher</a>
+      </div>
+      <div class="stats">
+        <div class="stat"><span class="label">Coins</span><span id="coinsVal" class="value">0</span></div>
+        <div class="stat"><span class="label">Combo</span><span id="comboVal" class="value">0</span></div>
+        <div class="stat"><span class="label">Best</span><span id="bestVal" class="value">0</span></div>
+        <div class="stat"><span class="label">Cars</span><span id="topCarsVal" class="value">1</span></div>
+      </div>
+    </header>
+
+    <section class="arenaWrap">
+      <div id="arena" class="arena">
+        <div class="spawnBand">Drop Lane</div>
+        <div id="wallTop" class="wall top"></div>
+        <div id="wallLeft" class="wall left"></div>
+        <div id="wallRight" class="wall right"></div>
+        <div id="floor" class="floor"></div>
+        <div id="floorLabel" class="floorLabel">Garage Floor</div>
+        <div id="deviceLayer" class="deviceLayer"></div>
+        <div id="carLayer" class="carLayer"></div>
+        <div id="effectLayer" class="effectLayer"></div>
+        <div id="ghost" class="ghost" hidden></div>
+        <div id="floats" class="floats"></div>
+        <div id="summary" class="summary">
+          <h3>Run Result</h3>
+          <div class="summaryLine"><span>Combo</span><strong id="sumCombo">0</strong></div>
+          <div class="summaryLine"><span>Earned</span><strong id="sumCoins">0</strong></div>
+          <div class="summaryLine"><span>Best Combo</span><strong id="sumBest">0</strong></div>
+          <div id="sumRecord" class="record"></div>
+          <button id="continueBtn" class="ctrlBtn drop" type="button">BUILD / CONTINUE</button>
+        </div>
+      </div>
+    </section>
+
+    <footer class="bottom">
+      <div id="shop" class="shop"></div>
+      <div class="controls">
+        <button id="rotateBtn" class="ctrlBtn" type="button">Rotate</button>
+        <button id="removeBtn" class="ctrlBtn warn" type="button">Sell / Remove</button>
+        <button id="dropBtn" class="ctrlBtn drop" type="button">DROP</button>
+      </div>
+      <div class="carsCtl">
+        <button id="carsMinusBtn" class="carStepBtn" type="button">-</button>
+        <div id="carsVal" class="carsVal">Cars: 1</div>
+        <button id="carsPlusBtn" class="carStepBtn" type="button">+</button>
+      </div>
+      <div class="statusRow">
+        <span id="statusText">Build mode: place devices freely in arena.</span>
+        <div class="debug">
+          <button id="debugCoinsBtn" class="debugBtn" type="button">+100 Coins</button>
+          <button id="resetBtn" class="debugBtn" type="button">Reset Progress</button>
+        </div>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "combo_drop_lab_save_v3";
+    const MAX_CARS_PER_DROP = 10;
+    const MAX_CARS_TOTAL_PER_RUN = 20;
+    const MIN_CARS_PER_DROP = 1;
+    const SPRING_ROTATION_VECTORS = [
+      { x: -0.45, y: -1 },
+      { x: 0, y: -1 },
+      { x: 0.45, y: -1 }
+    ];
+
+    const DEVICE_DEFS = {
+      spring: { type: "spring", name: "Spring", price: 30, size: 52, radius: 23, rotations: 3, oneShot: true, placement: "floor" },
+      cannon: { type: "cannon", name: "Cannon", price: 50, size: 44, radius: 20, rotations: 1, oneShot: false, placement: "wall", range: 165, cooldownMs: 1200 },
+      bumper: { type: "bumper", name: "Bumper", price: 35, size: 50, radius: 24, rotations: 1, oneShot: false, placement: "free" },
+      gate: { type: "gate", name: "Multiply Gate", price: 45, size: 56, radius: 24, rotations: 1, oneShot: false, placement: "free", gateWidth: 24, gateHeight: 42 }
+    };
+
+    const state = {
+      mode: "build",
+      coins: 100,
+      bestCombo: 0,
+      currentCombo: 0,
+      carsPerDrop: 1,
+      placedDevices: [],
+      pendingDevice: null,
+      selectedDeviceId: null,
+      pointer: null,
+      drag: null,
+      nextDeviceId: 1,
+      cars: [],
+      nextCarId: 1,
+      run: null,
+      summary: { combo: 0, earned: 0, best: 0, record: false },
+      hitFx: new Map(),
+      lastFrameAt: performance.now()
+    };
+
+    const dom = {
+      arena: document.getElementById("arena"),
+      wallTop: document.getElementById("wallTop"),
+      wallLeft: document.getElementById("wallLeft"),
+      wallRight: document.getElementById("wallRight"),
+      floor: document.getElementById("floor"),
+      floorLabel: document.getElementById("floorLabel"),
+      deviceLayer: document.getElementById("deviceLayer"),
+      carLayer: document.getElementById("carLayer"),
+      effectLayer: document.getElementById("effectLayer"),
+      ghost: document.getElementById("ghost"),
+      floats: document.getElementById("floats"),
+      shop: document.getElementById("shop"),
+      rotateBtn: document.getElementById("rotateBtn"),
+      removeBtn: document.getElementById("removeBtn"),
+      dropBtn: document.getElementById("dropBtn"),
+      continueBtn: document.getElementById("continueBtn"),
+      carsMinusBtn: document.getElementById("carsMinusBtn"),
+      carsPlusBtn: document.getElementById("carsPlusBtn"),
+      carsVal: document.getElementById("carsVal"),
+      debugCoinsBtn: document.getElementById("debugCoinsBtn"),
+      resetBtn: document.getElementById("resetBtn"),
+      statusText: document.getElementById("statusText"),
+      summary: document.getElementById("summary"),
+      sumCombo: document.getElementById("sumCombo"),
+      sumCoins: document.getElementById("sumCoins"),
+      sumBest: document.getElementById("sumBest"),
+      sumRecord: document.getElementById("sumRecord"),
+      coinsVal: document.getElementById("coinsVal"),
+      comboVal: document.getElementById("comboVal"),
+      bestVal: document.getElementById("bestVal"),
+      topCarsVal: document.getElementById("topCarsVal")
+    };
+
+    let layout = null;
+    let shopButtons = new Map();
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function dist(ax, ay, bx, by) {
+      return Math.hypot(ax - bx, ay - by);
+    }
+
+    function normalize(x, y) {
+      const length = Math.hypot(x, y) || 1;
+      return { x: x / length, y: y / length };
+    }
+
+    function getDeviceDef(type) {
+      return DEVICE_DEFS[type];
+    }
+
+    function setStatus(text) {
+      dom.statusText.textContent = text;
+    }
+
+    function computeLayout() {
+      const rect = dom.arena.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
+      const wallInset = 22;
+      const top = 56;
+      const floorHeight = clamp(Math.round(height * 0.14), 40, 52);
+      const floorY = clamp(height - floorHeight, top + 80, height - 24);
+      layout = {
+        width,
+        height,
+        left: wallInset,
+        right: width - wallInset,
+        top,
+        floor: floorY,
+        floorHeight,
+        spawnY: top + 15
+      };
+
+      dom.wallTop.style.left = `${layout.left}px`;
+      dom.wallTop.style.right = `${width - layout.right}px`;
+      dom.wallTop.style.top = `${layout.top - 10}px`;
+      dom.wallTop.style.height = "10px";
+
+      dom.wallLeft.style.left = `${layout.left - 12}px`;
+      dom.wallLeft.style.top = `${layout.top - 8}px`;
+      dom.wallLeft.style.height = `${Math.max(60, layout.floor - layout.top + 8)}px`;
+
+      dom.wallRight.style.left = `${layout.right}px`;
+      dom.wallRight.style.top = `${layout.top - 8}px`;
+      dom.wallRight.style.height = `${Math.max(60, layout.floor - layout.top + 8)}px`;
+
+      dom.floor.style.left = "0px";
+      dom.floor.style.right = "0px";
+      dom.floor.style.bottom = "0px";
+      dom.floor.style.height = `${layout.floorHeight}px`;
+
+      dom.floorLabel.style.left = `${layout.left + 16}px`;
+      dom.floorLabel.style.top = `${layout.floor + 6}px`;
+    }
+
+    function toLocalPoint(event) {
+      const rect = dom.arena.getBoundingClientRect();
+      return {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top
+      };
+    }
+
+    function placeConstraint(type, x, y) {
+      const def = getDeviceDef(type);
+      const half = def.size * 0.5;
+      let wallSide = null;
+
+      if (def.placement === "floor") {
+        const px = clamp(x, layout.left + half + 3, layout.right - half - 3);
+        const py = layout.floor - half - 2;
+        return { x: px, y: py, wallSide: null };
+      }
+
+      if (def.placement === "wall") {
+        wallSide = x < (layout.left + layout.right) * 0.5 ? "left" : "right";
+        const px = wallSide === "left"
+          ? layout.left + half + 1
+          : layout.right - half - 1;
+        const py = clamp(y, layout.top + half + 2, layout.floor - half - 6);
+        return { x: px, y: py, wallSide };
+      }
+
+      return {
+        x: clamp(x, layout.left + half + 2, layout.right - half - 2),
+        y: clamp(y, layout.top + half + 2, layout.floor - half - 6),
+        wallSide: null
+      };
+    }
+
+    function isPlacementValid(candidate, ignoreId = null) {
+      const def = getDeviceDef(candidate.type);
+      if (!def) {
+        return false;
+      }
+
+      const half = def.size * 0.5;
+      if (candidate.x < layout.left + half || candidate.x > layout.right - half) {
+        return false;
+      }
+      if (candidate.y < layout.top + half || candidate.y > layout.floor - half) {
+        return false;
+      }
+      if (def.placement === "floor") {
+        const expectedY = layout.floor - half - 2;
+        if (Math.abs(candidate.y - expectedY) > 1.5) {
+          return false;
+        }
+      }
+      if (def.placement === "wall") {
+        const nearLeft = Math.abs(candidate.x - (layout.left + half + 1)) < 1.5;
+        const nearRight = Math.abs(candidate.x - (layout.right - half - 1)) < 1.5;
+        if (!nearLeft && !nearRight) {
+          return false;
+        }
+      }
+
+      for (const other of state.placedDevices) {
+        if (other.id === ignoreId) {
+          continue;
+        }
+        const otherDef = getDeviceDef(other.type);
+        const minDistance = def.radius + otherDef.radius + 8;
+        if (dist(candidate.x, candidate.y, other.x, other.y) < minDistance) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function applyPlacement(type, x, y) {
+      const constrained = placeConstraint(type, x, y);
+      return {
+        x: constrained.x,
+        y: constrained.y,
+        wallSide: constrained.wallSide
+      };
+    }
+
+    function saveProgress() {
+      const payload = {
+        coins: state.coins,
+        bestCombo: state.bestCombo,
+        carsPerDrop: state.carsPerDrop,
+        placedDevices: state.placedDevices.map((device) => ({
+          id: device.id,
+          type: device.type,
+          x: device.x,
+          y: device.y,
+          rotation: device.rotation || 0,
+          wallSide: device.wallSide || null
+        }))
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    }
+
+    function loadProgress() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) {
+          return;
+        }
+        const data = JSON.parse(raw);
+        if (typeof data.coins === "number") {
+          state.coins = Math.max(0, Math.floor(data.coins));
+        }
+        if (typeof data.bestCombo === "number") {
+          state.bestCombo = Math.max(0, Math.floor(data.bestCombo));
+        }
+        if (typeof data.carsPerDrop === "number") {
+          state.carsPerDrop = clamp(Math.floor(data.carsPerDrop), MIN_CARS_PER_DROP, MAX_CARS_PER_DROP);
+        }
+        if (Array.isArray(data.placedDevices)) {
+          const loaded = [];
+          for (const item of data.placedDevices) {
+            const def = getDeviceDef(item.type);
+            if (!def) {
+              continue;
+            }
+            const placed = applyPlacement(def.type, Number(item.x) || 0, Number(item.y) || 0);
+            const candidate = {
+              id: Number.isFinite(item.id) ? Number(item.id) : state.nextDeviceId++,
+              type: def.type,
+              x: placed.x,
+              y: placed.y,
+              rotation: def.type === "spring" ? clamp(Math.floor(item.rotation || 0), 0, 2) : 0,
+              wallSide: placed.wallSide,
+              lastHitAt: 0,
+              cooldownUntil: 0,
+              flashUntil: 0
+            };
+            if (!isPlacementValid(candidate, null)) {
+              continue;
+            }
+            loaded.push(candidate);
+          }
+          state.placedDevices = loaded;
+          const maxId = loaded.reduce((m, d) => Math.max(m, d.id), 0);
+          state.nextDeviceId = Math.max(state.nextDeviceId, maxId + 1);
+        }
+      } catch (error) {
+        console.warn("Failed to load progress", error);
+      }
+    }
+
+    function createShop() {
+      dom.shop.innerHTML = "";
+      shopButtons.clear();
+      for (const def of Object.values(DEVICE_DEFS)) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "buyBtn";
+        button.innerHTML = `<span>${def.name}</span><span class="price">${def.price} coins</span>`;
+        button.addEventListener("click", () => buyDevice(def.type));
+        dom.shop.appendChild(button);
+        shopButtons.set(def.type, button);
+      }
+    }
+
+    function buyDevice(type) {
+      if (state.mode !== "build") {
+        return;
+      }
+      if (state.pendingDevice) {
+        setStatus("Place or cancel pending device first.");
+        return;
+      }
+      const def = getDeviceDef(type);
+      if (!def) {
+        return;
+      }
+      if (state.coins < def.price) {
+        setStatus("Not enough coins.");
+        return;
+      }
+      state.coins -= def.price;
+      state.pendingDevice = { type, rotation: 0 };
+      state.selectedDeviceId = null;
+      saveProgress();
+      setStatus("Move cursor into arena and place device.");
+      renderAll();
+    }
+
+    function getPointerPlacement(type, point) {
+      if (!point) {
+        return null;
+      }
+      const placed = applyPlacement(type, point.x, point.y);
+      return {
+        type,
+        x: placed.x,
+        y: placed.y,
+        wallSide: placed.wallSide
+      };
+    }
+
+    function placePendingAtPointer() {
+      if (state.mode !== "build" || !state.pendingDevice || !state.pointer) {
+        return;
+      }
+      const proposal = getPointerPlacement(state.pendingDevice.type, state.pointer);
+      if (!proposal) {
+        return;
+      }
+      const candidate = {
+        id: state.nextDeviceId++,
+        type: proposal.type,
+        x: proposal.x,
+        y: proposal.y,
+        rotation: state.pendingDevice.type === "spring" ? state.pendingDevice.rotation : 0,
+        wallSide: proposal.wallSide,
+        lastHitAt: 0,
+        cooldownUntil: 0,
+        flashUntil: 0
+      };
+      if (!isPlacementValid(candidate, null)) {
+        setStatus("Invalid placement: out of bounds or too close to another object.");
+        state.nextDeviceId -= 1;
+        renderAll();
+        return;
+      }
+      state.placedDevices.push(candidate);
+      state.pendingDevice = null;
+      state.selectedDeviceId = candidate.id;
+      saveProgress();
+      setStatus("Object placed.");
+      renderAll();
+    }
+
+    function rotateSelected() {
+      if (state.mode !== "build") {
+        return;
+      }
+      if (state.pendingDevice) {
+        if (state.pendingDevice.type !== "spring") {
+          setStatus("Only Spring can rotate.");
+          return;
+        }
+        state.pendingDevice.rotation = (state.pendingDevice.rotation + 1) % 3;
+        renderAll();
+        return;
+      }
+      const device = state.placedDevices.find((d) => d.id === state.selectedDeviceId);
+      if (!device) {
+        return;
+      }
+      if (device.type !== "spring") {
+        setStatus("Only Spring can rotate.");
+        return;
+      }
+      device.rotation = (device.rotation + 1) % 3;
+      saveProgress();
+      renderAll();
+    }
+
+    function removeSelected() {
+      if (state.mode !== "build") {
+        return;
+      }
+      if (state.pendingDevice) {
+        const def = getDeviceDef(state.pendingDevice.type);
+        state.coins += def.price;
+        state.pendingDevice = null;
+        setStatus("Pending object canceled and refunded.");
+        saveProgress();
+        renderAll();
+        return;
+      }
+      const idx = state.placedDevices.findIndex((d) => d.id === state.selectedDeviceId);
+      if (idx < 0) {
+        return;
+      }
+      const removed = state.placedDevices[idx];
+      state.coins += getDeviceDef(removed.type).price;
+      state.placedDevices.splice(idx, 1);
+      state.selectedDeviceId = null;
+      setStatus("Object removed and refunded.");
+      saveProgress();
+      renderAll();
+    }
+
+    function startDragDevice(event, id) {
+      if (state.mode !== "build") {
+        return;
+      }
+      const device = state.placedDevices.find((d) => d.id === id);
+      if (!device) {
+        return;
+      }
+      state.pendingDevice = null;
+      const point = toLocalPoint(event);
+      state.selectedDeviceId = id;
+      state.drag = {
+        id,
+        startX: point.x,
+        startY: point.y,
+        moved: false,
+        wasSelected: state.selectedDeviceId === id,
+        previewX: device.x,
+        previewY: device.y,
+        previewWallSide: device.wallSide || null
+      };
+      window.addEventListener("pointermove", onGlobalPointerMove);
+      window.addEventListener("pointerup", onGlobalPointerUp);
+      event.preventDefault();
+      renderAll();
+    }
+
+    function clearDrag() {
+      state.drag = null;
+      window.removeEventListener("pointermove", onGlobalPointerMove);
+      window.removeEventListener("pointerup", onGlobalPointerUp);
+    }
+
+    function onGlobalPointerMove(event) {
+      if (!state.drag) {
+        return;
+      }
+      const point = toLocalPoint(event);
+      const device = state.placedDevices.find((d) => d.id === state.drag.id);
+      if (!device) {
+        return;
+      }
+      const constrained = applyPlacement(device.type, point.x, point.y);
+      state.drag.previewX = constrained.x;
+      state.drag.previewY = constrained.y;
+      state.drag.previewWallSide = constrained.wallSide;
+      if (!state.drag.moved && dist(point.x, point.y, state.drag.startX, state.drag.startY) > 5) {
+        state.drag.moved = true;
+      }
+      renderAll();
+    }
+
+    function onGlobalPointerUp() {
+      if (!state.drag) {
+        return;
+      }
+      const drag = state.drag;
+      const device = state.placedDevices.find((d) => d.id === drag.id);
+      if (!device) {
+        clearDrag();
+        renderAll();
+        return;
+      }
+
+      if (!drag.moved) {
+        if (device.type === "spring") {
+          device.rotation = (device.rotation + 1) % 3;
+          saveProgress();
+          setStatus("Spring rotated.");
+        } else {
+          setStatus("Object selected. Drag to move.");
+        }
+        clearDrag();
+        renderAll();
+        return;
+      }
+
+      const candidate = {
+        ...device,
+        x: drag.previewX,
+        y: drag.previewY,
+        wallSide: drag.previewWallSide
+      };
+      if (isPlacementValid(candidate, device.id)) {
+        device.x = candidate.x;
+        device.y = candidate.y;
+        device.wallSide = candidate.wallSide;
+        saveProgress();
+        setStatus("Object moved.");
+      } else {
+        setStatus("Cannot place here.");
+      }
+      clearDrag();
+      renderAll();
+    }
+
+    function addFloatingText(x, y, text) {
+      const node = document.createElement("div");
+      node.className = "floatText";
+      node.textContent = text;
+      node.style.left = `${x}px`;
+      node.style.top = `${y}px`;
+      dom.floats.appendChild(node);
+      setTimeout(() => node.remove(), 580);
+    }
+
+    function addShotEffect(x1, y1, x2, y2) {
+      const shot = document.createElement("div");
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const length = Math.hypot(dx, dy);
+      const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+      shot.className = "shot";
+      shot.style.left = `${x1}px`;
+      shot.style.top = `${y1}px`;
+      shot.style.width = `${length}px`;
+      shot.style.transform = `rotate(${angle}deg)`;
+      dom.effectLayer.appendChild(shot);
+      setTimeout(() => shot.remove(), 220);
+    }
+
+    function addBlastEffect(x, y) {
+      const blast = document.createElement("div");
+      blast.className = "blast";
+      blast.style.left = `${x}px`;
+      blast.style.top = `${y}px`;
+      dom.effectLayer.appendChild(blast);
+      setTimeout(() => blast.remove(), 450);
+    }
+
+    function markComboHit(device, x, y, now) {
+      if (now - (device.lastHitAt || 0) < 180) {
+        return false;
+      }
+      device.lastHitAt = now;
+      state.currentCombo += 1;
+      if (state.run) {
+        state.run.lastHitAt = now;
+      }
+      state.hitFx.set(device.id, now + 130);
+      addFloatingText(x, y, "+1");
+      return true;
+    }
+
+    function resetRunDevices() {
+      for (const device of state.placedDevices) {
+        device.lastHitAt = 0;
+        device.cooldownUntil = 0;
+        device.flashUntil = 0;
+      }
+    }
+
+    function spawnCar(now) {
+      const safeLeft = layout.left + 24;
+      const safeRight = layout.right - 24;
+      const x = safeLeft + Math.random() * (safeRight - safeLeft);
+      const car = {
+        id: state.nextCarId++,
+        x,
+        y: layout.spawnY,
+        vx: (Math.random() - 0.5) * 92,
+        vy: 35,
+        radius: 10,
+        angle: 0,
+        state: "falling",
+        exitDir: 0,
+        slowTime: 0,
+        spawnedAt: now,
+        usedSprings: new Set(),
+        usedGates: new Set()
+      };
+      state.cars.push(car);
+      if (state.run) {
+        state.run.totalCarsCreated += 1;
+      }
+    }
+
+    function spawnClonedCar(baseCar, now) {
+      if (!state.run || state.run.totalCarsCreated >= MAX_CARS_TOTAL_PER_RUN) {
+        addFloatingText(baseCar.x, baseCar.y - 18, "MAX");
+        return false;
+      }
+      const clone = {
+        id: state.nextCarId++,
+        x: clamp(baseCar.x + (Math.random() * 22 - 11), layout.left + 20, layout.right - 20),
+        y: clamp(baseCar.y + (Math.random() * 12 - 6), layout.top + 14, layout.floor - 20),
+        vx: baseCar.vx + (Math.random() * 70 - 35),
+        vy: baseCar.vy + (Math.random() * 50 - 25),
+        radius: baseCar.radius,
+        angle: baseCar.angle,
+        state: "falling",
+        exitDir: 0,
+        slowTime: 0,
+        spawnedAt: now,
+        usedSprings: new Set(baseCar.usedSprings),
+        usedGates: new Set(baseCar.usedGates)
+      };
+      state.cars.push(clone);
+      state.run.totalCarsCreated += 1;
+      addBlastEffect(baseCar.x, baseCar.y);
+      addFloatingText(baseCar.x, baseCar.y - 22, "x2");
+      return true;
+    }
+
+    function toDrivingOut(car) {
+      if (car.state !== "falling") {
+        return;
+      }
+      car.state = "drivingOut";
+      car.vx = 0;
+      car.vy = 0;
+      car.y = layout.floor - car.radius;
+      const distLeft = car.x - layout.left;
+      const distRight = layout.right - car.x;
+      car.exitDir = distLeft <= distRight ? -1 : 1;
+      car.angle = car.exitDir < 0 ? -8 : 8;
+      car.slowTime = 0;
+    }
+
+    function updateCannonShots(now) {
+      for (const device of state.placedDevices) {
+        if (device.type !== "cannon") {
+          continue;
+        }
+        if (now < (device.cooldownUntil || 0)) {
+          continue;
+        }
+        let target = null;
+        let bestDist = Infinity;
+        for (const car of state.cars) {
+          if (car.state !== "falling") {
+            continue;
+          }
+          const d = dist(device.x, device.y, car.x, car.y);
+          if (d <= getDeviceDef("cannon").range && d < bestDist) {
+            bestDist = d;
+            target = car;
+          }
+        }
+        if (!target) {
+          continue;
+        }
+        const dir = normalize(target.x - device.x, target.y - device.y);
+        target.vx += dir.x * 300;
+        target.vy += dir.y * 280 - 40;
+        markComboHit(device, target.x, target.y, now);
+        device.cooldownUntil = now + getDeviceDef("cannon").cooldownMs;
+        device.flashUntil = now + 120;
+        addShotEffect(device.x, device.y, target.x, target.y);
+      }
+    }
+
+    function circleIntersectsRect(cx, cy, cr, rx, ry, rw, rh) {
+      const nearestX = clamp(cx, rx, rx + rw);
+      const nearestY = clamp(cy, ry, ry + rh);
+      const dx = cx - nearestX;
+      const dy = cy - nearestY;
+      return (dx * dx + dy * dy) <= (cr * cr);
+    }
+
+    function collideCarWithDevice(car, device, now) {
+      if (device.type === "cannon") {
+        return;
+      }
+      const def = getDeviceDef(device.type);
+
+      if (device.type === "gate") {
+        if (car.usedGates.has(device.id)) {
+          return;
+        }
+        const rx = device.x - (def.gateWidth * 0.5);
+        const ry = device.y - (def.gateHeight * 0.5);
+        const hit = circleIntersectsRect(car.x, car.y, car.radius, rx, ry, def.gateWidth, def.gateHeight);
+        if (!hit) {
+          return;
+        }
+        car.usedGates.add(device.id);
+        if (markComboHit(device, car.x, car.y, now)) {
+          spawnClonedCar(car, now);
+        }
+        return;
+      }
+
+      const hitDist = car.radius + def.radius;
+      const d = dist(car.x, car.y, device.x, device.y);
+      if (d >= hitDist) {
+        return;
+      }
+      const n = normalize(car.x - device.x, car.y - device.y);
+      const overlap = hitDist - d + 0.2;
+      car.x += n.x * overlap;
+      car.y += n.y * overlap;
+
+      if (device.type === "spring") {
+        if (car.usedSprings.has(device.id)) {
+          return;
+        }
+        const vec = SPRING_ROTATION_VECTORS[device.rotation || 0];
+        const springDir = normalize(vec.x, vec.y);
+        car.vx = springDir.x * 430 + car.vx * 0.2;
+        car.vy = springDir.y * 430 + car.vy * 0.2;
+        if (markComboHit(device, car.x, car.y, now)) {
+          car.usedSprings.add(device.id);
+        }
+        return;
+      }
+
+      let baseForce = 325;
+      let spin = (Math.random() - 0.5) * 0.5;
+      const tangent = { x: -n.y, y: n.x };
+      const out = normalize(n.x + tangent.x * spin, n.y + tangent.y * spin);
+      car.vx = out.x * baseForce + car.vx * 0.22;
+      car.vy = out.y * baseForce + car.vy * 0.22;
+      markComboHit(device, car.x, car.y, now);
+    }
+
+    function updateRun(dt, now) {
+      if (!state.run) {
+        return;
+      }
+
+      while (state.run.spawned < state.run.total && now >= state.run.nextSpawnAt) {
+        if (state.run.totalCarsCreated < MAX_CARS_TOTAL_PER_RUN) {
+          spawnCar(now);
+        } else {
+          addFloatingText((layout.left + layout.right) * 0.5, layout.top + 36, "MAX CARS");
+        }
+        state.run.spawned += 1;
+        state.run.nextSpawnAt += 250 + Math.random() * 200;
+      }
+
+      for (const car of state.cars) {
+        if (car.state === "done") {
+          continue;
+        }
+        if (car.state === "drivingOut") {
+          const targetY = layout.floor - car.radius;
+          car.y += (targetY - car.y) * Math.min(1, dt * 9);
+          car.angle += (0 - car.angle) * Math.min(1, dt * 10);
+          car.x += car.exitDir * 220 * dt;
+          if (car.x < layout.left - 64 || car.x > layout.right + 64) {
+            car.state = "done";
+          }
+          continue;
+        }
+
+        const gravity = 980;
+        const damping = Math.pow(0.992, dt * 60);
+        car.vy += gravity * dt;
+        car.vx *= damping;
+        car.vy *= damping;
+        car.x += car.vx * dt;
+        car.y += car.vy * dt;
+
+        const leftBound = layout.left + car.radius;
+        const rightBound = layout.right - car.radius;
+        const topBound = layout.top + car.radius;
+        if (car.x < leftBound) {
+          car.x = leftBound;
+          car.vx = Math.abs(car.vx) * 0.82;
+        } else if (car.x > rightBound) {
+          car.x = rightBound;
+          car.vx = -Math.abs(car.vx) * 0.82;
+        }
+        if (car.y < topBound) {
+          car.y = topBound;
+          car.vy = Math.abs(car.vy) * 0.72;
+        }
+
+        for (const device of state.placedDevices) {
+          collideCarWithDevice(car, device, now);
+        }
+
+        if (car.y + car.radius >= layout.floor) {
+          car.y = layout.floor - car.radius;
+          toDrivingOut(car);
+          continue;
+        }
+
+        car.angle = clamp(car.vx * 0.08, -28, 28);
+        const speed = Math.hypot(car.vx, car.vy);
+        if (speed < 36) {
+          car.slowTime += dt;
+          if (car.slowTime >= 2) {
+            toDrivingOut(car);
+          }
+        } else {
+          car.slowTime = 0;
+        }
+      }
+
+      updateCannonShots(now);
+
+      if (now - state.run.lastHitAt > 4000) {
+        const falling = state.cars.filter((car) => car.state === "falling");
+        const allSlow = falling.length > 0 && falling.every((car) => Math.hypot(car.vx, car.vy) < 72);
+        if (allSlow) {
+          for (const car of falling) {
+            toDrivingOut(car);
+          }
+          state.run.lastHitAt = now;
+        }
+      }
+
+      const allSpawned = state.run.spawned >= state.run.total;
+      const allDone = state.cars.length > 0 && state.cars.every((car) => car.state === "done");
+      if (allSpawned && allDone) {
+        finishRun();
+      }
+    }
+
+    function startDrop() {
+      if (state.mode !== "build") {
+        return;
+      }
+      if (state.pendingDevice) {
+        setStatus("Place or remove pending object first.");
+        return;
+      }
+      state.mode = "drop";
+      state.currentCombo = 0;
+      state.cars = [];
+      resetRunDevices();
+      const now = performance.now();
+      state.run = {
+        total: state.carsPerDrop,
+        spawned: 0,
+        nextSpawnAt: now + 110,
+        lastHitAt: now,
+        totalCarsCreated: 0
+      };
+      dom.summary.classList.remove("active");
+      setStatus(`Drop mode: spawning ${state.carsPerDrop} car(s).`);
+      renderAll();
+    }
+
+    function finishRun() {
+      if (state.mode !== "drop") {
+        return;
+      }
+      state.mode = "summary";
+      const earned = state.currentCombo * 2;
+      state.coins += earned;
+      const prevBest = state.bestCombo;
+      state.bestCombo = Math.max(state.bestCombo, state.currentCombo);
+      state.summary = {
+        combo: state.currentCombo,
+        earned,
+        best: state.bestCombo,
+        record: state.bestCombo > prevBest
+      };
+      state.currentCombo = 0;
+      state.run = null;
+      resetRunDevices();
+      updateSummaryPanel();
+      dom.summary.classList.add("active");
+      saveProgress();
+      setStatus("Run complete.");
+      renderAll();
+    }
+
+    function continueFromSummary() {
+      if (state.mode === "drop") {
+        return;
+      }
+      state.mode = "build";
+      state.cars = [];
+      resetRunDevices();
+      dom.summary.classList.remove("active");
+      setStatus("Build mode: place devices and press DROP.");
+      renderAll();
+    }
+
+    function updateSummaryPanel() {
+      dom.sumCombo.textContent = String(state.summary.combo);
+      dom.sumCoins.textContent = `${state.summary.earned} coins`;
+      dom.sumBest.textContent = String(state.summary.best);
+      dom.sumRecord.textContent = state.summary.record ? "New Best Combo!" : "";
+    }
+
+    function renderDevices() {
+      dom.deviceLayer.innerHTML = "";
+      const now = performance.now();
+      const fragment = document.createDocumentFragment();
+
+      for (const device of state.placedDevices) {
+        const def = getDeviceDef(device.type);
+        const node = document.createElement("div");
+        node.className = `device ${device.type}`;
+        node.dataset.id = String(device.id);
+        node.style.width = `${def.size}px`;
+        node.style.height = `${def.size}px`;
+        node.style.left = `${device.x}px`;
+        node.style.top = `${device.y}px`;
+        node.style.transform = "translate(-50%, -50%)";
+
+        if (device.type === "spring") {
+          const arrow = document.createElement("div");
+          arrow.className = "springArrow";
+          const angle = device.rotation === 0 ? -130 : (device.rotation === 1 ? -90 : -50);
+          arrow.style.transform = `translate(-50%,-50%) rotate(${angle}deg)`;
+          node.appendChild(arrow);
+        }
+        if (device.type === "gate") {
+          const gateCore = document.createElement("div");
+          gateCore.className = "gateCore";
+          gateCore.textContent = "x2";
+          node.appendChild(gateCore);
+        }
+        if (device.type === "cannon") {
+          node.classList.add(device.wallSide === "right" ? "right" : "left");
+          if (device.flashUntil > now) {
+            node.classList.add("flash");
+          }
+        }
+        if (device.id === state.selectedDeviceId) {
+          node.classList.add("selected");
+        }
+        if (state.drag && state.drag.id === device.id) {
+          node.classList.add("dragging");
+          node.style.left = `${state.drag.previewX}px`;
+          node.style.top = `${state.drag.previewY}px`;
+          if (device.type === "cannon") {
+            node.classList.remove("left", "right");
+            node.classList.add((state.drag.previewWallSide === "right") ? "right" : "left");
+          }
+        }
+        const hitUntil = state.hitFx.get(device.id);
+        if (hitUntil && hitUntil > now) {
+          node.classList.add("hit");
+        }
+        if (state.mode === "build") {
+          node.addEventListener("pointerdown", (event) => startDragDevice(event, device.id));
+        }
+        fragment.appendChild(node);
+      }
+
+      const selected = state.placedDevices.find((d) => d.id === state.selectedDeviceId);
+      if (state.mode === "build" && selected && selected.type === "cannon") {
+        const rangeNode = document.createElement("div");
+        const range = getDeviceDef("cannon").range;
+        rangeNode.className = "cannonRange";
+        rangeNode.style.width = `${range * 2}px`;
+        rangeNode.style.height = `${range * 2}px`;
+        rangeNode.style.left = `${selected.x - range}px`;
+        rangeNode.style.top = `${selected.y - range}px`;
+        fragment.appendChild(rangeNode);
+      }
+
+      dom.deviceLayer.appendChild(fragment);
+      for (const [id, expiry] of state.hitFx.entries()) {
+        if (expiry <= now) {
+          state.hitFx.delete(id);
+        }
+      }
+    }
+
+    function renderCars() {
+      dom.carLayer.innerHTML = "";
+      const fragment = document.createDocumentFragment();
+      for (const car of state.cars) {
+        if (car.state === "done") {
+          continue;
+        }
+        const node = document.createElement("div");
+        node.className = `car ${car.state === "drivingOut" ? "drive" : ""}`;
+        node.style.left = `${car.x}px`;
+        node.style.top = `${car.y}px`;
+        node.style.transform = `translate(-50%,-50%) rotate(${car.angle}deg)`;
+        const roof = document.createElement("div");
+        roof.className = "roof";
+        node.appendChild(roof);
+        fragment.appendChild(node);
+      }
+      dom.carLayer.appendChild(fragment);
+    }
+
+    function renderGhost() {
+      if (state.mode !== "build" || !state.pendingDevice || !state.pointer) {
+        dom.ghost.hidden = true;
+        return;
+      }
+      const def = getDeviceDef(state.pendingDevice.type);
+      const placement = getPointerPlacement(state.pendingDevice.type, state.pointer);
+      if (!placement) {
+        dom.ghost.hidden = true;
+        return;
+      }
+      const candidate = {
+        id: -1,
+        type: placement.type,
+        x: placement.x,
+        y: placement.y,
+        rotation: state.pendingDevice.type === "spring" ? state.pendingDevice.rotation : 0,
+        wallSide: placement.wallSide
+      };
+      const valid = isPlacementValid(candidate, null);
+      dom.ghost.hidden = false;
+      dom.ghost.style.width = `${def.size}px`;
+      dom.ghost.style.height = `${def.size}px`;
+      dom.ghost.style.left = `${candidate.x}px`;
+      dom.ghost.style.top = `${candidate.y}px`;
+      dom.ghost.classList.toggle("blocked", !valid);
+    }
+
+    function renderHud() {
+      dom.coinsVal.textContent = String(state.coins);
+      dom.comboVal.textContent = String(state.currentCombo);
+      dom.bestVal.textContent = String(state.bestCombo);
+      dom.topCarsVal.textContent = String(state.carsPerDrop);
+      dom.carsVal.textContent = `Cars: ${state.carsPerDrop}`;
+    }
+
+    function renderShopState() {
+      const lockBuild = state.mode !== "build";
+      for (const [type, button] of shopButtons.entries()) {
+        const def = getDeviceDef(type);
+        button.disabled = lockBuild || !!state.pendingDevice || state.coins < def.price;
+        button.classList.toggle("selected", !!state.pendingDevice && state.pendingDevice.type === type);
+      }
+    }
+
+    function renderControls() {
+      const selected = state.placedDevices.find((d) => d.id === state.selectedDeviceId);
+      const rotateTargetType = state.pendingDevice ? state.pendingDevice.type : (selected ? selected.type : null);
+      const canRotate = rotateTargetType === "spring";
+      const lockBuild = state.mode !== "build";
+      dom.rotateBtn.disabled = lockBuild || !canRotate;
+      dom.removeBtn.disabled = lockBuild || (!state.pendingDevice && !selected);
+      dom.dropBtn.disabled = lockBuild || !!state.pendingDevice;
+      dom.carsMinusBtn.disabled = lockBuild || state.carsPerDrop <= MIN_CARS_PER_DROP;
+      dom.carsPlusBtn.disabled = lockBuild || state.carsPerDrop >= MAX_CARS_PER_DROP;
+    }
+
+    function renderAll() {
+      renderDevices();
+      renderCars();
+      renderGhost();
+      renderHud();
+      renderShopState();
+      renderControls();
+    }
+
+    function resetProgress() {
+      localStorage.removeItem(STORAGE_KEY);
+      state.mode = "build";
+      state.coins = 100;
+      state.bestCombo = 0;
+      state.currentCombo = 0;
+      state.carsPerDrop = 1;
+      state.placedDevices = [];
+      state.pendingDevice = null;
+      state.selectedDeviceId = null;
+      state.drag = null;
+      state.cars = [];
+      state.run = null;
+      state.nextDeviceId = 1;
+      state.nextCarId = 1;
+      state.summary = { combo: 0, earned: 0, best: 0, record: false };
+      state.hitFx.clear();
+      dom.summary.classList.remove("active");
+      saveProgress();
+      setStatus("Progress reset.");
+      renderAll();
+    }
+
+    function onArenaPointerMove(event) {
+      state.pointer = toLocalPoint(event);
+      if (state.mode === "build") {
+        renderGhost();
+      }
+    }
+
+    function onArenaPointerLeave() {
+      state.pointer = null;
+      renderGhost();
+    }
+
+    function onArenaPointerUp(event) {
+      if (state.mode !== "build" || state.drag) {
+        return;
+      }
+      const targetDevice = event.target.closest(".device");
+      if (targetDevice) {
+        const id = Number(targetDevice.dataset.id);
+        state.selectedDeviceId = Number.isFinite(id) ? id : null;
+        renderAll();
+        return;
+      }
+      if (state.pendingDevice) {
+        placePendingAtPointer();
+      } else {
+        state.selectedDeviceId = null;
+        renderAll();
+      }
+    }
+
+    function tick(now) {
+      const dt = Math.min((now - state.lastFrameAt) / 1000, 0.033);
+      state.lastFrameAt = now;
+      if (state.mode === "drop") {
+        updateRun(dt, now);
+      }
+      renderCars();
+      renderHud();
+      requestAnimationFrame(tick);
+    }
+
+    function wireEvents() {
+      dom.rotateBtn.addEventListener("click", rotateSelected);
+      dom.removeBtn.addEventListener("click", removeSelected);
+      dom.dropBtn.addEventListener("click", startDrop);
+      dom.continueBtn.addEventListener("click", continueFromSummary);
+      dom.carsMinusBtn.addEventListener("click", () => {
+        state.carsPerDrop = clamp(state.carsPerDrop - 1, MIN_CARS_PER_DROP, MAX_CARS_PER_DROP);
+        saveProgress();
+        renderAll();
+      });
+      dom.carsPlusBtn.addEventListener("click", () => {
+        state.carsPerDrop = clamp(state.carsPerDrop + 1, MIN_CARS_PER_DROP, MAX_CARS_PER_DROP);
+        saveProgress();
+        renderAll();
+      });
+      dom.debugCoinsBtn.addEventListener("click", () => {
+        state.coins += 100;
+        saveProgress();
+        setStatus("Added 100 debug coins.");
+        renderAll();
+      });
+      dom.resetBtn.addEventListener("click", resetProgress);
+
+      dom.arena.addEventListener("pointermove", onArenaPointerMove);
+      dom.arena.addEventListener("pointerleave", onArenaPointerLeave);
+      dom.arena.addEventListener("pointerup", onArenaPointerUp);
+
+      window.addEventListener("resize", () => {
+        computeLayout();
+        for (const device of state.placedDevices) {
+          const c = applyPlacement(device.type, device.x, device.y);
+          device.x = c.x;
+          device.y = c.y;
+          device.wallSide = c.wallSide;
+        }
+        saveProgress();
+        renderAll();
+      });
+    }
+
+    function init() {
+      computeLayout();
+      createShop();
+      loadProgress();
+      wireEvents();
+      updateSummaryPanel();
+      setStatus("Build mode: place devices and press DROP.");
+      renderAll();
+      requestAnimationFrame(tick);
+    }
+
+    init();
+  </script>
+</body>
+</html>
