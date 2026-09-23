@@ -484,12 +484,13 @@
       .screenButtons .actionButton{width:100%}
     }
   </style>
+  <link rel="stylesheet" href="menu-system.css">
 </head>
 <body>
   <main class="app">
     <aside class="leftCol">
       <section class="panel titleCard">
-        <div class="eyebrow">Worm Jam Prototype</div>
+        <div class="eyebrow">Worm puzzle</div>
         <h1>Worm Place Puzzle</h1>
         <p class="muted">Place every worm on its matching pipe path. Sockets mark the ends; the line marks the exact body route.</p>
       </section>
@@ -522,7 +523,7 @@
         <div class="buttonRack">
           <button id="restartButton" class="actionButton secondary small" type="button">Restart</button>
           <button id="menuButton" class="actionButton secondary small" type="button">Menu</button>
-          <button id="debugButton" class="actionButton accent small" type="button">Debug</button>
+          <button id="debugButton" class="actionButton accent small" type="button">Tools</button>
         </div>
       </section>
 
@@ -581,7 +582,7 @@
       <div class="menuGrid">
         <section class="menuPanel">
           <h3>Campaign</h3>
-          <p class="muted">A 100 level sequence with short FTUE hints and a gradual mix of small boards, long paths, dense starts, and color matching.</p>
+          <p class="muted">Guide matching worms into their marked paths across 100 levels, with longer routes and new color combinations along the way.</p>
           <div class="menuStats">
             <div class="statCard"><span>Unlocked</span><strong id="menuUnlocked">1</strong></div>
             <div class="statCard"><span>Total</span><strong>100</strong></div>
@@ -608,7 +609,7 @@
         </section>
         <section class="menuPanel">
           <h3>Sandbox</h3>
-          <p class="muted">Generate, restart, export, and import boards without changing campaign progress.</p>
+          <p class="muted">Create and replay your own worm layouts without changing campaign progress.</p>
           <div class="menuStats">
             <div class="statCard"><span>Width</span><strong>5-20</strong></div>
             <div class="statCard"><span>Height</span><strong>5-30</strong></div>

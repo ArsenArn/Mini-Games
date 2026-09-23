@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
@@ -152,6 +152,7 @@
     @media (max-width:900px){.app.desktop-mode{width:100vw;grid-template-columns:1fr;grid-template-rows:auto 1fr}.app.desktop-mode .screen .panel{width:min(100%,560px)}.app.desktop-mode .setupShell,.app.desktop-mode .tutorialGrid,.app.desktop-mode .settingsGrid{grid-template-columns:1fr}}
     @media (max-width:430px){.app{width:100vw;padding-left:10px;padding-right:10px}.layoutGrid,.difficultyGrid,.stackedMeta,.tutorialGrid{grid-template-columns:1fr}.hudTop,.hudBottom{flex-direction:column}.hudButtonRow,.hudGroup{justify-content:space-between}}
   </style>
+  <link rel="stylesheet" href="menu-system.css">
 </head>
 <body>
   <div class="app">
@@ -196,15 +197,15 @@
       </div>
       <div id="menuScreen" class="screen">
         <div class="panel">
-          <div class="eyebrow">Canvas Prototype</div>
+          <div class="eyebrow">Choose your run</div>
           <div class="setupShell">
             <div class="setupIntro">
               <h1>Snake Merge Defense</h1>
               <p>Collect colored orbs, hold attack rows, and break the flood before the wall gives out.</p>
               <div class="compactTagRow">
                 <div class="compactTag">Flood Grid</div>
-                <div class="compactTag desktopOnly">Desktop setup on the right</div>
-                <div class="compactTag mobileOnly">Settings under a separate button</div>
+                <div class="compactTag desktopOnly">Build your defense</div>
+                <div class="compactTag mobileOnly">Build your defense</div>
               </div>
               <div class="modeGrid">
                 <button class="difficultyButton selected" type="button" data-mode="levels"><strong>Levels</strong></button>

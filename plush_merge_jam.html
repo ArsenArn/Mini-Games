@@ -41,10 +41,11 @@
       width: 100vw;
       height: 100vh;
     }
+    canvas:focus-visible{outline:3px solid #fff7df;outline-offset:-6px}
   </style>
 </head>
 <body>
-  <canvas id="gameCanvas" aria-label="Plush Merge Jam canvas"></canvas>
+  <canvas id="gameCanvas" tabindex="0" role="application" aria-label="Plush Merge Jam. Use Tab to move through menu actions and Enter to choose."></canvas>
   <script>
     (() => {
       "use strict";
@@ -233,6 +234,23 @@
         ctx.arcTo(x, y + h, x, y, radius);
         ctx.arcTo(x, y, x + w, y, radius);
         ctx.closePath();
+      }
+      function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight) {
+        const words = text.split(/\s+/);
+        let line = "";
+        let lineY = y;
+        for (const word of words) {
+          const candidate = line ? `${line} ${word}` : word;
+          if (line && ctx.measureText(candidate).width > maxWidth) {
+            ctx.fillText(line, x, lineY);
+            line = word;
+            lineY += lineHeight;
+          } else {
+            line = candidate;
+          }
+        }
+        if (line) ctx.fillText(line, x, lineY);
+        return lineY + lineHeight;
       }
       function withAlpha(hex, alpha) {
         const clean = hex.replace("#", "");
@@ -1268,13 +1286,40 @@
           this.game = game;
           this.buttons = [];
           this.levelCards = [];
+          this.focusedItem = null;
+          this.focusState = null;
         }
         clear() {
           this.buttons.length = 0;
           this.levelCards.length = 0;
         }
         addButton(id, label, x, y, w, h, onClick, options = {}) {
-          this.buttons.push({ id, label, x, y, w, h, onClick, kind: options.kind || "primary", disabled: !!options.disabled, small: !!options.small });
+          this.buttons.push({ id, label, x, y, w, h, onClick, kind: options.kind || "primary", disabled: !!options.disabled, small: !!options.small, focused: this.focusedItem?.type === "button" && this.focusedItem.id === id });
+        }
+        keyboardItems() {
+          if (this.game.state === CONFIG.STATES.LEVEL_SELECT) {
+            return [
+              ...this.levelCards.filter((card) => card.unlocked).map((card) => ({ type: "card", id: String(card.index), card })),
+              ...this.buttons.map((button) => ({ type: "button", id: button.id, button }))
+            ];
+          }
+          return this.buttons.map((button) => ({ type: "button", id: button.id, button }));
+        }
+        moveFocus(direction) {
+          const items = this.keyboardItems();
+          if (!items.length) return;
+          const current = items.findIndex((item) => item.type === this.focusedItem?.type && item.id === this.focusedItem?.id);
+          const next = (current + direction + items.length) % items.length;
+          this.focusedItem = { type: items[next].type, id: items[next].id };
+        }
+        activateFocused() {
+          const items = this.keyboardItems();
+          const item = items.find((candidate) => candidate.type === this.focusedItem?.type && candidate.id === this.focusedItem?.id);
+          if (!item) return;
+          this.game.audio.ensureContext();
+          this.game.audio.playUI();
+          if (item.type === "card") this.game.startCampaignLevel(item.card.index);
+          else if (!item.button.disabled) item.button.onClick();
         }
         hitButton(x, y) {
           for (let i = this.buttons.length - 1; i >= 0; i--) {
@@ -1292,6 +1337,10 @@
         draw(ctx, layout) {
           this.clear();
           const state = this.game.state;
+          if (state !== this.focusState) {
+            this.focusState = state;
+            this.focusedItem = state === CONFIG.STATES.MENU ? { type: "button", id: "play" } : state === CONFIG.STATES.LEVEL_SELECT ? { type: "card", id: "1" } : null;
+          }
           if (state === CONFIG.STATES.MENU) this.drawMenu(ctx, layout);
           if (state === CONFIG.STATES.LEVEL_SELECT) this.drawLevelSelect(ctx, layout);
           if (state === CONFIG.STATES.GAMEPLAY) this.drawGameplayHUD(ctx, layout);
@@ -1343,10 +1392,20 @@
           ctx.strokeStyle = palette[2];
           ctx.stroke();
           ctx.fillStyle = palette[2];
+          if (button.focused) {
+            roundRectPath(ctx, button.x - 4, button.y - 4, button.w + 8, button.h + 8, CONFIG.BUTTON_RADIUS + 4);
+            ctx.lineWidth = 7;
+            ctx.strokeStyle = "#4b351f";
+            ctx.stroke();
+            roundRectPath(ctx, button.x - 4, button.y - 4, button.w + 8, button.h + 8, CONFIG.BUTTON_RADIUS + 4);
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = "#fff5d5";
+            ctx.stroke();
+          }
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.font = `${button.small ? 20 : 26}px "Trebuchet MS", "Segoe Print", "Comic Sans MS", cursive`;
-          ctx.fillText(button.label, button.x + button.w / 2, button.y + button.h / 2 + 1);
+          ctx.font = `${Math.min(button.small ? 18 : 22, button.w * 0.085)}px "Trebuchet MS", "Segoe Print", "Comic Sans MS", cursive`;
+          ctx.fillText(button.label, button.x + button.w / 2, button.y + button.h / 2 + 1, button.w - 20);
           ctx.restore();
         }
         drawTitle(ctx, layout) {
@@ -1366,34 +1425,36 @@
         }
         drawMenu(ctx, layout) {
           this.drawTitle(ctx, layout);
-          const panelW = Math.min(layout.width - 48, 520);
-          const panelH = Math.min(layout.height - 170, 630);
+          const compact = layout.height < 700 || layout.width < 480;
+          const panelW = Math.min(layout.width - (layout.width < 480 ? 24 : 48), 520);
+          const panelY = compact ? 102 : Math.max(140, layout.height * 0.2);
+          const panelH = Math.min(layout.height - panelY - 14, compact ? 480 : 630);
           const panelX = (layout.width - panelW) / 2;
-          const panelY = Math.max(140, layout.height * 0.2);
           this.drawPanel(ctx, panelX, panelY, panelW, panelH, 0.96);
           ctx.save();
           ctx.textAlign = "center";
           ctx.textBaseline = "top";
           ctx.fillStyle = CONFIG.UI_THEME.text;
-          ctx.font = `22px "Trebuchet MS", "Segoe Print", cursive`;
-          ctx.fillText("Plush sliding merge puzzle", layout.width / 2, panelY + 26);
-          ctx.font = `18px "Trebuchet MS", "Segoe Print", cursive`;
-          ctx.fillText("Color Block Jam x Fruit Merge в уютной деревянной коробке", layout.width / 2, panelY + 60);
+          ctx.font = `${compact ? 16 : 22}px "Trebuchet MS", "Segoe Print", cursive`;
+          drawWrappedText(ctx, "Сдвигайте одинаковые игрушки, чтобы объединять их.", layout.width / 2, panelY + (compact ? 22 : 24), panelW - 52, compact ? 20 : 26);
           ctx.restore();
           const btnW = panelW - 72;
-          const btnH = 66;
+          const btnH = compact ? 50 : 62;
           const btnX = panelX + 36;
-          const startY = panelY + 118;
+          const startY = panelY + (compact ? 70 : 94);
+          const step = compact ? 58 : 78;
           this.addButton("play", "ИГРАТЬ", btnX, startY, btnW, btnH, () => this.game.startCampaignLevel(1));
-          this.addButton("select", "ВЫБОР УРОВНЯ", btnX, startY + 84, btnW, btnH, () => this.game.setState(CONFIG.STATES.LEVEL_SELECT), { kind: "secondary" });
-          this.addButton("random", "СЛУЧАЙНЫЙ УРОВЕНЬ", btnX, startY + 168, btnW, btnH, () => this.game.openRandomLevel("normal"));
-          this.addButton("endless", "БЕСКОНЕЧНЫЙ РЕЖИМ", btnX, startY + 252, btnW, btnH, () => this.game.startEndless(), { kind: "secondary" });
-          this.addButton("audio", this.game.audio.enabled ? "ЗВУК: ВКЛ" : "ЗВУК: ВЫКЛ", btnX, startY + 354, btnW, 56, () => this.game.toggleAudio(), { kind: "secondary", small: true });
+          this.addButton("select", "ВЫБОР УРОВНЯ", btnX, startY + step, btnW, btnH, () => this.game.setState(CONFIG.STATES.LEVEL_SELECT), { kind: "secondary" });
+          this.addButton("random", "СЛУЧАЙНЫЙ УРОВЕНЬ", btnX, startY + step * 2, btnW, btnH, () => this.game.openRandomLevel("normal"));
+          this.addButton("endless", "БЕСКОНЕЧНЫЙ РЕЖИМ", btnX, startY + step * 3, btnW, btnH, () => this.game.startEndless(), { kind: "secondary" });
+          const audioY = startY + step * 4 + (compact ? 2 : 18);
+          this.addButton("audio", this.game.audio.enabled ? "ЗВУК: ВКЛ" : "ЗВУК: ВЫКЛ", btnX, audioY, btnW, compact ? 44 : 50, () => this.game.toggleAudio(), { kind: "secondary", small: true });
           ctx.save();
           ctx.textAlign = "center";
           ctx.fillStyle = withAlpha(CONFIG.UI_THEME.textSoft, 0.95);
-          ctx.font = `17px "Trebuchet MS", "Segoe Print", cursive`;
-          ctx.fillText("Drag: мышь/палец  •  Z: undo  •  R: restart  •  H: hint  •  Esc: пауза", layout.width / 2, panelY + panelH - 56);
+          ctx.textBaseline = "bottom";
+          ctx.font = `${compact ? 12 : 15}px "Trebuchet MS", "Segoe Print", cursive`;
+          drawWrappedText(ctx, compact ? "Z — отмена · H — подсказка · Esc — пауза" : "Перетаскивайте блоки · Z — отмена · H — подсказка · Esc — пауза", layout.width / 2, panelY + panelH - (compact ? 28 : 30), panelW - 38, compact ? 15 : 18);
           ctx.restore();
           for (const button of this.buttons) this.drawButton(ctx, button);
         }
@@ -1457,6 +1518,16 @@
               ctx.beginPath();
               ctx.arc(x + cardW - 26 - s * 22, y + 26, 7, 0, Math.PI * 2);
               ctx.fill();
+            }
+            if (this.focusedItem?.type === "card" && this.focusedItem.id === String(i + 1) && unlocked) {
+              roundRectPath(ctx, x - 4, y - 4, cardW + 8, cardH + 8, 27);
+              ctx.lineWidth = 7;
+              ctx.strokeStyle = "#4b351f";
+              ctx.stroke();
+              roundRectPath(ctx, x - 4, y - 4, cardW + 8, cardH + 8, 27);
+              ctx.lineWidth = 3;
+              ctx.strokeStyle = "#fff5d5";
+              ctx.stroke();
             }
             ctx.restore();
           }
@@ -1630,6 +1701,7 @@
         }
         onPointerDown(event) {
           const pos = this.toCanvasPosition(event);
+          this.game.canvas.focus({ preventScroll: true });
           this.game.audio.ensureContext();
           const button = this.game.ui.hitButton(pos.x, pos.y);
           if (button && !button.disabled) {
@@ -1738,6 +1810,25 @@
         }
         onKeyDown(event) {
           const state = this.game.state;
+          if (state === CONFIG.STATES.MENU || state === CONFIG.STATES.LEVEL_SELECT) {
+            if (event.key === "Escape" && state === CONFIG.STATES.LEVEL_SELECT) {
+              event.preventDefault();
+              this.game.setState(CONFIG.STATES.MENU);
+              return;
+            }
+            if (["Tab", "ArrowDown", "ArrowRight", "ArrowUp", "ArrowLeft"].includes(event.key)) {
+              event.preventDefault();
+              this.game.canvas.focus({ preventScroll: true });
+              const backwards = event.shiftKey || event.key === "ArrowUp" || event.key === "ArrowLeft";
+              this.game.ui.moveFocus(backwards ? -1 : 1);
+              return;
+            }
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              this.game.ui.activateFocused();
+            }
+            return;
+          }
           if (state !== CONFIG.STATES.GAMEPLAY && state !== CONFIG.STATES.PAUSE) return;
           if (event.key === "Escape") {
             event.preventDefault();

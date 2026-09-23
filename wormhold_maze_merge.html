@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -428,6 +428,7 @@
       .debugDrawer{left:10px;width:auto}
     }
   </style>
+  <link rel="stylesheet" href="menu-system.css">
 </head>
 <body>
   <div class="app">
@@ -460,45 +461,45 @@
 
       <section id="bootScreen" class="screen visible">
         <div class="panel narrow">
-          <div class="eyebrow">Boot</div>
+          <div class="eyebrow">Wormhold Maze Merge</div>
           <h1>Wormhold Maze Merge</h1>
-          <p>Loading maze grid, slither controls, tower nodes, A* pathfinding, wave simulation, save data, audio, and debug tools.</p>
+          <p>Shape a maze around your core, merge tower-worms, and outlast the incoming waves.</p>
           <div class="dashboard">
-            <div class="dashboardCard"><span>Core Loop</span><strong>🫳 Build -> 🧬 Merge -> ⚔️ Battle</strong></div>
-            <div class="dashboardCard"><span>Field</span><strong>🧱 Maze Grid + 🏰 Core</strong></div>
-            <div class="dashboardCard"><span>Modes</span><strong>🎮 Campaign Ready</strong></div>
+            <div class="dashboardCard"><span>Build</span><strong>Shape the maze</strong></div>
+            <div class="dashboardCard"><span>Merge</span><strong>Grow your towers</strong></div>
+            <div class="dashboardCard"><span>Battle</span><strong>Protect the core</strong></div>
           </div>
         </div>
       </section>
 
       <section id="menuScreen" class="screen">
         <div class="panel">
-          <div class="eyebrow">Puzzle Defense Prototype</div>
+          <div class="eyebrow">Build · Merge · Defend</div>
           <h1>Wormhold Maze Merge</h1>
-          <p>Build a worm maze around the core, drag worms smoothly by their ends, merge equal specializations into longer bodies, park towers on bonus cells, and let pathfinding waves test the layout.</p>
+          <p>Turn your living defenders into a winding maze. Combine matching tower-worms and steer each wave away from the core.</p>
           <div class="tagRow">
-            <div class="tag">🧩 Puzzle / Merge / Tower Defense</div>
-            <div class="tag">📱 Mobile + Desktop</div>
-            <div class="tag">🧪 Debug + Campaign</div>
+            <div class="tag">Puzzle · Merge · Defense</div>
+            <div class="tag">Campaign</div>
+            <div class="tag">Built for touch and mouse</div>
           </div>
           <div class="featureRow">
             <div class="featureCard">
-              <h3>🫳 End-Drag Slither</h3>
-              <span>Grab the head or tail and steer the body cell by cell like a snake while preserving a valid route.</span>
+              <h3>Build</h3>
+              <span>Place living defenders to shape the route around your core.</span>
             </div>
             <div class="featureCard">
-              <h3>🧱 Maze Pressure</h3>
-              <span>Enemies enter from the top and sides, solve the maze with A*, and punish weak corridors.</span>
+              <h3>Merge</h3>
+              <span>Combine matching worms to strengthen your tower line.</span>
             </div>
             <div class="featureCard">
-              <h3>✨ Designer Ready</h3>
-              <span>Use the built-in drawer to tune path debug, tower multipliers, enemy pacing, bonus cells, and export/import JSON.</span>
+              <h3>Defend</h3>
+              <span>Guide enemies through the maze while your towers attack.</span>
             </div>
           </div>
           <div class="dashboard">
-            <div class="dashboardCard"><span>Campaign</span><strong>🗺️ 6 levels</strong></div>
-            <div class="dashboardCard"><span>Wave Curve</span><strong>⏱️ 15-40 sec target</strong></div>
-            <div class="dashboardCard"><span>Modes</span><strong>⚙️ Campaign now, endless later</strong></div>
+            <div class="dashboardCard"><span>Campaign</span><strong>6 levels</strong></div>
+            <div class="dashboardCard"><span>Build phase</span><strong>Place and merge</strong></div>
+            <div class="dashboardCard"><span>Battle</span><strong>Automatic waves</strong></div>
           </div>
           <div class="screenButtons">
             <button id="menuPlayButton" class="menuButton primary" type="button">Campaign</button>

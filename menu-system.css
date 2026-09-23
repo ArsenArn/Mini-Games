@@ -1,0 +1,200 @@
+/* Shared interaction and menu polish. Game-specific palettes remain in each game. */
+:where(button,a,input,select,textarea):focus-visible{
+  outline:3px solid #f6cf57;
+  outline-offset:3px;
+  box-shadow:0 0 0 2px rgba(18,28,40,.72);
+}
+
+:where(button,a){-webkit-tap-highlight-color:transparent}
+:where(button,a):disabled{cursor:not-allowed}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    scroll-behavior:auto!important;
+    animation-duration:.01ms!important;
+    animation-iteration-count:1!important;
+    transition-duration:.01ms!important;
+  }
+}
+
+/* Compact setup overlays */
+#layoutScreen>.panel,
+#menuScreen>.panel,
+#menuScreen>.screenCard,
+#menuScreen>.screenCard.wide,
+#menuScreen>.panel.narrow{
+  border-radius:24px;
+  padding:clamp(18px,3vw,30px);
+  gap:clamp(14px,2vw,20px);
+  box-shadow:0 24px 60px rgba(12,25,38,.2);
+}
+
+#layoutScreen>.panel,
+#menuScreen>.panel{
+  max-height:none;
+  overflow:visible;
+  scrollbar-width:thin;
+}
+
+#layoutScreen h1,
+#menuScreen h1,
+#menuScreen h2{letter-spacing:-.035em}
+
+#layoutScreen .difficultyButton,
+#menuScreen .difficultyButton,
+#menuScreen .menuButton,
+#menuScreen .actionButton,
+#menuScreen .btn,
+#menuScreen .launch{
+  min-height:46px;
+}
+
+#menuScreen .difficultyButton,
+#menuScreen .menuChoice,
+#menuScreen .menuPanel,
+#menuScreen .featureCard,
+#menuScreen .dashboardCard,
+#menuScreen .metaCard,
+#menuScreen .statCard{
+  min-width:0;
+}
+
+#menuScreen .menuChoice,
+#menuScreen .menuPanel{
+  border-radius:20px;
+}
+
+#menuScreen .screenButtons,
+#menuScreen .panelButtons{gap:10px}
+
+/* Scrollable mode screens keep their actions in view on short phones. */
+#menuScreen.screen,
+#layoutScreen.screen,
+#menuScreen.screen.visible,
+#layoutScreen.screen.visible{
+  overscroll-behavior:contain;
+  position:fixed;
+  inset:0;
+  z-index:100;
+}
+
+#layoutScreen>.panel{width:min(100%,680px)}
+
+#menuScreen.screen,
+#layoutScreen.screen{
+  overflow-y:auto;
+  align-items:flex-start;
+}
+
+#menuScreen.screen>.screenCard,
+#menuScreen.screen>.panel{margin:auto 0}
+
+/* Keep a consistent rhythm across the larger game mode cards. */
+#menuScreen .menuGrid,
+#menuScreen .featureRow,
+#menuScreen .dashboard,
+#menuScreen .statTiles{gap:12px}
+
+#menuScreen .menuChoice p,
+#menuScreen .menuPanel p,
+#menuScreen .featureCard span,
+#menuScreen .modeButton span{
+  line-height:1.5;
+}
+
+#menuScreen .menuChoice h3,
+#menuScreen .featureCard h3{letter-spacing:-.02em}
+
+#menuScreen .menuButton:hover,
+#menuScreen .actionButton:hover,
+#menuScreen .btn:hover,
+#menuScreen .difficultyButton:hover,
+#menuScreen .modeButton:hover,
+#menuScreen .screenButtons button:hover{
+  filter:brightness(1.06);
+}
+
+#menuScreen .menuButton:active,
+#menuScreen .actionButton:active,
+#menuScreen .btn:active,
+#menuScreen .difficultyButton:active,
+#menuScreen .modeButton:active,
+#menuScreen .screenButtons button:active{
+  filter:brightness(.97);
+}
+
+/* Worm Sort uses its own class names and an adjacent stylesheet. */
+#menuScreen>.screenCard{
+  max-height:none;
+  overflow:visible;
+}
+
+@media(max-width:760px){
+  #menuScreen .menuGrid,
+  #menuScreen .featureRow,
+  #menuScreen .dashboard,
+  #menuScreen .statTiles{grid-template-columns:1fr}
+
+  #menuScreen .screenButtons{grid-template-columns:1fr}
+
+  #menuScreen .screenButtons>*{width:100%;min-width:0}
+
+  #menuScreen .menuChoice{min-height:0}
+
+  #menuScreen .dashboard{display:none}
+
+  #menuScreen .featureRow{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+
+  #menuScreen .featureCard{padding:10px}
+
+  #menuScreen .featureCard{align-content:center;text-align:center}
+
+  #menuScreen .featureCard span{display:none}
+
+  #menuScreen .screenCard,
+  #menuScreen>.panel,
+  #layoutScreen>.panel{margin:auto 0}
+}
+
+/* Weapon Arena has full-page setup panels rather than an overlay card. */
+#mainMenu.screen.active{overflow:auto;overscroll-behavior:contain}
+#mainMenu .shell{padding-bottom:12px}
+#mainMenu .menuGrid{align-items:stretch}
+#mainMenu .modePanel,
+#mainMenu .menuSide{border-radius:20px}
+#mainMenu .modeButton{min-height:90px;border-radius:15px}
+#mainMenu .row button{min-height:46px;padding:12px 15px}
+
+/* Arena Oddities builds its mode cards after startup. */
+#overlay>header{padding:14px 16px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.035)}
+#overlay .title{letter-spacing:-.035em}
+#overlay .screenBody>.card:first-child{line-height:1.55}
+#overlay .btn{min-height:48px;border-radius:12px;cursor:pointer;transition:transform .16s ease,filter .16s ease}
+#overlay .btn:hover{transform:translateY(-1px);filter:brightness(1.08)}
+#overlay .btn.secondary:hover{border-color:rgba(80,216,255,.32)}
+
+/* Ball Bastion's first screen is a short meta upgrade stop before the run. */
+#metaOverlay{align-items:flex-start;overflow:auto;overscroll-behavior:contain}
+#metaOverlay .panel{margin:auto 0;border-radius:22px;padding:clamp(18px,4vw,28px)}
+#metaOverlay .panel h2{font-size:clamp(26px,6vw,36px);letter-spacing:-.04em}
+#metaOverlay .rowBtns .btn{min-height:48px}
+#metaOverlay .tiny{line-height:1.5}
+#metaOverlay #addGoldBtn,
+#frame>.debugToggle{display:none}
+
+@media(max-width:640px){
+  #mainMenu .shell{min-height:0;gap:14px}
+  #mainMenu .brand h1{font-size:clamp(38px,12vw,54px)}
+  #mainMenu .menuGrid{grid-template-columns:1fr}
+  #mainMenu .modeButton{padding:15px}
+  #mainMenu .modeButton b{font-size:21px}
+  #mainMenu .row button{flex:1 1 100%}
+
+  #overlay{grid-template-rows:auto 1fr;padding:12px;gap:10px}
+  #overlay .grid2{grid-template-columns:1fr}
+  #overlay .grid3{grid-template-columns:1fr}
+
+  #metaOverlay .panel{max-height:calc(100dvh - 28px)}
+  #metaOverlay .rowBtns{display:grid;grid-template-columns:1fr}
+  #metaOverlay .rowBtns .btn{width:100%}
+}

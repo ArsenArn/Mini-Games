@@ -427,6 +427,7 @@
       .debugDrawer{left:10px;width:auto}
     }
   </style>
+  <link rel="stylesheet" href="menu-system.css">
 </head>
 <body>
   <div class="app">
@@ -459,45 +460,45 @@
 
       <section id="bootScreen" class="screen visible">
         <div class="panel narrow">
-          <div class="eyebrow">Boot</div>
+          <div class="eyebrow">Wormhold Merge</div>
           <h1>Wormhold Merge</h1>
-          <p>Loading build grid, worm systems, bonus tiles, wave estimator, battle simulation, save data, audio, and debug tools.</p>
+          <p>Place living defenders, merge matching specialists, and prepare for the next wave.</p>
           <div class="dashboard">
-            <div class="dashboardCard"><span>Core Loop</span><strong>Build -> Merge -> Battle</strong></div>
-            <div class="dashboardCard"><span>Field</span><strong>Grid Base + Free Battle</strong></div>
-            <div class="dashboardCard"><span>Modes</span><strong>Campaign Ready</strong></div>
+            <div class="dashboardCard"><span>Build</span><strong>Place a team</strong></div>
+            <div class="dashboardCard"><span>Merge</span><strong>Grow your defenders</strong></div>
+            <div class="dashboardCard"><span>Battle</span><strong>Hold each wave</strong></div>
           </div>
         </div>
       </section>
 
       <section id="menuScreen" class="screen">
         <div class="panel">
-          <div class="eyebrow">Puzzle Defense Prototype</div>
+          <div class="eyebrow">Place · Merge · Defend</div>
           <h1>Wormhold Merge</h1>
-          <p>Move living fortress-worms across the base, merge equal specializations into longer bodies, park them on bonus tiles, and let the auto-battle wave play out.</p>
+          <p>Build a team of living defenders. Combine matching worms, claim helpful tiles, and see how your formation handles the next wave.</p>
           <div class="tagRow">
             <div class="tag">Puzzle / Merge / Auto-Battler</div>
             <div class="tag">Mobile + Desktop</div>
-            <div class="tag">Campaign + Mode Framework</div>
+            <div class="tag">Campaign</div>
           </div>
           <div class="featureRow">
             <div class="featureCard">
-              <h3>Living Buildings</h3>
-              <span>Each worm occupies several base cells, carries a combat specialization, and scales with body length.</span>
+              <h3>Build</h3>
+              <span>Move your team across the grid and put useful bonus tiles to work.</span>
             </div>
             <div class="featureCard">
-              <h3>Fast Wave Pacing</h3>
-              <span>Enemy waves are generated from estimated player power and target duration, then played as short auto-battles.</span>
+              <h3>Merge</h3>
+              <span>Combine matching specialists to build a stronger defense.</span>
             </div>
             <div class="featureCard">
-              <h3>Designer Ready</h3>
-              <span>Use the built-in drawer to change field sizes, balance curves, worm pools, bonus tiles, and export/import JSON.</span>
+              <h3>Defend</h3>
+              <span>Your formation takes on each wave in a short automatic battle.</span>
             </div>
           </div>
           <div class="dashboard">
             <div class="dashboardCard"><span>Campaign</span><strong>6 levels</strong></div>
-            <div class="dashboardCard"><span>Wave Curve</span><strong>20-60 sec target</strong></div>
-            <div class="dashboardCard"><span>Modes</span><strong>Campaign now, endless later</strong></div>
+            <div class="dashboardCard"><span>Round length</span><strong>20–60 seconds</strong></div>
+            <div class="dashboardCard"><span>Progress</span><strong>Saved locally</strong></div>
           </div>
           <div class="screenButtons">
             <button id="menuPlayButton" class="menuButton primary" type="button">Campaign</button>

@@ -1204,6 +1204,7 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="menu-system.css">
 </head>
 <body>
   <div id="app" class="app">
@@ -1225,7 +1226,7 @@
     <div class="desktopShell">
       <aside class="sideColumn sideLeft desktopOnly">
         <section class="panelCard titleCard desktopTitleCard">
-          <div class="eyebrow">Cute Grid Prototype</div>
+          <div class="eyebrow">Pipe link puzzle</div>
           <h1>Worm Link Merge</h1>
           <p>Slither warm toy-worms across a soft puzzle grid, fuse matching pairs into longer links, and seal paired sockets before the quest stack runs dry.</p>
         </section>
@@ -1330,7 +1331,7 @@
           <div class="panelHead">
             <div>
               <div class="eyebrow">Loop</div>
-              <h2>How The Prototype Flows</h2>
+              <h2>How to play</h2>
             </div>
           </div>
           <ol class="ruleList">
@@ -1565,16 +1566,16 @@
     <div class="screenCard">
       <div class="eyebrow">Boot</div>
       <h2>Worm Link Merge</h2>
-      <p>Building a soft puzzle board with slither movement, merge pressure, paired sockets, resolve rewards, short quests, and a live designer panel.</p>
-      <div class="resultTone">Loading prototype systems: CONFIG, save, audio, renderer, level generator, quest stack, pipe solver hints, and editor tools.</div>
+      <p>Connect living pipe paths, match their colors, and clear a series of compact board puzzles.</p>
+      <div class="resultTone">Preparing your board…</div>
     </div>
   </div>
 
   <div id="menuScreen" class="screen hidden">
     <div class="screenCard wide">
-      <div class="eyebrow">Level Start</div>
-      <h2>Set The Run</h2>
-      <p>Choose a level, seed the generator, and launch a new board. Auto progression grows the field every two levels and scales quest demand toward sixteen tasks by level ten.</p>
+      <div class="eyebrow">Worm Link Merge</div>
+      <h2>Choose a board</h2>
+      <p>Select a campaign level, set a repeatable seed, or continue the board already in progress.</p>
       <div class="menuGrid">
         <section class="menuPanel">
           <div class="field">
@@ -1597,7 +1598,7 @@
           <div class="screenButtons">
             <button id="menuStartButton" class="actionButton accent" type="button">Generate + Start</button>
             <button id="menuResumeOverlayButton" class="actionButton secondary" type="button">Resume Current Run</button>
-            <button id="menuDesignerButton" class="actionButton secondary" type="button">Open Designer</button>
+            <button id="menuDesignerButton" class="actionButton secondary" type="button">Open Board Editor</button>
           </div>
         </section>
 
@@ -1608,15 +1609,15 @@
             <div class="metaCard"><span>Pipes</span><strong id="menuMetaPipes">4</strong></div>
           </div>
           <div class="resultTone">
-            Level 1 starts with a calm short-range puzzle deck. Higher levels broaden the size range, add walls from level 3 onward, unlock colored sockets at the configured threshold, and keep the quest stack rotating in short bursts.
+            Later levels add longer routes, more walls, and new pipe-color goals as your campaign progresses.
           </div>
           <div class="menuTagRow">
-            <div class="menuTag">Head / tail dragging</div>
-            <div class="menuTag">Mandatory merge lock</div>
-            <div class="menuTag">Resolve reward loop</div>
-            <div class="menuTag">Editable board JSON</div>
+            <div class="menuTag">Drag either end</div>
+            <div class="menuTag">Match paired sockets</div>
+            <div class="menuTag">Merge matching worms</div>
+            <div class="menuTag">Clear pipe goals</div>
           </div>
-          <p>Controls: drag from the selected end, or use arrow buttons / arrow keys. Press <strong>M</strong> to merge, <strong>R</strong> to resolve, <strong>Tab</strong> to cycle worms, <strong>Q</strong> or <strong>E</strong> to swap ends, and <strong>G</strong> to open the designer drawer.</p>
+          <p>Drag a highlighted end or use the arrow keys. Press <strong>M</strong> to merge, <strong>R</strong> to resolve, <strong>Tab</strong> to select another worm, and <strong>G</strong> to open the board editor.</p>
         </section>
       </div>
     </div>

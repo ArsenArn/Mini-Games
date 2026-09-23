@@ -1,966 +1,248 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Game Launcher</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101318">
+  <title>Mini Games — Browser Prototype Arcade</title>
   <style>
     :root{
-      --bg-top:#eef4ff;
-      --bg-bottom:#f7f0e7;
-      --panel:rgba(255,255,255,.78);
-      --panel-border:rgba(20,48,84,.08);
-      --text:#143054;
-      --muted:#5f7391;
-      --accent:#173b67;
-      --accent-soft:#e7eef9;
-      --shadow:0 24px 60px rgba(20,48,84,.16);
+      color-scheme:dark;
+      --bg:#101318;
+      --surface:#191d23;
+      --surface-raised:#20252d;
+      --line:#303741;
+      --ink:#f4f1e9;
+      --muted:#a6adb4;
+      --lime:#d5f36a;
+      --lime-ink:#1a2110;
+      --coral:#ff8b72;
+      --lavender:#c3b5ff;
+      --radius:20px;
+      --shadow:0 18px 44px rgba(0,0,0,.2);
     }
     *{box-sizing:border-box}
-    html,body{margin:0;min-height:100%;font-family:"Trebuchet MS",Verdana,sans-serif;color:var(--text)}
-    body{
-      display:grid;
-      place-items:center;
-      padding:24px;
-      background:
-        radial-gradient(circle at top left, rgba(90,135,255,.22), transparent 34%),
-        radial-gradient(circle at bottom right, rgba(245,201,77,.18), transparent 28%),
-        linear-gradient(180deg,var(--bg-top),var(--bg-bottom));
-    }
-    .shell{
-      width:min(100%,1100px);
-      padding:20px;
-      border-radius:32px;
-      background:var(--panel);
-      border:1px solid var(--panel-border);
-      box-shadow:var(--shadow);
-      backdrop-filter:blur(12px);
-    }
-    .hero{
-      display:grid;
-      gap:10px;
-      margin-bottom:20px;
-    }
-    .eyebrow{
-      font-size:12px;
-      letter-spacing:.26em;
-      text-transform:uppercase;
-      color:var(--muted);
-    }
-    h1{
-      margin:0;
-      font-size:clamp(36px,7vw,68px);
-      line-height:.92;
-      max-width:700px;
-    }
-    .sub{
-      margin:0;
-      max-width:720px;
-      color:var(--muted);
-      font-size:16px;
-      line-height:1.5;
-    }
-    .grid{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-      gap:16px;
-    }
-    .card{
-      display:grid;
-      gap:14px;
-      padding:18px;
-      border-radius:24px;
-      background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(239,244,255,.88));
-      border:1px solid rgba(20,48,84,.08);
-      box-shadow:0 14px 34px rgba(20,48,84,.08);
-    }
-    .preview{
-      position:relative;
-      height:170px;
-      overflow:hidden;
-      border-radius:18px;
-      background:linear-gradient(180deg,#edf5ff,#f8fbff);
-      border:1px solid rgba(20,48,84,.06);
-    }
-    .preview.snake{
-      background:
-        linear-gradient(180deg,rgba(90,135,255,.16) 0 48%, rgba(23,59,103,.9) 48% 53%, rgba(78,203,144,.08) 53% 100%),
-        linear-gradient(90deg,rgba(20,48,84,.08) 0 1px,transparent 1px),
-        linear-gradient(180deg,rgba(20,48,84,.08) 0 1px,transparent 1px);
-      background-size:100% 100%, 28px 28px, 28px 28px;
-    }
-    .preview.plush{
-      background:
-        radial-gradient(circle at 28% 36%, rgba(255,108,121,.34), transparent 16%),
-        radial-gradient(circle at 64% 48%, rgba(245,201,77,.32), transparent 18%),
-        radial-gradient(circle at 72% 26%, rgba(90,135,255,.28), transparent 14%),
-        linear-gradient(180deg,#fff8f0,#f4f8ff);
-    }
-    .preview.worm{
-      background:
-        radial-gradient(circle at 24% 24%, rgba(255,197,106,.28), transparent 22%),
-        radial-gradient(circle at 78% 74%, rgba(90,135,255,.18), transparent 24%),
-        linear-gradient(180deg,#fff9ef,#eef7ff);
-    }
-    .preview.wormSort{
-      background:
-        linear-gradient(90deg,rgba(20,48,84,.06) 0 1px,transparent 1px),
-        linear-gradient(180deg,rgba(20,48,84,.06) 0 1px,transparent 1px),
-        linear-gradient(180deg,#f8fbff,#fff7ea);
-      background-size:30px 30px,30px 30px,100% 100%;
-    }
-    .preview.fortress{
-      background:
-        radial-gradient(circle at 22% 22%, rgba(255,186,94,.28), transparent 20%),
-        radial-gradient(circle at 80% 30%, rgba(111,188,255,.18), transparent 24%),
-        linear-gradient(180deg,rgba(193,228,255,.95) 0 48%, rgba(253,244,215,.96) 48% 100%);
-    }
-    .preview.arenaOddities{
-      background:
-        radial-gradient(circle at 25% 20%, rgba(80,216,255,.24), transparent 22%),
-        radial-gradient(circle at 78% 78%, rgba(255,147,86,.22), transparent 24%),
-        linear-gradient(180deg,#182231,#101720);
-    }
-    .preview.musicMixer{
-      background:
-        radial-gradient(circle at 50% 28%, rgba(84,224,255,.18), transparent 28%),
-        linear-gradient(180deg,#111827 0%,#090b14 72%,#15101c 100%);
-    }
-    .preview.ballBastion{
-      background:
-        linear-gradient(180deg,rgba(92,142,106,.9) 0 64%, rgba(28,45,58,.92) 64% 100%),
-        linear-gradient(90deg,rgba(255,255,255,.08) 0 1px,transparent 1px),
-        linear-gradient(180deg,rgba(255,255,255,.08) 0 1px,transparent 1px);
-      background-size:100% 100%,28px 28px,28px 28px;
-    }
-    .preview.comboDropLab{
-      background:
-        linear-gradient(180deg,rgba(170,200,230,.9) 0 28%, rgba(228,236,245,.94) 28% 76%, rgba(88,112,144,.95) 76% 100%),
-        linear-gradient(90deg,rgba(255,255,255,.12) 0 1px,transparent 1px),
-        linear-gradient(180deg,rgba(255,255,255,.12) 0 1px,transparent 1px);
-      background-size:100% 100%,24px 24px,24px 24px;
-    }
-    .wall{
-      position:absolute;
-      left:14px;
-      right:14px;
-      top:78px;
-      height:18px;
-      border-radius:999px;
-      background:#173b67;
-      box-shadow:inset 0 2px 0 rgba(255,255,255,.28);
-    }
-    .orb,.enemy,.snakeSeg{
-      position:absolute;
-      border-radius:50%;
-    }
-    .orb.blue,.enemy.blue{background:#5a87ff}
-    .orb.red,.enemy.red{background:#ff6c79}
-    .orb.yellow,.enemy.yellow{background:#f5c94d}
-    .orb.green,.enemy.green{background:#4ecb90}
-    .enemy{
-      width:22px;
-      height:22px;
-      border-radius:8px;
-      box-shadow:0 8px 16px rgba(20,48,84,.12);
-    }
-    .orb{
-      width:20px;
-      height:20px;
-      box-shadow:0 8px 16px rgba(20,48,84,.12);
-    }
-    .snakeSeg{
-      width:22px;
-      height:22px;
-      box-shadow:0 8px 16px rgba(20,48,84,.12);
-    }
-    .snakeEnd{
-      background:#173b67;
-      border-radius:14px 50% 50% 14px;
-    }
-    .line{
-      position:absolute;
-      height:12px;
-      border-radius:999px;
-      background:#173b67;
-    }
-    .plushDot{
-      position:absolute;
-      width:40px;
-      height:40px;
-      border-radius:14px;
-      background:rgba(255,255,255,.78);
-      border:1px solid rgba(20,48,84,.08);
-      box-shadow:0 12px 24px rgba(20,48,84,.08);
-    }
-    .plushDot::before{
-      content:"";
-      position:absolute;
-      inset:10px;
-      border-radius:999px;
-      background:linear-gradient(180deg,#ffd7dc,#fff4f6);
-    }
-    .pipeGhost{
-      position:absolute;
-      border-radius:999px;
-      background:rgba(36,77,130,.12);
-      border:1px dashed rgba(36,77,130,.16);
-    }
-    .socket{
-      position:absolute;
-      width:28px;
-      height:28px;
-      border-radius:50%;
-      background:rgba(255,255,255,.92);
-      border:5px solid rgba(214,224,236,.92);
-      box-shadow:0 10px 22px rgba(24,49,79,.08);
-    }
-    .wormLink{
-      position:absolute;
-      height:16px;
-      border-radius:999px;
-      background:#f5c94d;
-      box-shadow:0 10px 20px rgba(245,201,77,.22);
-      transform-origin:left center;
-    }
-    .wormSeg{
-      position:absolute;
-      width:24px;
-      height:24px;
-      border-radius:50%;
-      box-shadow:0 10px 20px rgba(24,49,79,.1);
-    }
-    .wormSeg.yellow{background:#f5c94d}
-    .wormSeg.blue{background:#5a87ff}
-    .wormSeg.red{background:#ff6c79}
-    .wormSeg.green{background:#4ecb90}
-    .sortContainer,.sortBlock,.sortWorm,.sortLoad{
-      position:absolute;
-    }
-    .sortContainer{
-      width:70px;
-      height:34px;
-      border-radius:14px;
-      background:rgba(255,255,255,.86);
-      border:1px solid rgba(20,48,84,.1);
-      box-shadow:0 10px 20px rgba(24,49,79,.08);
-      display:flex;
-      align-items:stretch;
-      gap:3px;
-      padding:7px;
-    }
-    .sortBlock{
-      width:16px;
-      height:16px;
-      border-radius:5px;
-      box-shadow:0 7px 14px rgba(24,49,79,.12);
-    }
-    .sortLoad{
-      width:20px;
-      height:20px;
-      border-radius:8px;
-      background:rgba(36,101,167,.14);
-      border:2px solid rgba(36,101,167,.34);
-    }
-    .sortWorm{
-      height:24px;
-      border-radius:999px;
-      background:#dfe8f3;
-      border:2px solid rgba(36,101,167,.2);
-      box-shadow:0 12px 20px rgba(24,49,79,.1);
-    }
-    .fortressTile,.fortressUnit,.fortressBolt,.fortressSegment,.fortressBadge{
-      position:absolute;
-    }
-    .fortressTile{
-      width:26px;
-      height:26px;
-      border-radius:10px;
-      border:1px solid rgba(20,48,84,.08);
-      background:rgba(255,255,255,.38);
-    }
-    .fortressSegment{
-      height:24px;
-      border-radius:999px;
-      background:linear-gradient(180deg,#ffe8bd,#f3aa61);
-      box-shadow:0 10px 18px rgba(24,49,79,.1);
-    }
-    .fortressBadge{
-      width:22px;
-      height:22px;
-      border-radius:10px;
-      display:grid;
-      place-items:center;
-      font-size:13px;
-      background:rgba(255,255,255,.72);
-      box-shadow:0 8px 14px rgba(24,49,79,.08);
-    }
-    .fortressUnit{
-      width:18px;
-      height:18px;
-      border-radius:50%;
-      box-shadow:0 8px 14px rgba(24,49,79,.12);
-    }
-    .fortressUnit.player{background:#f3aa61}
-    .fortressUnit.enemy{background:#7f4a5b}
-    .fortressBolt{
-      width:34px;
-      height:6px;
-      border-radius:999px;
-      background:linear-gradient(90deg,#ffe4a4,#f3aa61);
-      transform:rotate(-18deg);
-      box-shadow:0 8px 12px rgba(243,170,97,.22);
-    }
-    .oddArenaFrame,.oddFighter,.oddBlade,.oddOrb,.oddWeb,.oddPanel{
-      position:absolute;
-    }
-    .oddArenaFrame{
-      left:48px;
-      top:24px;
-      width:150px;
-      height:150px;
-      border-radius:22px;
-      border:4px solid #50d8ff;
-      background:
-        linear-gradient(90deg,rgba(255,255,255,.08) 0 1px,transparent 1px),
-        linear-gradient(180deg,rgba(255,255,255,.08) 0 1px,transparent 1px),
-        rgba(255,255,255,.05);
-      background-size:24px 24px;
-      box-shadow:inset 0 0 30px rgba(80,216,255,.08),0 16px 28px rgba(0,0,0,.14);
-    }
-    .oddFighter{
-      width:38px;
-      height:38px;
-      border-radius:50%;
-      display:grid;
-      place-items:center;
-      color:#fff;
-      font-size:13px;
-      font-weight:900;
-      border:3px solid rgba(255,255,255,.82);
-      box-shadow:0 10px 18px rgba(0,0,0,.18);
-    }
-    .oddFighter.player{background:#50d8ff;left:86px;top:84px}
-    .oddFighter.enemy{background:#c4683d;left:154px;top:58px}
-    .oddBlade{
-      left:108px;
-      top:78px;
-      width:58px;
-      height:6px;
-      border-radius:999px;
-      background:#e9fbff;
-      transform:rotate(-24deg);
-      box-shadow:0 0 12px rgba(80,216,255,.28);
-    }
-    .oddOrb{
-      width:14px;
-      height:14px;
-      border-radius:50%;
-      left:142px;
-      top:116px;
-      background:#ffd166;
-      box-shadow:0 0 12px rgba(255,209,102,.45);
-    }
-    .oddWeb{
-      left:72px;
-      top:48px;
-      width:104px;
-      height:2px;
-      background:rgba(210,247,255,.6);
-      transform:rotate(34deg);
-      transform-origin:left center;
-    }
-    .oddPanel{
-      left:36px;
-      right:36px;
-      bottom:18px;
-      height:26px;
-      border-radius:8px;
-      background:rgba(255,255,255,.1);
-      border:1px solid rgba(255,255,255,.12);
-    }
-    .mixerBeam,.mixerPerformer,.mixerPad,.mixerEq,.mixerDeck{
-      position:absolute;
-    }
-    .mixerBeam{
-      top:0;
-      width:54px;
-      height:142px;
-      background:linear-gradient(180deg,rgba(84,224,255,.28),transparent);
-      clip-path:polygon(42% 0,58% 0,100% 100%,0 100%);
-      opacity:.72;
-    }
-    .mixerPerformer{
-      width:28px;
-      height:42px;
-      border-radius:999px 999px 12px 12px;
-      background:linear-gradient(180deg,var(--performer-color),#151a27 72%);
-      border:2px solid rgba(255,255,255,.22);
-      box-shadow:0 10px 18px rgba(0,0,0,.24);
-    }
-    .mixerPerformer::before{
-      content:"";
-      position:absolute;
-      left:7px;
-      top:10px;
-      width:12px;
-      height:4px;
-      border-radius:999px;
-      background:rgba(255,255,255,.72);
-      box-shadow:0 9px 0 rgba(255,255,255,.28);
-    }
-    .mixerDeck{
-      left:28px;
-      right:28px;
-      bottom:18px;
-      height:38px;
-      border-radius:12px;
-      background:rgba(255,255,255,.08);
-      border:1px solid rgba(255,255,255,.12);
-    }
-    .mixerPad{
-      width:22px;
-      height:18px;
-      border-radius:7px;
-      background:var(--pad-color);
-      box-shadow:0 0 14px color-mix(in srgb,var(--pad-color),transparent 52%);
-    }
-    .mixerEq{
-      display:flex;
-      gap:3px;
-      align-items:flex-end;
-      height:28px;
-    }
-    .mixerEq span{
-      width:5px;
-      border-radius:999px;
-      background:#54e0ff;
-      box-shadow:0 0 10px rgba(84,224,255,.44);
-    }
-    .bastionWall,.bastionBall,.bastionEnemy,.bastionLauncher,.bastionChunk,.bastionAim{
-      position:absolute;
-    }
-    .bastionWall{
-      left:14px;
-      right:14px;
-      top:108px;
-      height:12px;
-      border-radius:999px;
-      background:#90a1ad;
-      box-shadow:inset 0 2px 0 rgba(255,255,255,.42),0 8px 14px rgba(0,0,0,.18);
-    }
-    .bastionLauncher{
-      width:26px;
-      height:30px;
-      left:118px;
-      top:124px;
-      border-radius:10px 10px 6px 6px;
-      background:#2f4f63;
-      transform:rotate(-24deg);
-      box-shadow:0 8px 14px rgba(0,0,0,.2);
-    }
-    .bastionAim{
-      width:72px;
-      height:2px;
-      left:132px;
-      top:118px;
-      background:repeating-linear-gradient(90deg,rgba(255,255,255,.88) 0 6px,transparent 6px 12px);
-      transform:rotate(-28deg);
-      transform-origin:left center;
-    }
-    .bastionBall{
-      width:18px;
-      height:18px;
-      border-radius:50%;
-      border:2px solid rgba(255,255,255,.72);
-      box-shadow:0 8px 14px rgba(9,20,29,.24);
-    }
-    .bastionEnemy{
-      width:14px;
-      height:14px;
-      border-radius:4px;
-      background:#ff7c68;
-      box-shadow:0 7px 12px rgba(0,0,0,.2);
-    }
-    .bastionChunk{
-      width:6px;
-      height:6px;
-      border-radius:1px;
-      background:#ffb46f;
-      opacity:.85;
-    }
-    .comboArenaFrame,.comboMiniCar,.comboMiniBumper,.comboMiniRamp,.comboMiniArrow,.comboMiniPad,.comboMiniText{
-      position:absolute;
-    }
-    .comboArenaFrame{
-      left:44px;
-      right:44px;
-      top:12px;
-      bottom:14px;
-      border-radius:18px;
-      border:3px solid rgba(40,73,108,.35);
-      box-shadow:inset 0 0 0 2px rgba(255,255,255,.42);
-    }
-    .comboMiniCar{
-      width:26px;
-      height:14px;
-      border-radius:8px 9px 6px 6px;
-      background:linear-gradient(180deg,#ff5d5d,#cf3345);
-      border:1px solid rgba(255,255,255,.7);
-      box-shadow:0 8px 12px rgba(20,48,84,.2);
-    }
-    .comboMiniCar::before,.comboMiniCar::after{
-      content:"";
-      position:absolute;
-      width:7px;
-      height:7px;
-      border-radius:50%;
-      background:#1e2d43;
-      bottom:-3px;
-    }
-    .comboMiniCar::before{left:3px}
-    .comboMiniCar::after{right:3px}
-    .comboMiniBumper{
-      width:18px;
-      height:18px;
-      border-radius:50%;
-      background:radial-gradient(circle at 30% 30%,#fff7c8,#f7b749 68%);
-      border:2px solid rgba(197,124,37,.8);
-      box-shadow:0 8px 12px rgba(197,124,37,.24);
-    }
-    .comboMiniRamp{
-      width:30px;
-      height:12px;
-      border-radius:999px;
-      background:linear-gradient(180deg,#d8e5f3,#8ea4c2);
-      box-shadow:0 6px 10px rgba(46,66,94,.2);
-    }
-    .comboMiniArrow{
-      width:24px;
-      height:10px;
-      border-radius:999px;
-      background:linear-gradient(90deg,#a4efff,#43c7ff);
-      box-shadow:0 0 10px rgba(67,199,255,.42);
-    }
-    .comboMiniArrow::after{
-      content:"";
-      position:absolute;
-      right:-7px;
-      top:-4px;
-      border-style:solid;
-      border-width:9px 0 9px 10px;
-      border-color:transparent transparent transparent #43c7ff;
-    }
-    .comboMiniPad{
-      width:26px;
-      height:8px;
-      border-radius:999px;
-      background:#394f8a;
-      box-shadow:0 6px 10px rgba(22,36,66,.24);
-    }
-    .comboMiniText{
-      right:20px;
-      top:20px;
-      padding:4px 8px;
-      border-radius:10px;
-      background:rgba(255,255,255,.7);
-      color:#1f5082;
-      font-size:17px;
-      font-weight:900;
-      letter-spacing:.02em;
-    }
-    .titleRow{
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      align-items:flex-start;
-    }
-    .tag{
-      padding:8px 10px;
-      border-radius:999px;
-      background:var(--accent-soft);
-      color:var(--accent);
-      font-size:12px;
-      font-weight:700;
-      white-space:nowrap;
-    }
-    .card h2{
-      margin:0;
-      font-size:28px;
-      line-height:1;
-    }
-    .desc{
-      margin:0;
-      color:var(--muted);
-      line-height:1.5;
-      font-size:15px;
-      min-height:66px;
-    }
-    .actions{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-    }
-    .launchBtn{
-      flex:1 1 150px;
-      border:0;
-      border-radius:16px;
-      padding:14px 16px;
-      background:var(--accent);
-      color:#fff;
-      font:inherit;
-      font-weight:700;
-      cursor:pointer;
-      transition:transform .16s ease, box-shadow .16s ease, opacity .16s ease;
-      box-shadow:0 14px 28px rgba(23,59,103,.2);
-    }
-    .launchBtn.secondary{
-      background:#fff;
-      color:var(--accent);
-      border:1px solid rgba(20,48,84,.1);
-      box-shadow:none;
-    }
-    .launchBtn:hover{transform:translateY(-1px)}
-    .launchBtn:active{transform:translateY(1px) scale(.99)}
-    .footer{
-      margin-top:18px;
-      color:var(--muted);
-      font-size:14px;
-    }
-    code{
-      padding:2px 6px;
-      border-radius:8px;
-      background:rgba(20,48,84,.06);
-      color:var(--accent);
-    }
-    @media (max-width:560px){
-      body{padding:12px}
-      .shell{padding:14px;border-radius:22px}
-      .preview{height:150px}
-      .desc{min-height:auto}
-    }
+    html{min-width:320px;min-height:100%;background:var(--bg);scroll-behavior:smooth}
+    body{margin:0;min-height:100vh;color:var(--ink);font-family:Inter,"Avenir Next","Segoe UI",sans-serif;background:radial-gradient(ellipse at 4% 0%,rgba(213,243,106,.08),transparent 35rem),radial-gradient(ellipse at 97% 26%,rgba(195,181,255,.08),transparent 31rem),var(--bg)}
+    button,input{font:inherit}
+    a{color:inherit}
+    :focus-visible{outline:3px solid var(--lime);outline-offset:4px}
+    .page{width:min(100% - 56px,1280px);margin:0 auto;padding:34px 0 52px}
+    .masthead{display:flex;align-items:center;justify-content:space-between;gap:20px;padding-bottom:48px}
+    .brand{display:inline-flex;align-items:center;gap:11px;text-decoration:none;font-size:13px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}
+    .brandMark{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:var(--lime);color:var(--lime-ink);font-size:18px;letter-spacing:-.08em}
+    .mastheadNote{color:var(--muted);font-size:13px;letter-spacing:.02em}
+    .hero{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:28px;padding:0 0 36px}
+    .eyebrow{margin:0 0 15px;color:var(--lime);font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase}
+    h1{max-width:850px;margin:0;font-size:clamp(42px,7.6vw,88px);line-height:.96;letter-spacing:-.065em;font-weight:760}
+    .intro{max-width:670px;margin:19px 0 0;color:#c1c5c9;font-size:clamp(16px,2vw,19px);line-height:1.55}
+    .collectionMark{width:138px;aspect-ratio:1;display:grid;align-content:center;justify-items:center;gap:2px;border:1px solid var(--line);border-radius:50%;color:var(--muted);transform:rotate(8deg)}
+    .collectionMark strong{color:var(--ink);font-size:42px;line-height:1;letter-spacing:-.07em}
+    .collectionMark span{font-size:10px;letter-spacing:.13em;text-transform:uppercase}
+    .catalog{border-top:1px solid var(--line);padding-top:26px}
+    .catalogTools{display:grid;grid-template-columns:minmax(220px,350px) minmax(0,1fr);align-items:center;gap:18px;margin-bottom:22px}
+    .searchWrap{position:relative}
+    .searchIcon{position:absolute;left:15px;top:50%;width:17px;height:17px;transform:translateY(-50%);color:#87909a;pointer-events:none}
+    #gameSearch{width:100%;height:48px;padding:0 15px 0 44px;border:1px solid var(--line);border-radius:14px;background:#171b21;color:var(--ink);font-size:14px}
+    #gameSearch::placeholder{color:#858d96}
+    #gameSearch:focus-visible{border-color:var(--lime);outline-offset:2px}
+    .filters{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
+    .filter{min-height:40px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:transparent;color:#c4c8cb;font-size:12px;font-weight:700;cursor:pointer;transition:background .16s ease,color .16s ease,border-color .16s ease}
+    .filter:hover{border-color:#717a82;color:var(--ink)}
+    .filter[aria-pressed="true"]{border-color:var(--lime);background:var(--lime);color:var(--lime-ink)}
+    .resultsLine{display:flex;justify-content:space-between;gap:12px;margin:0 0 14px;color:var(--muted);font-size:12px}
+    .resultsLine strong{color:var(--ink);font-weight:700}
+    .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+    .card{min-width:0;display:flex;flex-direction:column;padding:11px;border:1px solid #30363e;border-radius:var(--radius);background:linear-gradient(155deg,rgba(32,37,45,.98),rgba(24,28,34,.98));box-shadow:0 4px 18px rgba(0,0,0,.1);transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
+    .card:hover{transform:translateY(-3px);border-color:#555e69;box-shadow:var(--shadow)}
+    .preview{position:relative;overflow:hidden;aspect-ratio:1.9 / 1;min-height:140px;border:1px solid rgba(255,255,255,.09);border-radius:13px;background:#202b32}
+    .preview svg{display:block;width:100%;height:100%}
+    .cardCopy{display:flex;flex-direction:column;flex:1;padding:17px 8px 6px}
+    .titleRow{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+    h2{margin:0;font-size:clamp(16px,1.45vw,19px);line-height:1.18;letter-spacing:-.025em;font-weight:740}
+    .genre{flex:none;max-width:46%;padding:5px 8px;border:1px solid rgba(213,243,106,.22);border-radius:999px;color:var(--lime);font-size:10px;font-weight:750;line-height:1.1;text-align:center}
+    .desc{min-height:62px;margin:11px 0 18px;color:#adb4ba;font-size:13px;line-height:1.5}
+    .actions{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:auto}
+    .launch{display:inline-flex;min-height:44px;align-items:center;justify-content:center;gap:8px;padding:0 13px;border:1px solid transparent;border-radius:12px;background:var(--lime);color:var(--lime-ink);font-size:12px;font-weight:800;text-decoration:none;transition:background .16s ease,transform .16s ease}
+    .launch:hover{transform:translateY(-1px);background:#e1ff81}
+    .launch svg{width:14px;height:14px}
+    .launch.secondary{border-color:#414852;background:#252a32;color:#e2e3e2}
+    .launch.secondary:hover{border-color:#626c77;background:#303640}
+    .emptyState{grid-column:1/-1;min-height:220px;display:grid;place-content:center;justify-items:center;gap:8px;padding:28px;border:1px dashed #424a54;border-radius:var(--radius);text-align:center}
+    .emptyState strong{font-size:18px}
+    .emptyState p{margin:0;color:var(--muted);font-size:13px}
+    .footer{display:flex;justify-content:space-between;gap:16px;margin-top:34px;padding-top:17px;border-top:1px solid var(--line);color:#818990;font-size:11px}
+    .footer span:last-child{color:#a5abb0}
+    @media(max-width:1000px){.page{width:min(100% - 40px,900px)}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.catalogTools{grid-template-columns:minmax(200px,300px) minmax(0,1fr)}.filters{gap:6px}.filter{padding-inline:11px}}
+    @media(max-width:700px){.page{width:min(100% - 32px,560px);padding:22px 0 34px}.masthead{padding-bottom:38px}.mastheadNote{font-size:11px;text-align:right}.hero{grid-template-columns:1fr;gap:20px;padding-bottom:27px}.collectionMark{width:auto;aspect-ratio:auto;display:flex;align-items:baseline;justify-items:initial;gap:7px;transform:none;border:0;border-radius:0}.collectionMark strong{font-size:24px}.collectionMark span{font-size:10px}.eyebrow{margin-bottom:12px}.intro{margin-top:15px}.catalog{padding-top:19px}.catalogTools{grid-template-columns:1fr;gap:12px;margin-bottom:18px}.filters{justify-content:flex-start}.grid{gap:12px}.preview{min-height:120px}.desc{min-height:78px}}
+    @media(max-width:520px){.page{width:min(100% - 24px,420px);padding-top:16px}.masthead{padding-bottom:31px}.brand{font-size:11px;letter-spacing:.1em}.brandMark{width:30px;height:30px}.mastheadNote{max-width:130px;line-height:1.35}.hero{padding-bottom:22px}h1{font-size:clamp(40px,12vw,58px)}.intro{font-size:15px;line-height:1.5}.collectionMark{margin-top:-3px}.grid{grid-template-columns:1fr;gap:12px}.card{padding:10px;border-radius:18px}.preview{aspect-ratio:1.95 / 1;min-height:145px}.cardCopy{padding:14px 5px 4px}h2{font-size:18px}.desc{min-height:0;margin-bottom:15px}.actions{grid-template-columns:1fr auto}.launch{min-height:46px}.resultsLine{margin-bottom:12px}.footer{flex-direction:column;gap:6px;margin-top:25px}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}.card:hover,.launch:hover{transform:none}}
   </style>
 </head>
 <body>
-  <main class="shell">
-    <section class="hero">
-      <div class="eyebrow">Local Game Hub</div>
-      <h1>Choose A Game</h1>
-      <p class="sub">One launcher for all local browser prototypes in this folder. Add new entries to the list in the script and they will appear here automatically.</p>
+  <main class="page">
+    <header class="masthead">
+      <a class="brand" href="./game_launcher.html" aria-label="Mini Games home"><span class="brandMark" aria-hidden="true">m.</span><span>Mini Games</span></a>
+      <div class="mastheadNote">A collection of independent browser games</div>
+    </header>
+    <section class="hero" aria-labelledby="pageTitle">
+      <div>
+        <p class="eyebrow">Play the prototypes</p>
+        <h1 id="pageTitle">Small games.<br>Distinct worlds.</h1>
+        <p class="intro">A shelf of playful experiments in merging, puzzling, defending, and making music. Pick a world and jump right in.</p>
+      </div>
+      <div class="collectionMark" aria-label="12 browser games"><strong id="gameCount">12</strong><span>playable prototypes</span></div>
     </section>
-    <section id="gameGrid" class="grid" aria-label="Available games"></section>
-    <div class="footer">
-      Launcher file: <code>game_launcher.html</code>
-    </div>
+    <section class="catalog" aria-label="Game catalog">
+      <div class="catalogTools">
+        <label class="searchWrap">
+          <svg class="searchIcon" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="8.8" cy="8.8" r="5.7" stroke="currentColor" stroke-width="1.7"/><path d="m13 13 4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <input id="gameSearch" type="search" autocomplete="off" placeholder="Find a game" aria-label="Search games by title or genre">
+        </label>
+        <div id="genreFilters" class="filters" role="group" aria-label="Filter games by genre"></div>
+      </div>
+      <p class="resultsLine"><span id="resultCount" aria-live="polite">Showing all games</span><strong>Choose a game to play</strong></p>
+      <div id="gameGrid" class="grid" aria-label="Available games"></div>
+    </section>
+    <footer class="footer"><span>Made for curious players.</span><span>12 self-contained browser prototypes · No account needed</span></footer>
   </main>
+
+  <svg width="0" height="0" aria-hidden="true" style="position:absolute;overflow:hidden" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="art-plush" viewBox="0 0 640 320">
+      <defs><linearGradient id="pbg" x2="0" y2="1"><stop stop-color="#f8d9a1"/><stop offset="1" stop-color="#dc9566"/></linearGradient><linearGradient id="plushGold" x2="0" y2="1"><stop stop-color="#fff092"/><stop offset="1" stop-color="#ffc64d"/></linearGradient><filter id="pshadow" x="-.2" y="-.2" width="1.4" height="1.5"><feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#693b28" flood-opacity=".2"/></filter></defs>
+      <path fill="url(#pbg)" d="M0 0h640v320H0z"/><path fill="#8f573b" opacity=".17" d="M0 228h640v92H0z"/><g stroke="#fff1d4" stroke-opacity=".2"><path d="M0 258h640M0 289h640"/><path d="M92 228v92m92-92v92m92-92v92m92-92v92m92-92v92m92-92v92"/></g>
+      <rect x="75" y="45" width="490" height="226" rx="24" fill="#965e3e" opacity=".55"/><rect x="88" y="35" width="464" height="226" rx="22" fill="#fff1d8" stroke="#b8794d" stroke-width="5"/>
+      <g filter="url(#pshadow)"><rect x="115" y="60" width="116" height="88" rx="22" fill="url(#plushGold)"/><circle cx="151" cy="100" r="5" fill="#754d37"/><circle cx="195" cy="100" r="5" fill="#754d37"/><path d="M164 116q10 10 20 0" fill="none" stroke="#754d37" stroke-width="4" stroke-linecap="round"/><rect x="380" y="60" width="116" height="88" rx="22" fill="#79d7a0"/><circle cx="416" cy="100" r="5" fill="#315e48"/><circle cx="460" cy="100" r="5" fill="#315e48"/><path d="M429 116q10 10 20 0" fill="none" stroke="#315e48" stroke-width="4" stroke-linecap="round"/><rect x="249" y="162" width="132" height="75" rx="20" fill="#85caff"/><circle cx="290" cy="195" r="5" fill="#3b5673"/><circle cx="340" cy="195" r="5" fill="#3b5673"/><path d="M302 211q12 9 24 0" fill="none" stroke="#3b5673" stroke-width="4" stroke-linecap="round"/></g>
+      <path d="M246 101h128" stroke="#b96b43" stroke-width="5" stroke-linecap="round" stroke-dasharray="7 12"/><path d="m360 87 18 14-18 14" fill="none" stroke="#b96b43" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="310" cy="99" r="20" fill="#ff966e" stroke="#fff4d5" stroke-width="5"/><path d="M300 99h20m-10-10v20" stroke="#fff9e9" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="art-snake" viewBox="0 0 640 320">
+      <defs><linearGradient id="sbg" x2="0" y2="1"><stop stop-color="#19283a"/><stop offset="1" stop-color="#273548"/></linearGradient><linearGradient id="swall" x2="0" y2="1"><stop stop-color="#d4e0d8"/><stop offset="1" stop-color="#809a8d"/></linearGradient></defs><path fill="url(#sbg)" d="M0 0h640v320H0z"/><path d="M0 79h640M0 158h640M0 237h640" stroke="#718096" stroke-opacity=".22" stroke-dasharray="8 12"/><path fill="url(#swall)" d="M529 28h37v264h-37z"/><path d="M533 40h29m-29 46h29m-29 46h29m-29 46h29m-29 46h29" stroke="#526c60" stroke-width="6" stroke-linecap="round"/><g fill="#ff876f"><rect x="465" y="57" width="28" height="28" rx="8"/><rect x="418" y="137" width="28" height="28" rx="8"/></g><g fill="#b9a7ff"><rect x="452" y="214" width="28" height="28" rx="8"/></g><path d="M84 158h245q45 0 45-44t46-44h67" fill="none" stroke="#70dcaa" stroke-width="22" stroke-linecap="round"/><g fill="#8df0bf" stroke="#d5ffdc" stroke-width="3"><circle cx="84" cy="158" r="18"/><circle cx="135" cy="158" r="15"/><circle cx="186" cy="158" r="15"/><circle cx="237" cy="158" r="15"/><circle cx="288" cy="158" r="15"/><circle cx="374" cy="114" r="15"/><circle cx="420" cy="70" r="15"/></g><path d="M459 70h43" stroke="#f6d36d" stroke-width="7" stroke-linecap="round"/><circle cx="343" cy="232" r="14" fill="#f6d36d"/><circle cx="379" cy="232" r="14" fill="#ff876f"/><circle cx="415" cy="232" r="14" fill="#b9a7ff"/>
+    </symbol>
+    <symbol id="art-worm-link" viewBox="0 0 640 320">
+      <defs><linearGradient id="wlbg" x2="1" y2="1"><stop stop-color="#eaf3e6"/><stop offset="1" stop-color="#c8e5e7"/></linearGradient></defs><path fill="url(#wlbg)" d="M0 0h640v320H0z"/><rect x="92" y="26" width="456" height="268" rx="22" fill="#fffdf2" stroke="#92b8ae" stroke-width="4"/><g stroke="#c5d9d1" stroke-width="2"><path d="M168 27v266m76-266v266m76-266v266m76-266v266m76-266v266M93 92h454m-454 67h454m-454 67h454"/></g><path d="M164 60h79v32h77v68h79v67h78" fill="none" stroke="#76aeba" stroke-width="18" stroke-linejoin="round" stroke-linecap="round"/><path d="M164 60h79v32h77v68h79v67h78" fill="none" stroke="#d9f2e5" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/><g fill="#f3a265" stroke="#fff1d8" stroke-width="5"><circle cx="164" cy="60" r="17"/><circle cx="243" cy="92" r="15"/><circle cx="320" cy="160" r="15"/><circle cx="399" cy="227" r="15"/><circle cx="477" cy="227" r="15"/></g><g fill="#8ed3ba"><circle cx="164" cy="60" r="7"/><circle cx="477" cy="227" r="7"/></g><path d="M186 60h29" stroke="#ee9361" stroke-width="5" stroke-linecap="round"/><path d="m208 50 12 10-12 10" fill="none" stroke="#ee9361" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="537" cy="53" r="8" fill="#f6c755"/><circle cx="537" cy="84" r="8" fill="#88c7f3"/><circle cx="537" cy="115" r="8" fill="#ee8e89"/>
+    </symbol>
+    <symbol id="art-worm-place" viewBox="0 0 640 320">
+      <defs><linearGradient id="wpbg" x2="0" y2="1"><stop stop-color="#f4ecd9"/><stop offset="1" stop-color="#d8e9e5"/></linearGradient></defs><path fill="url(#wpbg)" d="M0 0h640v320H0z"/><rect x="92" y="28" width="456" height="264" rx="22" fill="#fffdf6" stroke="#9bb9aa" stroke-width="4"/><g stroke="#d6e0d7" stroke-width="2"><path d="M168 29v262m76-262v262m76-262v262m76-262v262m76-262v262M93 94h454m-454 66h454m-454 66h454"/></g><path d="M167 60h77v34h76v67h77v66h77" fill="none" stroke="#8baec0" stroke-width="18" stroke-linejoin="round" stroke-linecap="round"/><path d="M167 60h77v34h76v67h77v66h77" fill="none" stroke="#eaf7f5" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/><g fill="#79c994" stroke="#fff" stroke-width="4"><circle cx="167" cy="60" r="15"/><circle cx="244" cy="94" r="14"/><circle cx="320" cy="161" r="14"/><circle cx="397" cy="227" r="14"/><circle cx="474" cy="227" r="15"/></g><g fill="#f3a16d"><circle cx="167" cy="60" r="6"/><circle cx="474" cy="227" r="6"/></g><path d="M188 60h34" stroke="#e9a04d" stroke-width="5" stroke-linecap="round"/><path d="m214 50 12 10-12 10" fill="none" stroke="#e9a04d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><g fill="#83c9ed" stroke="#fff" stroke-width="3"><circle cx="290" cy="56" r="15"/><circle cx="320" cy="56" r="15"/><circle cx="350" cy="56" r="15"/></g><path d="M280 56h82" stroke="#83c9ed" stroke-width="11" stroke-linecap="round"/><circle cx="520" cy="91" r="5" fill="#f7c85a"/><circle cx="520" cy="111" r="5" fill="#f7c85a"/>
+    </symbol>
+    <symbol id="art-worm-sort" viewBox="0 0 640 320">
+      <defs><linearGradient id="wsbg" x2="0" y2="1"><stop stop-color="#e6f2ee"/><stop offset="1" stop-color="#c6dfe7"/></linearGradient></defs><path fill="url(#wsbg)" d="M0 0h640v320H0z"/><path d="M0 265h640" stroke="#9dbdb4" stroke-width="3"/><g><rect x="102" y="47" width="112" height="166" rx="22" fill="#fffdf5" stroke="#84a69e" stroke-width="4"/><rect x="264" y="47" width="112" height="166" rx="22" fill="#fffdf5" stroke="#84a69e" stroke-width="4"/><rect x="426" y="47" width="112" height="166" rx="22" fill="#fffdf5" stroke="#84a69e" stroke-width="4"/></g><g><path d="M119 179h28v24h-28zM151 179h28v24h-28zM183 179h14v24h-14z" fill="#f47e70"/><path d="M281 179h25v24h-25zM310 179h25v24h-25zM339 179h20v24h-20z" fill="#70a9eb"/><path d="M443 179h24v24h-24zM471 179h24v24h-24zM499 179h22v24h-22z" fill="#71c895"/></g><path d="M160 87h185q35 0 35 35v3q0 34 35 34h52" fill="none" stroke="#b6bccb" stroke-width="20" stroke-linecap="round"/><path d="M160 87h185q35 0 35 35v3q0 34 35 34h52" fill="none" stroke="#e0e5ed" stroke-width="5" stroke-linecap="round"/><g fill="#b5bdce" stroke="#f8f9ff" stroke-width="3"><circle cx="160" cy="87" r="16"/><circle cx="205" cy="87" r="13"/><circle cx="250" cy="87" r="13"/><circle cx="295" cy="87" r="13"/><circle cx="380" cy="125" r="13"/><circle cx="430" cy="159" r="13"/></g><g fill="#ff9b68" stroke="#fff" stroke-width="3"><rect x="231" y="72" width="18" height="25" rx="5"/><rect x="270" y="72" width="18" height="25" rx="5"/></g><path d="M473 159h27" stroke="#e59f4f" stroke-width="5" stroke-linecap="round"/><path d="m494 149 12 10-12 10" fill="none" stroke="#e59f4f" stroke-width="4"/>
+    </symbol>
+    <symbol id="art-fortress" viewBox="0 0 640 320">
+      <defs><linearGradient id="fbg" x2="0" y2="1"><stop stop-color="#c8e3ed"/><stop offset="1" stop-color="#e9deb9"/></linearGradient></defs><path fill="url(#fbg)" d="M0 0h640v320H0z"/><path d="M0 234h640v86H0z" fill="#cfbd8d"/><rect x="81" y="48" width="478" height="210" rx="18" fill="#f8f4e7" stroke="#859a87" stroke-width="4"/><g stroke="#c6c9b7" stroke-width="2"><path d="M149 50v206m68-206v206m68-206v206m68-206v206m68-206v206m68-206v206M82 118h476m-476 70h476"/></g><path d="M165 153h125" stroke="#b6c4d2" stroke-width="20" stroke-linecap="round"/><g fill="#f4b95d" stroke="#fff3d8" stroke-width="4"><circle cx="165" cy="153" r="16"/><circle cx="210" cy="153" r="13"/><circle cx="255" cy="153" r="13"/></g><path d="M197 153h38" stroke="#df9b45" stroke-width="4"/><path d="m230 144 12 9-12 9" fill="none" stroke="#df9b45" stroke-width="4"/><path d="M369 96v114" stroke="#a9bdd2" stroke-width="20" stroke-linecap="round"/><g fill="#f4b95d" stroke="#fff3d8" stroke-width="4"><circle cx="369" cy="96" r="16"/><circle cx="369" cy="141" r="13"/><circle cx="369" cy="186" r="13"/></g><path d="M369 128v29" stroke="#df9b45" stroke-width="4"/><path d="m360 154 9 12 9-12" fill="none" stroke="#df9b45" stroke-width="4"/><g fill="#d97164"><path d="M480 83h30v30h-30zM515 193h26v26h-26z"/><path d="M433 132h26v26h-26z"/></g><path d="M294 153h58" stroke="#668f7e" stroke-width="5" stroke-dasharray="5 8"/><circle cx="323" cy="153" r="21" fill="#75c89e" stroke="#ecfff1" stroke-width="4"/><path d="M315 153h16m-8-8v16" stroke="#fff" stroke-width="4" stroke-linecap="round"/><circle cx="369" cy="141" r="6" fill="#fff"/>
+    </symbol>
+    <symbol id="art-maze" viewBox="0 0 640 320">
+      <defs><linearGradient id="mzbg" x2="0" y2="1"><stop stop-color="#d5e8eb"/><stop offset="1" stop-color="#c2d1bd"/></linearGradient></defs><path fill="url(#mzbg)" d="M0 0h640v320H0z"/><rect x="72" y="25" width="496" height="270" rx="25" fill="#f4f2df" stroke="#859c91" stroke-width="4"/><path d="M320 85h122v53h-88v72H201v-75h-40v-51h100v-28h118v28" fill="none" stroke="#90a7a1" stroke-width="34" stroke-linejoin="round" stroke-linecap="square"/><path d="M143 159h57m132 51h75m-1-71h74" stroke="#df936a" stroke-width="5" stroke-dasharray="8 9"/><path d="m194 150 13 9-13 9m69 41 13 10-13 9m90-89 13 10-13 9" fill="none" stroke="#df936a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="320" cy="166" r="38" fill="#f0c567" stroke="#fff2ca" stroke-width="7"/><circle cx="320" cy="166" r="17" fill="#8a634d"/><path d="M312 166h16m-8-8v16" stroke="#fff" stroke-width="3" stroke-linecap="round"/><g fill="#e77f6d" stroke="#fff0df" stroke-width="3"><circle cx="128" cy="158" r="13"/><circle cx="490" cy="210" r="13"/></g><g fill="#68b89e" stroke="#f5fff3" stroke-width="3"><circle cx="430" cy="105" r="14"/><circle cx="242" cy="210" r="14"/></g><path d="M114 158h24m338 52h28" stroke="#e77f6d" stroke-width="8" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="art-weapon" viewBox="0 0 640 320">
+      <defs><linearGradient id="wabg" x2="0" y2="1"><stop stop-color="#171e37"/><stop offset="1" stop-color="#29233e"/></linearGradient><radialGradient id="warena"><stop stop-color="#3d3657"/><stop offset="1" stop-color="#24263d"/></radialGradient></defs><path fill="url(#wabg)" d="M0 0h640v320H0z"/><ellipse cx="320" cy="188" rx="235" ry="91" fill="url(#warena)" stroke="#6575a7" stroke-width="4"/><ellipse cx="320" cy="188" rx="178" ry="62" fill="none" stroke="#8677bd" stroke-width="2" stroke-dasharray="8 10"/><path d="M104 187h432" stroke="#c2b4ff" stroke-opacity=".24" stroke-width="2"/><g><circle cx="210" cy="170" r="38" fill="#57d6c4" stroke="#bcfff1" stroke-width="4"/><path d="M190 140q20-31 40 0" fill="#d9fcff"/><circle cx="198" cy="167" r="4" fill="#162c45"/><circle cx="222" cy="167" r="4" fill="#162c45"/><path d="m231 127 44-28" stroke="#f3ce70" stroke-width="13" stroke-linecap="round"/><path d="m265 95 21-12-5 24" fill="#f3ce70"/><circle cx="429" cy="187" r="34" fill="#fe766f" stroke="#ffd6c1" stroke-width="4"/><path d="M410 159q19-28 38 0" fill="#ffb898"/><circle cx="418" cy="184" r="4" fill="#462840"/><circle cx="440" cy="184" r="4" fill="#462840"/><path d="m397 211-25 20m71-106 26 10" stroke="#ffb07a" stroke-width="10" stroke-linecap="round"/></g><g fill="#d9dcf4" stroke="#746cb1" stroke-width="2"><rect x="118" y="67" width="44" height="18" rx="8" transform="rotate(-23 118 67)"/><rect x="479" y="75" width="50" height="18" rx="8" transform="rotate(27 479 75)"/></g><path d="m267 188 39-16 20 13 25-17" fill="none" stroke="#ffd36f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="320" cy="180" r="7" fill="#fff1a3"/>
+    </symbol>
+    <symbol id="art-oddities" viewBox="0 0 640 320">
+      <defs><linearGradient id="obg" x2="0" y2="1"><stop stop-color="#172331"/><stop offset="1" stop-color="#24363c"/></linearGradient></defs><path fill="url(#obg)" d="M0 0h640v320H0z"/><rect x="102" y="31" width="436" height="258" rx="39" fill="#263744" stroke="#73928d" stroke-width="4"/><path d="M125 61h390v198H125z" fill="none" stroke="#435e65" stroke-width="2" stroke-dasharray="4 10"/><path d="M150 244 276 79l124 161 87-130" fill="none" stroke="#83d3c0" stroke-opacity=".32" stroke-width="4"/><circle cx="236" cy="166" r="53" fill="#59d8be" stroke="#d5fff0" stroke-width="6"/><circle cx="236" cy="166" r="33" fill="#2a7c77"/><path d="M214 155q22-18 44 0" fill="none" stroke="#ecfff0" stroke-width="5" stroke-linecap="round"/><circle cx="221" cy="169" r="4" fill="#17323d"/><circle cx="251" cy="169" r="4" fill="#17323d"/><path d="M219 185q17 12 34 0" fill="none" stroke="#17323d" stroke-width="4" stroke-linecap="round"/><circle cx="429" cy="141" r="46" fill="#fd9470" stroke="#ffe0c5" stroke-width="6"/><circle cx="429" cy="141" r="28" fill="#bc4c57"/><path d="M412 132 427 143l18-20" fill="none" stroke="#fff0d8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="346" cy="220" r="9" fill="#f9d66b"/><path d="M346 220 386 176" stroke="#f9d66b" stroke-width="4" stroke-dasharray="5 8"/><path d="m312 103 24-20m-12 51 30 0" stroke="#f7d17b" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="art-bastion" viewBox="0 0 640 320">
+      <defs><linearGradient id="bbg" x2="0" y2="1"><stop stop-color="#bddbe1"/><stop offset="1" stop-color="#7896a1"/></linearGradient><linearGradient id="bball" x2="0" y2="1"><stop stop-color="#9ceeff"/><stop offset="1" stop-color="#3a9fc0"/></linearGradient></defs><path fill="url(#bbg)" d="M0 0h640v320H0z"/><path d="M0 65h640" stroke="#fff" stroke-opacity=".18"/><g fill="#e87869" stroke="#7d6571" stroke-width="3"><path d="M158 46h43v40h-43zM204 46h43v40h-43zM247 46h43v40h-43zM290 46h43v40h-43zM376 87h43v40h-43zM419 87h43v40h-43zM462 87h43v40h-43zM505 87h43v40h-43z"/><path d="M180 88h43v40h-43zM223 88h43v40h-43z" fill="#f7af5a"/></g><g fill="#ffd5ac"><circle cx="178" cy="65" r="3"/><circle cx="224" cy="65" r="3"/><circle cx="267" cy="65" r="3"/><circle cx="311" cy="65" r="3"/><circle cx="397" cy="106" r="3"/><circle cx="440" cy="106" r="3"/><circle cx="483" cy="106" r="3"/></g><path d="M88 268h464" stroke="#425865" stroke-width="15" stroke-linecap="round"/><path d="M100 253v29m35-29v29m35-29v29m35-29v29m35-29v29m35-29v29m35-29v29m35-29v29m35-29v29m35-29v29m35-29v29m35-29v29" stroke="#d3e4df" stroke-width="5"/><path d="M320 263 365 195" stroke="#f2d37c" stroke-width="7" stroke-linecap="round"/><circle cx="320" cy="263" r="23" fill="#344f5d" stroke="#e5f1ec" stroke-width="5"/><circle cx="367" cy="186" r="27" fill="url(#bball)" stroke="#e8fbff" stroke-width="5"/><circle cx="367" cy="186" r="10" fill="#e9fcff"/><circle cx="367" cy="186" r="40" fill="none" stroke="#e3f9ff" stroke-opacity=".55" stroke-width="3"/><g fill="#ffc664"><path d="m345 157 7-15 7 15-7 8zM398 176l15 7-15 7-8-7zM371 222l7 14 7-14-7-8z"/></g><path d="m110 143 22-8 22 8v21q-22 22-44 0z" fill="#769a7c" stroke="#eaf2da" stroke-width="4"/><path d="M106 172q12 0 14 11t-14 11m-9-31q-12 0-14-11t14-11" fill="none" stroke="#fff1bb" stroke-width="4"/>
+    </symbol>
+    <symbol id="art-music" viewBox="0 0 640 320">
+      <defs><linearGradient id="mbg" x2="0" y2="1"><stop stop-color="#17172a"/><stop offset="1" stop-color="#2d2340"/></linearGradient></defs><path fill="url(#mbg)" d="M0 0h640v320H0z"/><path d="M0 241h640" stroke="#59516d" stroke-width="2"/><g opacity=".7" fill="none" stroke-width="3"><path d="M102 81v147" stroke="#ff7d8c"/><path d="M211 58v170" stroke="#64d9b1"/><path d="M320 74v154" stroke="#6eb6ff"/><path d="M429 56v172" stroke="#c39cff"/><path d="M538 80v148" stroke="#ffd168"/></g><g><circle cx="102" cy="133" r="32" fill="#ff788e"/><path d="M77 112q25-28 50 0" fill="#ffd2bb"/><circle cx="91" cy="134" r="3" fill="#392b47"/><circle cx="112" cy="134" r="3" fill="#392b47"/><path d="M94 146q8 7 16 0" fill="none" stroke="#392b47" stroke-width="3" stroke-linecap="round"/><path d="M79 171v22m46-22v22" stroke="#ffb7ad" stroke-width="9" stroke-linecap="round"/><circle cx="211" cy="121" r="32" fill="#61d9ad"/><path d="M185 101q26-29 52 0" fill="#e4ffd2"/><circle cx="200" cy="121" r="3" fill="#293e46"/><circle cx="222" cy="121" r="3" fill="#293e46"/><path d="M201 134q10 9 20 0" fill="none" stroke="#293e46" stroke-width="3"/><path d="M188 159v29m46-29v29" stroke="#a1f0c7" stroke-width="9" stroke-linecap="round"/><circle cx="320" cy="137" r="32" fill="#6daeff"/><path d="M294 116q26-29 52 0" fill="#e6f0ff"/><circle cx="309" cy="136" r="3" fill="#27374c"/><circle cx="331" cy="136" r="3" fill="#27374c"/><path d="M310 149q10 8 20 0" fill="none" stroke="#27374c" stroke-width="3"/><path d="M297 175v18m46-18v18" stroke="#a7d5ff" stroke-width="9" stroke-linecap="round"/><circle cx="429" cy="120" r="32" fill="#bc91ff"/><path d="M403 99q26-28 52 0" fill="#f1e4ff"/><circle cx="418" cy="120" r="3" fill="#3c2c54"/><circle cx="440" cy="120" r="3" fill="#3c2c54"/><path d="M419 133q10 8 20 0" fill="none" stroke="#3c2c54" stroke-width="3"/><path d="M406 158v30m46-30v30" stroke="#ddc3ff" stroke-width="9" stroke-linecap="round"/><circle cx="538" cy="135" r="32" fill="#ffd166"/><path d="M512 114q26-29 52 0" fill="#fff2c8"/><circle cx="527" cy="135" r="3" fill="#4a3c3a"/><circle cx="549" cy="135" r="3" fill="#4a3c3a"/><path d="M528 148q10 8 20 0" fill="none" stroke="#4a3c3a" stroke-width="3"/><path d="M515 173v18m46-18v18" stroke="#ffe7a0" stroke-width="9" stroke-linecap="round"/></g><rect x="66" y="232" width="508" height="42" rx="14" fill="#111522" stroke="#68607b" stroke-width="2"/><g><rect x="85" y="243" width="28" height="21" rx="7" fill="#ff788e"/><rect x="139" y="243" width="28" height="21" rx="7" fill="#61d9ad"/><rect x="193" y="243" width="28" height="21" rx="7" fill="#6daeff"/><rect x="247" y="243" width="28" height="21" rx="7" fill="#bc91ff"/><rect x="301" y="243" width="28" height="21" rx="7" fill="#ffd166"/></g><path d="M374 256h26m-14-12v24m34-18h8v12h-8m25-19h8v24h-8m25-13h8v13h-8m25-22h8v22h-8" fill="none" stroke="#beb4dc" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="art-combo" viewBox="0 0 640 320">
+      <defs><linearGradient id="cdbg" x2="0" y2="1"><stop stop-color="#d8e4e7"/><stop offset="1" stop-color="#99adb8"/></linearGradient></defs><path fill="url(#cdbg)" d="M0 0h640v320H0z"/><rect x="90" y="28" width="460" height="264" rx="20" fill="#e7e4d5" stroke="#53656e" stroke-width="5"/><path d="M109 54h422v213H109z" fill="#b9c4bd" stroke="#7b8b86" stroke-width="3"/><path d="M110 242h420" stroke="#687976" stroke-width="9"/><path d="m142 211 87-31 61 25 80-75 65 15" fill="none" stroke="#f4a854" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/><path d="m147 207 81-28" stroke="#ffe2a2" stroke-width="4"/><circle cx="228" cy="178" r="25" fill="#eef4ed" stroke="#53656e" stroke-width="5"/><path d="M211 176h35l12 13h-50z" fill="#ed806f"/><circle cx="220" cy="191" r="6" fill="#243b49"/><circle cx="248" cy="191" r="6" fill="#243b49"/><path d="M338 131q0-24 24-24t24 24" fill="none" stroke="#69bddd" stroke-width="12"/><circle cx="362" cy="102" r="12" fill="#83d6eb"/><path d="M426 114v38m-11-30h22" stroke="#7790a1" stroke-width="11" stroke-linecap="round"/><circle cx="477" cy="176" r="14" fill="#f0c765" stroke="#fff2c3" stroke-width="4"/><path d="m453 226 9-17 9 17-9 8zm45-14 7-14 7 14-7 7zm-177 30 6-12 6 12-6 6" fill="#ffb95f"/><path d="m112 79 26 0m-13-13v26m366-1 22 0m-11-11v22" stroke="#86999b" stroke-width="3" opacity=".6"/>
+    </symbol>
+  </svg>
 
   <template id="gameCardTemplate">
     <article class="card">
-      <div class="preview"></div>
-      <div class="titleRow">
-        <div>
-          <h2></h2>
-        </div>
-        <div class="tag"></div>
-      </div>
-      <p class="desc"></p>
-      <div class="actions">
-        <button class="launchBtn" type="button">Launch</button>
-        <button class="launchBtn secondary" type="button">Open In New Tab</button>
+      <div class="preview"><svg viewBox="0 0 640 320" role="img" focusable="false"><use></use></svg></div>
+      <div class="cardCopy">
+        <div class="titleRow"><h2></h2><span class="genre"></span></div>
+        <p class="desc"></p>
+        <div class="actions"></div>
       </div>
     </article>
   </template>
 
   <script>
     const games = [
-      {
-        id: "plush",
-        title: "Plush Merge Jam",
-        file: "plush_merge_jam.html",
-        tag: "Merge",
-        description: "Arcade merge prototype with a soft toy presentation and quick local launch.",
-        preview: "plush"
-      },
-      {
-        id: "snake",
-        title: "Snake Merge Defense",
-        file: "snake_merge.html",
-        tag: "Snake + Defense",
-        description: "Hybrid snake, color resource management and lane defense with multiple game modes.",
-        preview: "snake"
-      },
-      {
-        id: "worm",
-        title: "Worm Link Merge",
-        file: "worm_link_merge.html",
-        tag: "Worm + Pipes",
-        description: "Grid puzzle prototype about slithering worms, mandatory merges, paired sockets, resolve bursts, and quest-driven progression.",
-        preview: "worm"
-      },
-      {
-        id: "worm_jam",
-        title: "Worm Place Puzzle",
-        file: "worm_place_puzzle.html",
-        tag: "Worm + Placement",
-        description: "Standalone worm placement puzzle with campaign progression, sandbox generation, matching pipe paths, and compact victory flow.",
-        preview: "worm"
-      },
-      {
-        id: "worm_sort",
-        title: "Worm Sort",
-        file: "worm_sort.html",
-        tag: "Sort Puzzle",
-        description: "Standalone sorting prototype with neutral worms, color blocks, outside containers, campaign progression, sandbox tools, and JSON levels.",
-        preview: "wormSort"
-      },
-      {
-        id: "worm_fortress",
-        title: "Wormhold Merge",
-        file: "worm_fortress_merge.html",
-        tag: "Merge + Auto-Battle",
-        description: "Move living fortress-worms on a base grid, merge equal specialists, claim bonus tiles, refresh the pool, and launch short auto-battle waves.",
-        preview: "fortress"
-      },
-      {
-        id: "wormhold_maze",
-        title: "Wormhold Maze Merge",
-        file: "wormhold_maze_merge.html",
-        tag: "Puzzle + Merge + TD",
-        description: "Build a worm maze around the core, merge equal tower-worms into longer bodies, shape enemy A* routes, and survive escalating defense waves.",
-        preview: "fortress"
-      },
-      {
-        id: "weapon_arena",
-        title: "Weapon Arena",
-        file: "weapon_arena_roguelite.html",
-        tag: "Auto-Battle Roguelite",
-        description: "Roguelite arena auto-battler with tournament duels, campaign waves, collectible fighters, upgrades, and chaotic weapon abilities.",
-        preview: "fortress"
-      },
-      {
-        id: "arena_oddities",
-        title: "Arena Oddities",
-        file: "arena_oddities.html",
-        tag: "Mobile Auto-Battle",
-        description: "Mobile arena auto-battler with strange fighters, unusual abilities, tournament mode, campaign waves, upgrades, and compact battles.",
-        preview: "arenaOddities"
-      },
-      {
-        id: "ball_bastion",
-        title: "Ball Bastion",
-        file: "ball_bastion.html",
-        tag: "Physics Defense",
-        description: "Launch heavy elemental balls, merge matching balls, break voxel enemies into pixels, and defend the wall for 3 minutes.",
-        preview: "ballBastion"
-      },
-      {
-        id: "music_loop_mixer",
-        title: "Loop Crew Mixer",
-        file: "music_loop_mixer/music_loop_mixer.html",
-        tag: "Music Mixer",
-        description: "Synchronized loop-based music mixer with character slots, queued sound activation, category pads, and cycle-based playback.",
-        preview: "musicMixer"
-      },
-      {
-        id: "combo_drop_lab",
-        title: "Combo Drop Lab",
-        file: "combo_drop_lab.html",
-        tag: "Physics Combo",
-        description: "Drop a toy car into a garage arena, place bumpers and ramps, create chain reactions, earn coins, and build bigger combos.",
-        preview: "comboDropLab"
-      }
+      {id:"plush",title:"Plush Merge Jam",file:"plush_merge_jam.html",genre:"Puzzle",genres:["Puzzle","Merge"],description:"Slide soft, characterful blocks together and build up to the rare plush crown.",art:"art-plush"},
+      {id:"snake",title:"Snake Merge Defense",file:"snake_merge.html",genre:"Defense",genres:["Defense","Puzzle"],description:"Gather colored orbs, line up a living snake, and break the waves pressing against your wall.",art:"art-snake"},
+      {id:"worm",title:"Worm Link Merge",file:"worm_link_merge.html",genre:"Puzzle",genres:["Puzzle","Merge"],description:"Guide linked worms through a pipe grid, match their colors, and resolve each board's quests.",art:"art-worm-link"},
+      {id:"worm_place",title:"Worm Place Puzzle",file:"worm_place_puzzle.html",genre:"Puzzle",genres:["Puzzle"],description:"Place each worm along its matching route and fill the target paths across the board.",art:"art-worm-place"},
+      {id:"worm_sort",title:"Worm Sort",file:"worm_sort.html",genre:"Puzzle",genres:["Puzzle"],description:"Carry loose color blocks with neutral worms and sort them into matching containers.",art:"art-worm-sort"},
+      {id:"fortress",title:"Wormhold Merge",file:"worm_fortress_merge.html",genre:"Strategy",genres:["Strategy","Merge","Defense"],description:"Place living defenders, merge matching specialists, then watch your formation take on a wave.",art:"art-fortress"},
+      {id:"maze",title:"Wormhold Maze Merge",file:"wormhold_maze_merge.html",genre:"Strategy",genres:["Strategy","Merge","Defense"],description:"Shape a winding route around the core and combine tower-worms before each defense wave.",art:"art-maze"},
+      {id:"weapon",title:"Weapon Arena",file:"weapon_arena_roguelite.html",genre:"Auto-battler",genres:["Auto-battler","Strategy"],description:"Choose a fighter, collect weapons and upgrades, and climb through a run of tactical duels.",art:"art-weapon"},
+      {id:"oddities",title:"Arena Oddities",file:"arena_oddities.html",genre:"Auto-battler",genres:["Auto-battler","Arcade"],description:"Send a strange fighter into compact ricochet battles, then build a run through fresh matchups.",art:"art-oddities"},
+      {id:"bastion",title:"Ball Bastion",file:"ball_bastion.html",genre:"Defense",genres:["Defense","Arcade"],description:"Launch heavy elemental balls, break blocky invaders, and hold the line through a three-minute run.",art:"art-bastion"},
+      {id:"mixer",title:"Loop Crew Mixer",file:"music_loop_mixer/music_loop_mixer.html",genre:"Music",genres:["Music"],description:"Assign loops to a colorful crew and layer a synchronized beat one performer at a time.",art:"art-music"},
+      {id:"combo",title:"Combo Drop Lab",file:"combo_drop_lab.html",genre:"Arcade",genres:["Arcade","Physics"],description:"Build a garage full of bumpers and ramps, drop a toy car, and set off a chain reaction.",art:"art-combo"}
     ];
-
     const grid = document.getElementById("gameGrid");
     const template = document.getElementById("gameCardTemplate");
+    const search = document.getElementById("gameSearch");
+    const filters = document.getElementById("genreFilters");
+    const count = document.getElementById("resultCount");
+    const genreOptions = ["All games", ...new Set(games.flatMap(game => game.genres))];
+    let activeGenre = "All games";
 
-    function createPreview(previewEl, type) {
-      previewEl.classList.add(type);
-      if (type === "snake") {
-        previewEl.innerHTML = `
-          <div class="enemy red" style="left:24px;top:26px"></div>
-          <div class="enemy blue" style="left:82px;top:22px"></div>
-          <div class="enemy green" style="left:144px;top:34px"></div>
-          <div class="wall"></div>
-          <div class="line" style="left:18px;top:110px;width:90px"></div>
-          <div class="line" style="left:96px;top:110px;width:56px;transform:rotate(-90deg);transform-origin:left center"></div>
-          <div class="snakeSeg snakeEnd" style="left:16px;top:104px"></div>
-          <div class="snakeSeg green" style="left:54px;top:104px"></div>
-          <div class="snakeSeg blue" style="left:92px;top:104px"></div>
-          <div class="snakeSeg snakeEnd" style="left:130px;top:104px;transform:scaleX(-1)"></div>
-          <div class="orb yellow" style="left:184px;top:114px"></div>
-          <div class="orb red" style="left:204px;top:58px"></div>
-        `;
-        return;
-      }
-      if (type === "worm") {
-        previewEl.innerHTML = `
-          <div class="pipeGhost" style="left:30px;top:42px;width:122px;height:18px"></div>
-          <div class="pipeGhost" style="left:148px;top:72px;width:18px;height:56px"></div>
-          <div class="socket" style="left:24px;top:36px"></div>
-          <div class="socket" style="left:146px;top:68px"></div>
-          <div class="wormLink" style="left:38px;top:92px;width:86px"></div>
-          <div class="wormSeg yellow" style="left:30px;top:88px"></div>
-          <div class="wormSeg blue" style="left:70px;top:88px"></div>
-          <div class="wormSeg yellow" style="left:110px;top:88px"></div>
-          <div class="wormSeg red" style="left:168px;top:44px"></div>
-          <div class="wormSeg red" style="left:194px;top:44px"></div>
-          <div class="wormSeg green" style="left:176px;top:112px"></div>
-          <div class="wormSeg green" style="left:202px;top:112px"></div>
-        `;
-        return;
-      }
-      if (type === "wormSort") {
-        previewEl.innerHTML = `
-          <div class="sortContainer" style="left:22px;top:18px">
-            <div class="sortBlock" style="background:#ff5f6d"></div>
-            <div class="sortBlock" style="background:#ff5f6d"></div>
-            <div class="sortBlock" style="background:#4594ff"></div>
-          </div>
-          <div class="sortContainer" style="left:168px;top:118px">
-            <div class="sortBlock" style="background:#4594ff"></div>
-            <div class="sortBlock" style="background:#35c982"></div>
-            <div class="sortBlock" style="background:#35c982"></div>
-          </div>
-          <div class="sortLoad" style="left:52px;top:62px"></div>
-          <div class="sortLoad" style="left:194px;top:92px"></div>
-          <div class="sortWorm" style="left:62px;top:96px;width:98px"></div>
-          <div class="sortBlock" style="left:82px;top:100px;background:#ff5f6d"></div>
-          <div class="sortBlock" style="left:112px;top:100px;background:#4594ff"></div>
-          <div class="sortBlock" style="left:44px;top:126px;background:#f5c84b"></div>
-          <div class="sortBlock" style="left:174px;top:56px;background:#35c982"></div>
-        `;
-        return;
-      }
-      if (type === "fortress") {
-        previewEl.innerHTML = `
-          <div class="fortressTile" style="left:26px;top:88px"></div>
-          <div class="fortressTile" style="left:56px;top:88px"></div>
-          <div class="fortressTile" style="left:86px;top:88px"></div>
-          <div class="fortressTile" style="left:116px;top:88px"></div>
-          <div class="fortressTile" style="left:146px;top:88px"></div>
-          <div class="fortressTile" style="left:176px;top:88px"></div>
-          <div class="fortressTile" style="left:206px;top:88px"></div>
-          <div class="fortressSegment" style="left:42px;top:98px;width:86px"></div>
-          <div class="fortressSegment" style="left:138px;top:122px;width:54px;background:linear-gradient(180deg,#fff0bf,#f0c15c)"></div>
-          <div class="fortressBadge" style="left:74px;top:98px">⚔️</div>
-          <div class="fortressBadge" style="left:154px;top:122px">🎯</div>
-          <div class="fortressUnit enemy" style="left:34px;top:28px"></div>
-          <div class="fortressUnit enemy" style="left:102px;top:40px"></div>
-          <div class="fortressUnit enemy" style="left:198px;top:34px"></div>
-          <div class="fortressUnit player" style="left:78px;top:76px"></div>
-          <div class="fortressUnit player" style="left:166px;top:104px"></div>
-          <div class="fortressBolt" style="left:158px;top:88px"></div>
-        `;
-        return;
-      }
-      if (type === "arenaOddities") {
-        previewEl.innerHTML = `
-          <div class="oddArenaFrame"></div>
-          <div class="oddWeb"></div>
-          <div class="oddBlade"></div>
-          <div class="oddOrb"></div>
-          <div class="oddFighter player">88</div>
-          <div class="oddFighter enemy">61</div>
-          <div class="oddPanel"></div>
-        `;
-        return;
-      }
-      if (type === "musicMixer") {
-        previewEl.innerHTML = `
-          <div class="mixerBeam" style="left:28px"></div>
-          <div class="mixerBeam" style="left:102px;background:linear-gradient(180deg,rgba(255,95,109,.24),transparent)"></div>
-          <div class="mixerBeam" style="right:30px;background:linear-gradient(180deg,rgba(255,209,102,.22),transparent)"></div>
-          <div class="mixerPerformer" style="left:34px;top:58px;--performer-color:#ff5f6d"></div>
-          <div class="mixerPerformer" style="left:72px;top:48px;--performer-color:#35d399"></div>
-          <div class="mixerPerformer" style="left:112px;top:62px;--performer-color:#4ea1ff"></div>
-          <div class="mixerPerformer" style="left:152px;top:46px;--performer-color:#b875ff"></div>
-          <div class="mixerPerformer" style="left:192px;top:60px;--performer-color:#ffd166"></div>
-          <div class="mixerDeck"></div>
-          <div class="mixerPad" style="left:46px;bottom:28px;--pad-color:#ff5f6d"></div>
-          <div class="mixerPad" style="left:76px;bottom:28px;--pad-color:#35d399"></div>
-          <div class="mixerPad" style="left:106px;bottom:28px;--pad-color:#4ea1ff"></div>
-          <div class="mixerPad" style="left:136px;bottom:28px;--pad-color:#b875ff"></div>
-          <div class="mixerPad" style="left:166px;bottom:28px;--pad-color:#ffd166"></div>
-          <div class="mixerEq" style="right:40px;bottom:64px">
-            <span style="height:10px"></span>
-            <span style="height:22px"></span>
-            <span style="height:15px"></span>
-            <span style="height:27px"></span>
-            <span style="height:18px"></span>
-          </div>
-        `;
-        return;
-      }
-      if (type === "ballBastion") {
-        previewEl.innerHTML = `
-          <div class="bastionWall"></div>
-          <div class="bastionLauncher"></div>
-          <div class="bastionAim"></div>
-          <div class="bastionBall" style="left:158px;top:92px;background:#ff8656"></div>
-          <div class="bastionBall" style="left:202px;top:122px;background:#6fd9ff"></div>
-          <div class="bastionBall" style="left:72px;top:86px;background:#c8d3e3"></div>
-          <div class="bastionEnemy" style="left:40px;top:24px"></div>
-          <div class="bastionEnemy" style="left:84px;top:40px;background:#ffb461"></div>
-          <div class="bastionEnemy" style="left:126px;top:30px;background:#ff7c68"></div>
-          <div class="bastionEnemy" style="left:196px;top:46px;background:#8dc8ff"></div>
-          <div class="bastionChunk" style="left:110px;top:56px"></div>
-          <div class="bastionChunk" style="left:118px;top:62px"></div>
-          <div class="bastionChunk" style="left:126px;top:54px"></div>
-          <div class="bastionChunk" style="left:132px;top:66px"></div>
-        `;
-        return;
-      }
-      if (type === "comboDropLab") {
-        previewEl.innerHTML = `
-          <div class="comboArenaFrame"></div>
-          <div class="comboMiniCar" style="left:112px;top:28px"></div>
-          <div class="comboMiniBumper" style="left:70px;top:82px"></div>
-          <div class="comboMiniBumper" style="left:168px;top:112px"></div>
-          <div class="comboMiniRamp" style="left:118px;top:92px;transform:rotate(-25deg)"></div>
-          <div class="comboMiniPad" style="left:84px;top:132px;transform:rotate(90deg)"></div>
-          <div class="comboMiniArrow" style="left:144px;top:56px;transform:rotate(68deg)"></div>
-          <div class="comboMiniText">x12</div>
-        `;
-        return;
-      }
-      previewEl.innerHTML = `
-        <div class="plushDot" style="left:32px;top:34px"></div>
-        <div class="plushDot" style="left:88px;top:78px"></div>
-        <div class="plushDot" style="left:156px;top:46px"></div>
-        <div class="plushDot" style="left:208px;top:92px"></div>
-      `;
-    }
-
-    function openGame(file, newTab = false) {
-      const url = new URL(file, window.location.href).href;
-      if (newTab) {
-        window.open(url, "_blank", "noopener");
-        return;
-      }
-      window.location.href = url;
-    }
-
-    games.forEach((game) => {
-      const fragment = template.content.cloneNode(true);
-      const card = fragment.querySelector(".card");
-      const preview = fragment.querySelector(".preview");
-      const title = fragment.querySelector("h2");
-      const tag = fragment.querySelector(".tag");
-      const desc = fragment.querySelector(".desc");
-      const [launchBtn, newTabBtn] = fragment.querySelectorAll(".launchBtn");
-
-      card.dataset.game = game.id;
-      title.textContent = game.title;
-      tag.textContent = game.tag;
-      desc.textContent = game.description;
-      createPreview(preview, game.preview);
-
-      launchBtn.addEventListener("click", () => openGame(game.file, false));
-      newTabBtn.addEventListener("click", () => openGame(game.file, true));
-
-      grid.appendChild(fragment);
+    document.getElementById("gameCount").textContent = games.length;
+    genreOptions.forEach((genre, index) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "filter";
+      button.textContent = genre;
+      button.setAttribute("aria-pressed", String(index === 0));
+      button.addEventListener("click", () => {
+        activeGenre = genre;
+        filters.querySelectorAll(".filter").forEach(item => item.setAttribute("aria-pressed", String(item === button)));
+        renderGames();
+      });
+      filters.appendChild(button);
     });
+
+    function makeCard(game) {
+      const card = template.content.firstElementChild.cloneNode(true);
+      const imageUse = card.querySelector("use");
+      imageUse.setAttribute("href", `#${game.art}`);
+      imageUse.setAttribute("xlink:href", `#${game.art}`);
+      card.querySelector("h2").textContent = game.title;
+      card.querySelector(".genre").textContent = game.genre;
+      card.querySelector(".desc").textContent = game.description;
+      const actions = card.querySelector(".actions");
+      const play = document.createElement("a");
+      play.className = "launch";
+      play.href = `./${game.file}`;
+      play.innerHTML = 'Play game <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9m-4-4 4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      const newTab = document.createElement("a");
+      newTab.className = "launch secondary";
+      newTab.href = `./${game.file}`;
+      newTab.target = "_blank";
+      newTab.rel = "noopener";
+      newTab.textContent = "New tab";
+      newTab.setAttribute("aria-label", `Open ${game.title} in a new tab`);
+      actions.append(play, newTab);
+      return card;
+    }
+
+    function renderGames() {
+      const query = search.value.trim().toLowerCase();
+      const visible = games.filter(game => {
+        const matchesGenre = activeGenre === "All games" || game.genres.includes(activeGenre);
+        const matchesSearch = !query || `${game.title} ${game.genre} ${game.genres.join(" ")} ${game.description}`.toLowerCase().includes(query);
+        return matchesGenre && matchesSearch;
+      });
+      grid.replaceChildren();
+      if (!visible.length) {
+        const empty = document.createElement("div");
+        empty.className = "emptyState";
+        empty.innerHTML = "<strong>No games found</strong><p>Try another title or choose a different genre.</p>";
+        grid.appendChild(empty);
+      } else {
+        visible.forEach(game => grid.appendChild(makeCard(game)));
+      }
+      count.textContent = visible.length === games.length ? `Showing all ${games.length} games` : `Showing ${visible.length} of ${games.length} games`;
+    }
+    search.addEventListener("input", renderGames);
+    renderGames();
   </script>
 </body>
 </html>
