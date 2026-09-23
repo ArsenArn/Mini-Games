@@ -566,7 +566,7 @@
 
       <section class="panel tipsCard">
         <h2>Signals</h2>
-        <p class="muted">Completed worms glow on target and can still be moved by default. Some targets are sockets-only (no line): connect both sockets with matching color and length. Enable "Remove completed worms" to clear solved worms and pipes.</p>
+        <p class="muted">Completed worms glow on target and can still be moved by default. Some targets are sockets-only (no line). Auto-place can snap matching worms onto lined targets.</p>
         <div id="toastStack" class="toastStack"></div>
       </section>
     </aside>
@@ -597,6 +597,10 @@
           <label class="menuOption" for="campaignRemoveCompletedInput">
             <input id="campaignRemoveCompletedInput" type="checkbox">
             Remove completed worms
+          </label>
+          <label class="menuOption" for="campaignAutoPlaceInput">
+            <input id="campaignAutoPlaceInput" type="checkbox">
+            Auto-place worms
           </label>
           <div class="screenButtons">
             <button id="campaignButton" class="actionButton accent" type="button">Campaign</button>
@@ -662,6 +666,7 @@
           <label class="field"><span>Obstacles %</span><input id="obstaclePercentInput" data-setting="obstaclePercent" type="number" min="0" max="18" step="1"></label>
           <label class="field"><span>Seed</span><input id="seedInput" data-setting="seed" type="text"></label>
           <label class="field checkField" for="removeCompletedWormsInput"><input id="removeCompletedWormsInput" data-setting="removeCompletedWorms" type="checkbox"><span>Remove completed worms</span></label>
+          <label class="field checkField" for="autoPlaceWormsInput"><input id="autoPlaceWormsInput" data-setting="autoPlaceWorms" type="checkbox"><span>Auto-place worms</span></label>
         </div>
         <div class="drawerNote" id="designerNote">Pipe pairs are normalized to the worm count so every worm has one valid target.</div>
         <div class="buttonRow">
@@ -711,7 +716,8 @@
           obstaclePercent: 4,
           seed: "worm-jam",
           freeRoutePipePairs: 0,
-          removeCompletedWorms: false
+          removeCompletedWorms: false,
+          autoPlaceWorms: false
         },
         INPUT: {
           dragThreshold: 18,
@@ -813,7 +819,8 @@
         data: {
           unlockedLevel: 1,
           sandbox: Helpers.deepClone(CONFIG.DEFAULT_SANDBOX),
-          campaignRemoveCompletedWorms: false
+          campaignRemoveCompletedWorms: false,
+          campaignAutoPlaceWorms: false
         },
         load() {
           try {
@@ -823,8 +830,14 @@
             this.data.unlockedLevel = Helpers.clamp(Number(parsed.unlockedLevel) || 1, 1, CONFIG.MAX_LEVEL);
             this.data.sandbox = { ...Helpers.deepClone(CONFIG.DEFAULT_SANDBOX), ...(parsed.sandbox || {}) };
             this.data.campaignRemoveCompletedWorms = !!parsed.campaignRemoveCompletedWorms;
+            this.data.campaignAutoPlaceWorms = !!parsed.campaignAutoPlaceWorms;
           } catch (error) {
-            this.data = { unlockedLevel: 1, sandbox: Helpers.deepClone(CONFIG.DEFAULT_SANDBOX), campaignRemoveCompletedWorms: false };
+            this.data = {
+              unlockedLevel: 1,
+              sandbox: Helpers.deepClone(CONFIG.DEFAULT_SANDBOX),
+              campaignRemoveCompletedWorms: false,
+              campaignAutoPlaceWorms: false
+            };
           }
         },
         commit() {
@@ -840,6 +853,7 @@
         },
         saveCampaignOptions(options = {}) {
           this.data.campaignRemoveCompletedWorms = !!options.removeCompletedWorms;
+          this.data.campaignAutoPlaceWorms = !!options.autoPlaceWorms;
           this.commit();
         }
       };
@@ -1035,7 +1049,8 @@
             colorOffset: Math.max(0, Math.round(Number(settings.colorOffset) || 0)),
             seed: String(settings.seed || "worm-jam"),
             freeRoutePipePairs: Math.max(0, Math.round(Number(settings.freeRoutePipePairs) || 0)),
-            removeCompletedWorms: !!settings.removeCompletedWorms
+            removeCompletedWorms: !!settings.removeCompletedWorms,
+            autoPlaceWorms: !!settings.autoPlaceWorms
           };
           if (repaired.lengthMax < repaired.lengthMin) repaired.lengthMax = repaired.lengthMin;
           let count = Math.max(repaired.startWorms, repaired.pipePairs);
@@ -1674,6 +1689,7 @@
             keyDirection: null,
             keyboardStepCooldown: 0,
             campaignRemoveCompletedWorms: !!Save.data.campaignRemoveCompletedWorms,
+            campaignAutoPlaceWorms: !!Save.data.campaignAutoPlaceWorms,
             manualSelectionRequired: false
           };
           this.time = 0;
@@ -1682,7 +1698,10 @@
           this.particles = [];
           this.bursts = [];
           this.sandboxSettings = Helpers.deepClone(Save.data.sandbox);
-          this.campaignOptions = { removeCompletedWorms: !!Save.data.campaignRemoveCompletedWorms };
+          this.campaignOptions = {
+            removeCompletedWorms: !!Save.data.campaignRemoveCompletedWorms,
+            autoPlaceWorms: !!Save.data.campaignAutoPlaceWorms
+          };
           this.bindRefs();
           this.renderer = new Renderer(this, this.refs.canvas);
           this.bindEvents();
@@ -1693,7 +1712,7 @@
         bindRefs() {
           const ids = [
             "gameCanvas","menuScreen","victoryScreen","designerDrawer","designerCloseButton","campaignButton","campaignLevelInput",
-            "campaignRemoveCompletedInput",
+            "campaignRemoveCompletedInput","campaignAutoPlaceInput",
             "sandboxButton","sandboxDesignerButton","restartButton","menuButton","debugButton","targetBadge","targetList","wormBadge","wormList",
             "hudMode","hudLevel","hudPlaced","hudMoves","hintLine","selectionMeta","selectedBox","tailButton","headButton","cycleButton",
             "switchEndButton","toastStack","menuUnlocked","victoryTitle","victoryText","resultLevel","resultPlaced","resultMoves",
@@ -1706,12 +1725,17 @@
         }
         bindEvents() {
           this.refs.campaignButton.addEventListener("click", () => this.startCampaign(this.getSelectedCampaignLevel(), {
-            removeCompletedWorms: !!this.refs.campaignRemoveCompletedInput.checked
+            removeCompletedWorms: !!this.refs.campaignRemoveCompletedInput.checked,
+            autoPlaceWorms: !!this.refs.campaignAutoPlaceInput.checked
           }));
           this.refs.campaignLevelInput.addEventListener("change", () => this.normalizeCampaignLevelInput());
           this.refs.campaignLevelInput.addEventListener("blur", () => this.normalizeCampaignLevelInput());
           this.refs.campaignRemoveCompletedInput.addEventListener("change", () => {
             this.campaignOptions.removeCompletedWorms = !!this.refs.campaignRemoveCompletedInput.checked;
+            Save.saveCampaignOptions(this.campaignOptions);
+          });
+          this.refs.campaignAutoPlaceInput.addEventListener("change", () => {
+            this.campaignOptions.autoPlaceWorms = !!this.refs.campaignAutoPlaceInput.checked;
             Save.saveCampaignOptions(this.campaignOptions);
           });
           this.refs.sandboxButton.addEventListener("click", () => this.startSandbox(false));
@@ -1802,14 +1826,20 @@
           const removeCompletedWorms = typeof options.removeCompletedWorms === "boolean"
             ? !!options.removeCompletedWorms
             : !!this.state.campaignRemoveCompletedWorms;
+          const autoPlaceWorms = typeof options.autoPlaceWorms === "boolean"
+            ? !!options.autoPlaceWorms
+            : !!this.state.campaignAutoPlaceWorms;
           this.state.campaignRemoveCompletedWorms = removeCompletedWorms;
+          this.state.campaignAutoPlaceWorms = autoPlaceWorms;
           this.campaignOptions.removeCompletedWorms = removeCompletedWorms;
+          this.campaignOptions.autoPlaceWorms = autoPlaceWorms;
           Save.saveCampaignOptions(this.campaignOptions);
           this.state.mode = "campaign";
           this.state.level = safeLevel;
           this.board = this.prepareBoard(LevelGenerator.build(safeLevel, "campaign", {
             ...Campaign.getSettings(safeLevel),
-            removeCompletedWorms
+            removeCompletedWorms,
+            autoPlaceWorms
           }), "campaign");
           this.resetInput();
           this.state.screen = "gameplay";
@@ -1844,7 +1874,12 @@
           this.toast("Sandbox board generated.", "success");
         }
         restart() {
-          if (this.state.mode === "campaign") this.startCampaign(this.state.level, { removeCompletedWorms: !!this.state.campaignRemoveCompletedWorms });
+          if (this.state.mode === "campaign") {
+            this.startCampaign(this.state.level, {
+              removeCompletedWorms: !!this.state.campaignRemoveCompletedWorms,
+              autoPlaceWorms: !!this.state.campaignAutoPlaceWorms
+            });
+          }
           else if (this.state.mode === "sandbox") this.startSandbox(this.state.designerOpen);
           else this.openMenu();
         }
@@ -1854,7 +1889,10 @@
             return;
           }
           const next = Helpers.clamp(this.state.level + 1, 1, CONFIG.MAX_LEVEL);
-          this.startCampaign(next, { removeCompletedWorms: !!this.state.campaignRemoveCompletedWorms });
+          this.startCampaign(next, {
+            removeCompletedWorms: !!this.state.campaignRemoveCompletedWorms,
+            autoPlaceWorms: !!this.state.campaignAutoPlaceWorms
+          });
         }
         openMenu() {
           this.state.screen = "menu";
@@ -1902,6 +1940,7 @@
             worm.completed = !!worm.completed;
             worm.removing = !!worm.removing;
             worm.hidden = !!worm.hidden;
+            worm.autoPlaceNeedsExit = !!worm.autoPlaceNeedsExit;
             worm.disappearT = Helpers.clamp(Number(worm.disappearT) || (worm.hidden ? 1 : 0), 0, 1);
             if (worm.hidden) {
               worm.removing = false;
@@ -2039,7 +2078,7 @@
           }
           const freeRouteInput = this.settingInputs.find((input) => input.dataset.setting === "freeRoutePipePairs");
           if (freeRouteInput) freeRouteInput.max = String(this.sandboxSettings.pipePairs);
-          this.refs.designerNote.textContent = `Validated: ${this.sandboxSettings.fieldWidth}x${this.sandboxSettings.fieldHeight}, ${this.sandboxSettings.startWorms} worms, length ${this.sandboxSettings.lengthMin}-${this.sandboxSettings.lengthMax}, ${this.sandboxSettings.colorCount} colors, ${this.sandboxSettings.obstaclePercent}% obstacles, free-route ${this.sandboxSettings.freeRoutePipePairs}/${this.sandboxSettings.pipePairs}, remove completed ${this.sandboxSettings.removeCompletedWorms ? "on" : "off"}.`;
+          this.refs.designerNote.textContent = `Validated: ${this.sandboxSettings.fieldWidth}x${this.sandboxSettings.fieldHeight}, ${this.sandboxSettings.startWorms} worms, length ${this.sandboxSettings.lengthMin}-${this.sandboxSettings.lengthMax}, ${this.sandboxSettings.colorCount} colors, ${this.sandboxSettings.obstaclePercent}% obstacles, free-route ${this.sandboxSettings.freeRoutePipePairs}/${this.sandboxSettings.pipePairs}, remove completed ${this.sandboxSettings.removeCompletedWorms ? "on" : "off"}, auto-place ${this.sandboxSettings.autoPlaceWorms ? "on" : "off"}.`;
         }
         toggleDesigner(force) {
           const open = typeof force === "boolean" ? force : !this.state.designerOpen;
@@ -2068,7 +2107,8 @@
               ...(parsed.settings || {}),
               ...(board.settings || {}),
               freeRoutePipePairs: Number((parsed.settings || {}).freeRoutePipePairs ?? (board.settings || {}).freeRoutePipePairs ?? 0) || 0,
-              removeCompletedWorms: !!((parsed.settings || {}).removeCompletedWorms ?? (board.settings || {}).removeCompletedWorms ?? false)
+              removeCompletedWorms: !!((parsed.settings || {}).removeCompletedWorms ?? (board.settings || {}).removeCompletedWorms ?? false),
+              autoPlaceWorms: !!((parsed.settings || {}).autoPlaceWorms ?? (board.settings || {}).autoPlaceWorms ?? false)
             }, "sandbox");
             this.sandboxSettings = { ...importedSettings };
             Save.saveSandbox(this.sandboxSettings);
@@ -2146,13 +2186,17 @@
           const direction = this.getDesiredPointerStep();
           if (!direction || this.state.pointerStepCooldown > 0) return;
           const moved = this.stepSelected(direction, { suppressSelectionToast: true, silentBlocked: true });
-          this.state.pointerStepCooldown = moved ? CONFIG.INPUT.pointerStepInterval : CONFIG.INPUT.pointerStepInterval * 0.6;
+          if (this.state.pointer) {
+            this.state.pointerStepCooldown = moved ? CONFIG.INPUT.pointerStepInterval : CONFIG.INPUT.pointerStepInterval * 0.6;
+          }
         }
         updateKeyboard(dt) {
           this.state.keyboardStepCooldown = Math.max(0, this.state.keyboardStepCooldown - dt);
           if (!this.state.keyDirection || this.state.keyboardStepCooldown > 0 || this.state.screen !== "gameplay") return;
           const moved = this.stepSelected(this.state.keyDirection, { suppressSelectionToast: true, silentBlocked: true });
-          this.state.keyboardStepCooldown = moved ? CONFIG.INPUT.keyboardStepInterval : CONFIG.INPUT.keyboardStepInterval * 0.7;
+          if (this.state.keyDirection) {
+            this.state.keyboardStepCooldown = moved ? CONFIG.INPUT.keyboardStepInterval : CONFIG.INPUT.keyboardStepInterval * 0.7;
+          }
         }
         onPointerDown(event) {
           if (!this.board || this.state.screen !== "gameplay") return;
@@ -2285,11 +2329,15 @@
             if (!options.silentBlocked) this.toast("That tile is blocked.", "warn");
             return false;
           }
+          const wasCompleted = !!worm.completed;
           worm.prevCells = worm.cells.map((cell) => ({ ...cell }));
           worm.moveT = 0;
           if (end === "head") worm.cells = worm.cells.slice(1).concat([next]);
           else worm.cells = [next].concat(worm.cells.slice(0, -1));
           this.board.moves++;
+          const targetPipe = this.board.pipes.find((pipe) => pipe.id === worm.targetId);
+          if (wasCompleted && targetPipe && !targetPipe.freeRoute) worm.autoPlaceNeedsExit = true;
+          this.tryAutoPlaceWorm(worm);
           this.refreshCompletion();
           return true;
         }
@@ -2306,6 +2354,59 @@
             });
           }
           return !occupied.has(Helpers.cellKey(next.x, next.y));
+        }
+        pathIsAvailableForWorm(worm, path) {
+          const occupied = new Set();
+          for (const other of this.board.worms) {
+            if (other.id === worm.id || other.hidden || other.removing) continue;
+            for (const cell of other.cells) occupied.add(Helpers.cellKey(cell.x, cell.y));
+          }
+          return path.every((cell) => !occupied.has(Helpers.cellKey(cell.x, cell.y)));
+        }
+        resetInputAfterAutoPlace() {
+          if (this.state.pointer?.id !== null && this.state.pointer?.id !== undefined) {
+            try { this.refs.canvas.releasePointerCapture(this.state.pointer.id); } catch (error) {}
+          }
+          this.state.pointer = null;
+          this.state.pointerBoard = null;
+          this.state.dragging = false;
+          this.state.dragDistance = 0;
+          this.state.keyDirection = null;
+          this.state.pointerStepCooldown = 0;
+          this.state.keyboardStepCooldown = 0;
+        }
+        tryAutoPlaceWorm(worm) {
+          if (!this.board?.settings?.autoPlaceWorms) return false;
+          if (!worm || worm.hidden || worm.removing) return false;
+          const pipe = this.board.pipes.find((candidate) => candidate.id === worm.targetId);
+          if (!pipe || pipe.hidden || pipe.removing || pipe.freeRoute) return false;
+          if (pipe.completed && this.board.settings.removeCompletedWorms) return false;
+          if (worm.color !== pipe.color || worm.length !== pipe.requiredLength) return false;
+
+          const tail = worm.cells[0];
+          const head = worm.cells[worm.cells.length - 1];
+          const tailAtA = Helpers.sameCell(tail, pipe.a);
+          const tailAtB = Helpers.sameCell(tail, pipe.b);
+          const headAtA = Helpers.sameCell(head, pipe.a);
+          const headAtB = Helpers.sameCell(head, pipe.b);
+          const touchesSocket = tailAtA || tailAtB || headAtA || headAtB;
+
+          if (worm.autoPlaceNeedsExit) {
+            if (!touchesSocket) worm.autoPlaceNeedsExit = false;
+            return false;
+          }
+
+          let snappedPath = null;
+          if (tailAtA || headAtB) snappedPath = pipe.path;
+          else if (tailAtB || headAtA) snappedPath = [...pipe.path].reverse();
+          if (!snappedPath || !this.pathIsAvailableForWorm(worm, snappedPath)) return false;
+
+          worm.prevCells = worm.cells.map((cell) => ({ ...cell }));
+          worm.cells = snappedPath.map((cell) => ({ ...cell }));
+          worm.moveT = 0;
+          worm.autoPlaceNeedsExit = false;
+          this.resetInputAfterAutoPlace();
+          return true;
         }
         checkExactPathCompletion(worm, pipe) {
           return BoardUtils.pathsEqual(worm.cells, pipe.path);
@@ -2474,6 +2575,9 @@
           if (!input.value) input.value = String(Save.data.unlockedLevel);
           if (this.refs.campaignRemoveCompletedInput) {
             this.refs.campaignRemoveCompletedInput.checked = !!this.campaignOptions.removeCompletedWorms;
+          }
+          if (this.refs.campaignAutoPlaceInput) {
+            this.refs.campaignAutoPlaceInput.checked = !!this.campaignOptions.autoPlaceWorms;
           }
         }
         renderLists() {
