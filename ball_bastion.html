@@ -248,7 +248,7 @@
           <div class="rowBtns" style="margin-top:8px">
             <button class="btn secondary" id="addGoldBtn" type="button">Debug: +100 Gold</button>
           </div>
-          <p class="tiny">Desktop: move mouse to aim, click field or Shoot. Mobile: drag to aim, release to fire.</p>
+          <p class="tiny" id="bastionControlHint">Move the mouse to aim, then click the field or Shoot.</p>
         </div>
       </div>
       <div class="overlay" id="levelOverlay">
@@ -698,7 +698,7 @@
     }
 
     function saveSave() {
-      localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+      if (!window.GameEntry?.current?.isDeveloper()) localStorage.setItem(SAVE_KEY, JSON.stringify(save));
     }
 
     function resetSave() {
@@ -2126,7 +2126,7 @@
     function frame(now) {
       const dt = clamp((now - lastTime) / 1000, 0, 0.033);
       lastTime = now;
-      if (state && state.phase === "playing") {
+      if (state && state.phase === "playing" && !window.GameEntry?.current?.isOpen()) {
         updateGameplay(dt);
       } else if (state) {
         updateParticles(dt);
@@ -2314,7 +2314,6 @@
       resetSaveBtn.addEventListener("click", resetSave);
       addGoldBtn.addEventListener("click", () => {
         save.gold += 100;
-        saveSave();
         refreshMetaUI();
       });
       toMetaBtn.addEventListener("click", () => {
@@ -2333,7 +2332,19 @@
       requestAnimationFrame(frame);
     }
 
+    window.BallBastionUI = {
+      openMeta, startRun,
+      setEntryMode(mode) {
+        resetSaveBtn.textContent = mode === "developer" ? "Reset Test State" : "Reset Save";
+        if (mode === "normal") {
+          save = loadSave();
+          if (state) state.debugVisible = false;
+          refreshMetaUI();
+        }
+      }
+    };
     boot();
   </script>
+  <script src="entry-flow.js" data-entry-game="bastion"></script>
 </body>
 </html>

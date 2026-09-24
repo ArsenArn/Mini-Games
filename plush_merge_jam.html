@@ -43,6 +43,7 @@
     }
     canvas:focus-visible{outline:3px solid #fff7df;outline-offset:-6px}
   </style>
+  <link rel="stylesheet" href="menu-system.css">
 </head>
 <body>
   <canvas id="gameCanvas" tabindex="0" role="application" aria-label="Plush Merge Jam. Use Tab to move through menu actions and Enter to choose."></canvas>
@@ -444,6 +445,7 @@
           return this.data.levelStats[levelIndex] || { stars: 0, bestScore: 0, bestMoves: null };
         }
         saveLevelResult(levelIndex, stats) {
+          if (window.GameEntry?.current?.isDeveloper()) return;
           const prev = this.getLevelStats(levelIndex);
           this.data.levelStats[levelIndex] = {
             stars: Math.max(prev.stars || 0, stats.stars || 0),
@@ -1443,18 +1445,22 @@
           const btnX = panelX + 36;
           const startY = panelY + (compact ? 70 : 94);
           const step = compact ? 58 : 78;
+          const developer = window.GameEntry?.current?.isDeveloper() ?? true;
           this.addButton("play", "ИГРАТЬ", btnX, startY, btnW, btnH, () => this.game.startCampaignLevel(1));
           this.addButton("select", "ВЫБОР УРОВНЯ", btnX, startY + step, btnW, btnH, () => this.game.setState(CONFIG.STATES.LEVEL_SELECT), { kind: "secondary" });
-          this.addButton("random", "СЛУЧАЙНЫЙ УРОВЕНЬ", btnX, startY + step * 2, btnW, btnH, () => this.game.openRandomLevel("normal"));
-          this.addButton("endless", "БЕСКОНЕЧНЫЙ РЕЖИМ", btnX, startY + step * 3, btnW, btnH, () => this.game.startEndless(), { kind: "secondary" });
-          const audioY = startY + step * 4 + (compact ? 2 : 18);
+          if (developer) {
+            this.addButton("random", "СЛУЧАЙНЫЙ УРОВЕНЬ", btnX, startY + step * 2, btnW, btnH, () => this.game.openRandomLevel("normal"));
+            this.addButton("endless", "БЕСКОНЕЧНЫЙ РЕЖИМ", btnX, startY + step * 3, btnW, btnH, () => this.game.startEndless(), { kind: "secondary" });
+          }
+          const audioY = startY + step * (developer ? 4 : 2) + (compact ? 2 : 18);
           this.addButton("audio", this.game.audio.enabled ? "ЗВУК: ВКЛ" : "ЗВУК: ВЫКЛ", btnX, audioY, btnW, compact ? 44 : 50, () => this.game.toggleAudio(), { kind: "secondary", small: true });
           ctx.save();
           ctx.textAlign = "center";
           ctx.fillStyle = withAlpha(CONFIG.UI_THEME.textSoft, 0.95);
           ctx.textBaseline = "bottom";
           ctx.font = `${compact ? 12 : 15}px "Trebuchet MS", "Segoe Print", cursive`;
-          drawWrappedText(ctx, compact ? "Z — отмена · H — подсказка · Esc — пауза" : "Перетаскивайте блоки · Z — отмена · H — подсказка · Esc — пауза", layout.width / 2, panelY + panelH - (compact ? 28 : 30), panelW - 38, compact ? 15 : 18);
+          const mobile = window.GameEntry?.current?.platform() === "mobile";
+          drawWrappedText(ctx, mobile ? "Перетаскивайте блоки пальцем · кнопки действий — внизу" : compact ? "Z — отмена · H — подсказка · Esc — пауза" : "Перетаскивайте блоки · Z — отмена · H — подсказка · Esc — пауза", layout.width / 2, panelY + panelH - (compact ? 28 : 30), panelW - 38, compact ? 15 : 18);
           ctx.restore();
           for (const button of this.buttons) this.drawButton(ctx, button);
         }
@@ -1483,7 +1489,7 @@
             const row = Math.floor(i / columns);
             const x = startX + col * (cardW + gap);
             const y = startY + row * (cardH + gap);
-            const unlocked = this.game.save.isUnlocked(i + 1);
+            const unlocked = !!window.GameEntry?.current?.isDeveloper() || this.game.save.isUnlocked(i + 1);
             const stats = this.game.save.getLevelStats(i + 1);
             const diffColor = level.difficulty === "easy" ? "#1ecb7f" : level.difficulty === "normal" ? "#ffd84d" : "#ff3864";
             this.levelCards.push({ x, y, w: cardW, h: cardH, index: i + 1, unlocked });
@@ -1532,7 +1538,8 @@
             ctx.restore();
           }
           const compact = layout.width < 700;
-          if (compact) {
+          const developer = window.GameEntry?.current?.isDeveloper() ?? true;
+          if (compact && developer) {
             const rowY = layout.height - 150;
             const gapX = 12;
             const rw = (layout.width - 48 - gapX * 2) / 3;
@@ -1542,11 +1549,13 @@
             this.addButton("back", "НАЗАД", panelX + 24, layout.height - 86, 160, 54, () => this.game.setState(CONFIG.STATES.MENU), { kind: "secondary" });
           } else {
             this.addButton("back", "НАЗАД", panelX + 24, layout.height - 86, 160, 54, () => this.game.setState(CONFIG.STATES.MENU), { kind: "secondary" });
+            if (developer) {
             const rw = 138;
             const rx = layout.width - (rw * 3 + 24 * 2) - 24;
             this.addButton("random_easy", "RANDOM EASY", rx, layout.height - 86, rw, 54, () => this.game.openRandomLevel("easy"), { kind: "primary", small: true });
             this.addButton("random_normal", "RANDOM NORM", rx + rw + 24, layout.height - 86, rw, 54, () => this.game.openRandomLevel("normal"), { kind: "primary", small: true });
             this.addButton("random_hard", "RANDOM HARD", rx + (rw + 24) * 2, layout.height - 86, rw, 54, () => this.game.openRandomLevel("hard"), { kind: "primary", small: true });
+            }
           }
           for (const button of this.buttons) this.drawButton(ctx, button);
         }
@@ -1914,6 +1923,7 @@
           this.layout = this.computeLayout();
         }
         startCampaignLevel(levelIndex) {
+          if (window.GameEntry?.current && !window.GameEntry.current.isDeveloper() && !this.save.isUnlocked(levelIndex)) return;
           const level = deepClone(this.campaignLevels[levelIndex - 1]);
           if (!level) return;
           this.currentLevelIndex = levelIndex;
@@ -1922,6 +1932,7 @@
           this.setState(CONFIG.STATES.GAMEPLAY);
         }
         openRandomLevel(difficulty) {
+          if (window.GameEntry?.current && !window.GameEntry.current.isDeveloper()) return;
           const seed = `random_${difficulty}_${Date.now()}`;
           const level = this.generator.generateLevel({ difficulty, mode: "random" }, seed);
           this.currentLevelIndex = null;
@@ -1930,6 +1941,7 @@
           this.setState(CONFIG.STATES.GAMEPLAY);
         }
         startEndless() {
+          if (window.GameEntry?.current && !window.GameEntry.current.isDeveloper()) return;
           const seed = `endless_${Date.now()}`;
           const level = this.generator.generateLevel({ difficulty: "normal", mode: "endless", targetTier: 5 }, seed);
           level.goal = { type: CONFIG.GOAL_TYPES.ENDLESS };
@@ -1995,7 +2007,7 @@
         frame(timestamp) {
           const delta = Math.min(0.1, (timestamp - this.lastTimestamp) / 1000 || CONFIG.FIXED_DT);
           this.lastTimestamp = timestamp;
-          this.accumulator += delta;
+          if (!window.GameEntry?.current?.isOpen()) this.accumulator += delta;
           let steps = 0;
           while (this.accumulator >= CONFIG.FIXED_DT && steps < CONFIG.MAX_STEPS_PER_FRAME) {
             this.update(CONFIG.FIXED_DT);
@@ -2252,5 +2264,6 @@
       window.__PLUSH_MERGE_JAM__ = game;
     })();
   </script>
+  <script src="entry-flow.js" data-entry-game="plush"></script>
 </body>
 </html>

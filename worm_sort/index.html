@@ -19,7 +19,7 @@
         <div class="itemTop"><h2>Containers</h2><span id="containerBadge" class="tag">0</span></div>
         <div id="containerList" class="list"></div>
       </section>
-      <section class="panel statusCard">
+      <section class="panel statusCard" id="boardStatusCard">
         <div class="itemTop"><h2>Board Status</h2><span id="validityBadge" class="tag">Ready</span></div>
         <div id="debugStats" class="list"></div>
       </section>
@@ -58,7 +58,7 @@
         </div>
       </section>
       <section class="panel controlsCard">
-        <div class="itemTop"><h2>Move</h2><span class="tag">WASD</span></div>
+        <div class="itemTop"><h2>Move</h2><span class="tag" id="sortControlTag">WASD</span></div>
         <div class="dpad">
           <span class="dpadSpacer"></span>
           <button class="actionButton" data-dir="up" type="button">Up</button>
@@ -123,7 +123,7 @@
           <label>Campaign rules<select id="campaignRulesInput"><option value="standard">standard</option><option value="growing" selected>growing worm</option></select></label>
           <button id="campaignButton" class="actionButton accent" type="button">Campaign</button>
         </div>
-        <div class="menuChoice">
+        <div class="menuChoice" id="sandboxMenuChoice">
           <div>
             <h3>Sandbox</h3>
           <p class="muted">Build your own sorting boards and try a fresh layout whenever you like.</p>
@@ -160,5 +160,6 @@
   <script src="src/renderer.js"></script>
   <script src="src/game.js"></script>
   <script src="src/main.js"></script>
+  <script src="../entry-flow.js" data-entry-game="worm_sort"></script>
 </body>
 </html>

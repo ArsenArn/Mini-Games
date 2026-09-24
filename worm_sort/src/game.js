@@ -102,7 +102,8 @@
           this.state.keyCooldown = Math.max(0, this.state.keyCooldown - dt);
         }
         startCampaign(level, rulesMode = "growing") {
-          const safeLevel = Helpers.clamp(level, 1, CONFIG.MAX_CAMPAIGN_LEVEL);
+          const maxLevel = window.GameEntry?.current && !window.GameEntry.current.isDeveloper() ? Save.data.unlockedLevel : CONFIG.MAX_CAMPAIGN_LEVEL;
+          const safeLevel = Helpers.clamp(level, 1, maxLevel);
           this.board = LevelGenerator.build(safeLevel, "campaign", { ...Campaign.settings(safeLevel), rulesMode });
           this.initialBoard = Helpers.clone(this.board);
           this.state = { ...this.state, mode: "campaign", level: safeLevel, screen: "gameplay", selection: { id: this.board.worms[0].id }, selectedEnd: "head" };
@@ -112,6 +113,7 @@
           this.updateUI();
         }
         startSandbox() {
+          if (window.GameEntry?.current && !window.GameEntry.current.isDeveloper()) return;
           this.generateSandbox();
           this.state.mode = "sandbox";
           this.state.level = 0;
@@ -121,6 +123,7 @@
           this.updateUI();
         }
         generateSandbox() {
+          if (window.GameEntry?.current && !window.GameEntry.current.isDeveloper()) return;
           this.sandboxSettings = this.readDesigner();
           this.board = LevelGenerator.build(0, "sandbox", this.sandboxSettings);
           this.initialBoard = Helpers.clone(this.board);
@@ -408,10 +411,12 @@
           }, "sandbox");
         }
         toggleDesigner() {
+          if (!this.state.designerOpen && window.GameEntry?.current && !window.GameEntry.current.isDeveloper()) return;
           this.state.designerOpen = !this.state.designerOpen;
           this.refs.designerPanel.classList.toggle("hidden", !this.state.designerOpen);
         }
         exportJSON() {
+          if (window.GameEntry?.current && !window.GameEntry.current.isDeveloper()) return;
           if (!this.board) return;
           const clean = Helpers.clone(this.board);
           delete clean._playableSet;
@@ -425,6 +430,7 @@
           this.toast("JSON exported.", "success");
         }
         importJSON() {
+          if (window.GameEntry?.current && !window.GameEntry.current.isDeveloper()) return;
           try {
             const parsed = JSON.parse(this.refs.jsonBox.value);
             const level = parsed.level || parsed;

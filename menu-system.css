@@ -182,6 +182,68 @@
 #metaOverlay #addGoldBtn,
 #frame>.debugToggle{display:none}
 
+/* The shared entry flow is scoped so game boards and their palettes stay intact. */
+.entry-developer-only[hidden],.entry-flow[hidden],.entry-dock[hidden]{display:none!important}
+body[data-entry-mode="developer"] #metaOverlay #addGoldBtn,
+body[data-entry-mode="developer"] #frame>.debugToggle{display:block}
+.entry-flow,.entry-flow *,.entry-dock,.entry-dock *{box-sizing:border-box;touch-action:auto}
+.entry-flow{
+  position:fixed;inset:0;z-index:10000;display:grid;place-items:center;
+  overflow:auto;padding:max(18px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(18px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));
+  color:#f4f1e9;background:rgba(10,15,22,.88);backdrop-filter:blur(12px);
+  font-family:Inter,"Avenir Next","Segoe UI",sans-serif;
+}
+.entry-panel{
+  width:min(100%,850px);margin:auto;padding:clamp(22px,4vw,42px);border-radius:26px;
+  border:1px solid rgba(255,255,255,.18);background:linear-gradient(145deg,#252b35,#15191f 70%);
+  box-shadow:0 30px 90px rgba(0,0,0,.42);display:grid;gap:22px;
+}
+.entry-flow button,.entry-flow a,.entry-dock button{font:inherit}
+.entry-flow button{cursor:pointer}
+.entry-top{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.entry-eyebrow{font-size:12px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;color:var(--entry-accent)}
+.entry-top a{color:#c7d0d7;font-size:13px;text-decoration:none;white-space:nowrap}
+.entry-top a:hover{text-decoration:underline;color:#fff}
+.entry-heading{display:grid;gap:8px}
+.entry-heading h1{margin:0;color:#fff;font:800 clamp(30px,6vw,56px)/1.04 Inter,"Avenir Next","Segoe UI",sans-serif;letter-spacing:-.045em}
+.entry-heading p{margin:0;color:#bbc4cb;font-size:15px;line-height:1.55}
+.entry-text-button{justify-self:start;border:0;padding:7px 0;background:none;color:var(--entry-accent);font-size:14px;font-weight:700}
+.entry-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.entry-option{min-height:135px;padding:19px;text-align:left;display:grid;align-content:center;gap:9px;border:1px solid #4b5663;border-radius:18px;background:#29313b;color:#fff;transition:transform .16s ease,border-color .16s ease,background .16s ease}
+.entry-option strong{font-size:22px;line-height:1.15}
+.entry-option span{font-size:14px;line-height:1.45;color:#c8d1d9}
+.entry-option:hover{transform:translateY(-2px);border-color:var(--entry-accent)}
+.entry-option.selected{border-color:var(--entry-accent);background:#303b42;box-shadow:inset 0 0 0 1px var(--entry-accent)}
+.entry-note{min-height:24px;margin:0;color:#d4dbe0;font-size:14px;line-height:1.55}
+.entry-primary{justify-self:start;min-height:50px;padding:12px 23px;border:0;border-radius:12px;background:var(--entry-accent);color:#142025;font-weight:800!important}
+.entry-primary:hover{filter:brightness(1.08)}
+.entry-tutorial{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:24px;align-items:center}
+.entry-scene{display:block;width:100%;max-height:270px;overflow:hidden;border-radius:17px;background:#121b24}
+.entry-instructions{display:grid;gap:10px}
+.entry-instructions>div{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.12);display:grid;gap:3px}
+.entry-instructions span{color:var(--entry-accent);font-size:11px;letter-spacing:.11em;text-transform:uppercase;font-weight:800}
+.entry-instructions strong{font-size:15px;line-height:1.43;color:#fff;font-weight:600}
+.entry-dock{position:fixed;z-index:9000;left:max(10px,env(safe-area-inset-left));bottom:max(10px,env(safe-area-inset-bottom));display:flex;gap:6px;padding:5px;border:1px solid rgba(255,255,255,.32);border-radius:14px;background:rgba(18,26,35,.92);box-shadow:0 8px 28px rgba(0,0,0,.3);font-family:Inter,"Segoe UI",sans-serif}
+.entry-dock button{min-width:44px;min-height:44px;padding:8px 12px;border:0;border-radius:9px;background:#394756;color:#fff;font-size:14px;font-weight:800;cursor:pointer}
+.entry-dock button:hover{background:#526779}
+body[data-entry-game="plush"] .entry-dock{bottom:88px}
+body[data-entry-game="bastion"] .entry-dock{top:max(10px,env(safe-area-inset-top));bottom:auto}
+body[data-entry-game="combo"] .backLink{display:none}
+body[data-entry-game="combo"] .entry-dock{position:static;box-shadow:none;padding:2px;gap:3px}
+body[data-entry-game="combo"] .entry-dock button{min-height:38px;min-width:38px;padding:5px 8px;font-size:12px}
+body[data-entry-game="mixer"] .titleRow>div:first-child{min-width:0}
+body[data-entry-game="mixer"] .entry-dock{position:static;box-shadow:none;flex:0 0 auto}
+.entry-flow :is(button,a):focus-visible,.entry-dock button:focus-visible{outline:3px solid var(--entry-accent,#f6cf57);outline-offset:3px;box-shadow:0 0 0 2px #17202a}
+@media(max-width:700px){
+  .entry-options,.entry-tutorial{grid-template-columns:1fr}
+  .entry-option{min-height:100px}
+  .entry-tutorial{gap:14px}
+  .entry-scene{max-height:190px}
+  .entry-panel{gap:17px}
+  .entry-flow{align-items:start}
+}
+@media(prefers-reduced-motion:reduce){.entry-option{transition:none}.entry-option:hover{transform:none}}
+
 @media(max-width:640px){
   #mainMenu .shell{min-height:0;gap:14px}
   #mainMenu .brand h1{font-size:clamp(38px,12vw,54px)}

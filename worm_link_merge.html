@@ -1310,8 +1310,8 @@
           <div class="signalGrid">
             <div class="signalLine"><span>Pending pipe batch</span><strong id="pendingPipeValue">No</strong></div>
             <div class="signalLine"><span>Colored pipes</span><strong id="coloredPipeValue">Off</strong></div>
-            <div class="signalLine"><span>Seed</span><strong id="seedValue">warm-link</strong></div>
-            <div class="signalLine"><span>Edit mode</span><strong id="editModeValue">Play</strong></div>
+            <div class="signalLine" id="seedSignal"><span>Seed</span><strong id="seedValue">warm-link</strong></div>
+            <div class="signalLine" id="editModeSignal"><span>Edit mode</span><strong id="editModeValue">Play</strong></div>
             <div class="signalLine"><span>Currency</span><strong id="currencyValue">0</strong></div>
           </div>
           <div id="toastStack" class="toastStack"></div>
@@ -1586,7 +1586,7 @@
               <button id="menuLevelUpButton" class="actionButton secondary small" type="button">+</button>
             </div>
           </div>
-          <label class="field">
+          <label class="field" id="menuSeedField">
             <span>Seed</span>
             <input id="menuSeedInput" type="text" value="warm-link">
           </label>
@@ -1617,7 +1617,7 @@
             <div class="menuTag">Merge matching worms</div>
             <div class="menuTag">Clear pipe goals</div>
           </div>
-          <p>Drag a highlighted end or use the arrow keys. Press <strong>M</strong> to merge, <strong>R</strong> to resolve, <strong>Tab</strong> to select another worm, and <strong>G</strong> to open the board editor.</p>
+          <p id="menuControlHint">Drag a highlighted end or use the arrow keys. Press M to merge, R to resolve, and Tab to select another worm.</p>
         </section>
       </div>
     </div>
@@ -1940,6 +1940,7 @@
         }
 
         setHighestLevel(level) {
+          if (window.GameEntry?.current?.isDeveloper()) return;
           this.data.highestLevel = Math.max(this.data.highestLevel, level);
           this.persist();
         }
@@ -1955,6 +1956,7 @@
         }
 
         addCurrency(amount) {
+          if (window.GameEntry?.current?.isDeveloper()) return;
           this.data.currency = Math.max(0, (this.data.currency || 0) + amount);
           this.persist();
         }
@@ -2806,7 +2808,8 @@
         }
 
         setMenuLevel(level) {
-          this.selectedMenuLevel = Math.max(1, Math.min(99, level));
+          const limit = window.GameEntry?.current && !window.GameEntry.current.isDeveloper() ? Math.max(1, this.game.save.data.highestLevel) : 99;
+          this.selectedMenuLevel = Math.max(1, Math.min(limit, level));
           this.refs.menuLevelValue.textContent = String(this.selectedMenuLevel);
           this.game.previewLevelRules(this.selectedMenuLevel);
         }
@@ -3812,14 +3815,14 @@
           this.ui.setSeed(this.designer.seed);
           this.ui.setMenuLevel(Math.max(1, this.save.data.highestLevel || 1));
           this.previewLevelRules(this.ui.selectedMenuLevel);
-          this.startLevelFromMenu();
+          this.showScreen(CONFIG.GAME_STATES.MENU);
           requestAnimationFrame((ts) => this.frame(ts));
         }
 
         frame(timestamp) {
           const dt = Math.min(0.05, (timestamp - this.lastFrame) / 1000 || 0.016);
           this.lastFrame = timestamp;
-          this.update(dt);
+          if (!window.GameEntry?.current?.isOpen()) this.update(dt);
           this.renderer.render();
           this.ui.render();
           requestAnimationFrame((ts) => this.frame(ts));
@@ -3925,7 +3928,7 @@
             coloredPipesEnabled: base.coloredPipesEnabled,
             requiredQuestCount: base.requiredQuestCount
           };
-          this.save.setDesigner(this.designer);
+          if (!window.GameEntry?.current || window.GameEntry.current.isDeveloper()) this.save.setDesigner(this.designer);
           this.ui.loadDesignerSettings(this.designer);
           this.previewLevelRules(level);
         }
@@ -3961,6 +3964,7 @@
         }
 
         setSeed(seed) {
+          if (window.GameEntry?.current && !window.GameEntry.current.isDeveloper()) return;
           const next = seed || "warm-link";
           this.currentSeedBase = next;
           this.designer.seed = next;
@@ -3969,6 +3973,7 @@
         }
 
         onDesignerFieldEdited(input, lightweight = false) {
+          if (window.GameEntry?.current && !window.GameEntry.current.isDeveloper()) return;
           if (input.dataset.lockable === "scenario" && this.ui.refs.followProgressionInput.checked) {
             this.ui.refs.followProgressionInput.checked = false;
           }
@@ -3977,6 +3982,7 @@
         }
 
         readDesignerFromUI() {
+          if (window.GameEntry?.current && !window.GameEntry.current.isDeveloper()) return;
           this.designer = this.ui.readDesignerSettings();
           this.currentSeedBase = this.designer.seed;
           this.ui.updateLockState();
@@ -3992,7 +3998,19 @@
         }
 
         toggleDesigner(flag) {
+          if (flag !== false && window.GameEntry?.current && !window.GameEntry.current.isDeveloper()) return;
           this.state.designerOpen = flag;
+        }
+
+        setEntryMode(mode) {
+          this.toggleDesigner(false);
+          this.designer = Helpers.deepClone(mode === "developer" ? (this.save.data.designer || CONFIG.DEFAULT_DESIGNER) : CONFIG.DEFAULT_DESIGNER);
+          if (mode === "normal") this.designer.followProgression = true;
+          this.currentSeedBase = this.designer.seed;
+          this.ui.loadDesignerSettings(this.designer);
+          this.ui.setSeed(this.designer.seed);
+          if (mode === "normal") this.ui.setMenuLevel(Math.min(this.ui.selectedMenuLevel, this.save.data.highestLevel));
+          this.previewLevelRules(this.ui.selectedMenuLevel);
         }
 
         toggleSound() {
@@ -4162,12 +4180,14 @@
         }
 
         exportCurrentLevel() {
+          if (window.GameEntry?.current && !window.GameEntry.current.isDeveloper()) return;
           if (!this.board) return;
           this.ui.refs.levelJsonTextarea.value = JSON.stringify(this.buildExportState(), null, 2);
           this.animations.addToast("Current level exported to JSON.", "success");
         }
 
         importLevelFromTextarea() {
+          if (window.GameEntry?.current && !window.GameEntry.current.isDeveloper()) return;
           try {
             const text = this.ui.refs.levelJsonTextarea.value.trim();
             if (!text) return;
@@ -4514,6 +4534,7 @@
         }
 
         setEditMode(mode) {
+          if (window.GameEntry?.current && !window.GameEntry.current.isDeveloper()) return;
           this.designer.editMode = mode;
           document.querySelectorAll("[data-edit-mode]").forEach((button) => {
             button.classList.toggle("active", button.dataset.editMode === mode);
@@ -5109,9 +5130,10 @@
       }
 
       window.addEventListener("DOMContentLoaded", () => {
-        new Game();
+        window.WormLinkMerge = new Game();
       });
     })();
   </script>
+  <script src="entry-flow.js" data-entry-game="worm_link"></script>
 </body>
 </html>

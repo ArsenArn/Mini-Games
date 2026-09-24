@@ -623,6 +623,7 @@
       .stats .value{font-size:15px}
     }
   </style>
+  <link rel="stylesheet" href="menu-system.css">
 </head>
 <body>
   <main class="app">
@@ -907,6 +908,7 @@
     }
 
     function saveProgress() {
+      if (window.GameEntry?.current?.isDeveloper()) return;
       const payload = {
         coins: state.coins,
         bestCombo: state.bestCombo,
@@ -1752,7 +1754,7 @@
     }
 
     function resetProgress() {
-      localStorage.removeItem(STORAGE_KEY);
+      if (!window.GameEntry?.current?.isDeveloper()) localStorage.removeItem(STORAGE_KEY);
       state.mode = "build";
       state.coins = 100;
       state.bestCombo = 0;
@@ -1790,6 +1792,7 @@
       if (state.mode !== "build" || state.drag) {
         return;
       }
+      state.pointer = toLocalPoint(event);
       const targetDevice = event.target.closest(".device");
       if (targetDevice) {
         const id = Number(targetDevice.dataset.id);
@@ -1808,7 +1811,7 @@
     function tick(now) {
       const dt = Math.min((now - state.lastFrameAt) / 1000, 0.033);
       state.lastFrameAt = now;
-      if (state.mode === "drop") {
+      if (state.mode === "drop" && !window.GameEntry?.current?.isOpen()) {
         updateRun(dt, now);
       }
       renderCars();
@@ -1868,6 +1871,28 @@
     }
 
     init();
+    window.ComboDropLabUI = {
+      setEntryMode(mode) {
+        dom.resetBtn.textContent = mode === "developer" ? "Reset Test State" : "Reset Progress";
+        if (mode !== "normal") return;
+        state.mode = "build";
+        state.coins = 100;
+        state.bestCombo = 0;
+        state.carsPerDrop = 1;
+        state.placedDevices = [];
+        state.pendingDevice = null;
+        state.selectedDeviceId = null;
+        state.drag = null;
+        state.cars = [];
+        state.run = null;
+        state.nextDeviceId = 1;
+        state.nextCarId = 1;
+        dom.summary.classList.remove("active");
+        loadProgress();
+        renderAll();
+      }
+    };
   </script>
+  <script src="entry-flow.js" data-entry-game="combo"></script>
 </body>
 </html>

@@ -503,7 +503,7 @@
           <div class="screenButtons">
             <button id="menuPlayButton" class="menuButton primary" type="button">Campaign</button>
             <button id="menuContinueButton" class="menuButton" type="button">Continue Last</button>
-            <button id="menuSandboxButton" class="menuButton" type="button">Sandbox Setup</button>
+            <button id="menuSandboxButton" class="menuButton" type="button">Debug Setup</button>
             <button id="menuLauncherButton" class="menuButton" type="button">Launcher</button>
           </div>
         </div>
@@ -1149,6 +1149,7 @@
           localStorage.setItem(this.key, JSON.stringify(this.data));
         }
         setHighestUnlocked(level) {
+          if (window.GameEntry?.current?.isDeveloper()) return;
           this.data.highestUnlocked = Math.max(this.data.highestUnlocked, level);
           this.write();
         }
@@ -1157,11 +1158,18 @@
           this.write();
         }
         setLastLevel(level) {
+          if (window.GameEntry?.current?.isDeveloper()) return;
           this.data.lastLevel = Math.max(1, level);
           this.write();
         }
         setDesigner(data) {
+          if (window.GameEntry?.current && !window.GameEntry.current.isDeveloper()) return;
           this.data.designer = deepClone(data);
+          this.write();
+        }
+        setBattleSpeed(speed) {
+          this.data.designer = deepClone(this.data.designer || CONFIG.DEFAULT_DESIGNER);
+          this.data.designer.battleSpeed = speed;
           this.write();
         }
       }
@@ -1993,10 +2001,12 @@
           const estimate = state.lastEstimate || { ratio: 1, targetDuration: 0, expectedDuration: 0 };
           const tags = [];
           tags.push(`<div class="statusTag">Mode: ${state.modeLabel || "Campaign"}</div>`);
-          tags.push(`<div class="statusTag">Target: ${Math.round(estimate.targetDuration || 0)}s</div>`);
-          tags.push(`<div class="statusTag">Estimate: ${Math.round(estimate.expectedDuration || 0)}s</div>`);
-          const ratioClass = estimate.ratio >= 1.08 ? "good" : estimate.ratio >= 0.92 ? "warn" : "danger";
-          tags.push(`<div class="statusTag ${ratioClass}">Pressure ${estimate.ratio.toFixed(2)}x</div>`);
+          if (window.GameEntry?.current?.isDeveloper()) {
+            tags.push(`<div class="statusTag">Target: ${Math.round(estimate.targetDuration || 0)}s</div>`);
+            tags.push(`<div class="statusTag">Estimate: ${Math.round(estimate.expectedDuration || 0)}s</div>`);
+            const ratioClass = estimate.ratio >= 1.08 ? "good" : estimate.ratio >= 0.92 ? "warn" : "danger";
+            tags.push(`<div class="statusTag ${ratioClass}">Pressure ${estimate.ratio.toFixed(2)}x</div>`);
+          }
           if (state.phase === CONFIG.PHASES.BATTLE) {
             tags.push(`<div class="statusTag">Enemies ${state.units.filter((unit) => unit.faction === "enemy" && unit.alive).length}</div>`);
             tags.push(`<div class="statusTag">Allies ${state.units.filter((unit) => unit.faction === "player" && unit.alive).length}</div>`);
@@ -2034,14 +2044,16 @@
           }
           const refreshCost = this.game.getRefreshCost();
           tags.push(`<div class="statusTag">Refresh cost ${refreshCost}</div>`);
-          tags.push(`<div class="statusTag">Seed ${this.game.designer.seed}</div>`);
-          tags.push(`<div class="statusTag">Types ${this.game.designer.allowedWormTypes.length}</div>`);
+          if (window.GameEntry?.current?.isDeveloper()) {
+            tags.push(`<div class="statusTag">Seed ${this.game.designer.seed}</div>`);
+            tags.push(`<div class="statusTag">Types ${this.game.designer.allowedWormTypes.length}</div>`);
+          }
           this.refs.poolFooterText.innerHTML = tags.join("");
         }
         renderLevels() {
           const current = this.game.save.data.highestUnlocked || 1;
           this.refs.levelGrid.innerHTML = CONFIG.CAMPAIGN_LEVELS.map((level) => {
-            const unlocked = level.id <= current;
+            const unlocked = !!window.GameEntry?.current?.isDeveloper() || level.id <= current;
             return `
               <button class="levelCard ${unlocked ? "" : "locked"}" data-level="${level.id}" ${unlocked ? "" : "disabled"}>
                 <div class="eyebrow">Campaign</div>
@@ -2114,6 +2126,9 @@
           this.refs = this.collectRefs();
           this.save = new SaveManager(CONFIG.SAVE_KEY);
           this.audio = new AudioManager(this.save.data.soundOn);
+          this.entryDefaults = deepClone({ worm: CONFIG.WORM_TYPES, unit: CONFIG.UNIT_TYPES, enemy: CONFIG.ENEMY_TYPES, balance: CONFIG.BALANCE });
+          this.entryDeveloperConfig = null;
+          this.entryMode = null;
           this.designer = this.normalizeDesigner(deepClone(this.save.data.designer || CONFIG.DEFAULT_DESIGNER));
           this.state = this.createInitialState();
           this.renderer = new Renderer(this);
@@ -2289,7 +2304,7 @@
           this.ui.setScreen(CONFIG.SCREENS.BOOT);
           this.ui.refresh();
           setTimeout(() => {
-            this.openMenu();
+            if (this.state.screen === CONFIG.SCREENS.BOOT) this.openMenu();
           }, 650);
         }
         getBoardConfig() {
@@ -2380,13 +2395,29 @@
         toggleBattleSpeed() {
           this.state.battleSpeed = this.state.battleSpeed >= 2 ? 1 : 2;
           this.designer.battleSpeed = this.state.battleSpeed;
-          this.save.setDesigner(this.designer);
+          if (window.GameEntry?.current?.isDeveloper()) this.save.setDesigner(this.designer);
+          else this.save.setBattleSpeed(this.state.battleSpeed);
           this.ui.refresh();
         }
         toggleDebug(force) {
+          if (force !== false && window.GameEntry?.current && !window.GameEntry.current.isDeveloper()) return;
           this.state.debugOpen = typeof force === "boolean" ? force : !this.state.debugOpen;
           this.refs.debugDrawer.classList.toggle("open", this.state.debugOpen);
           if (this.state.debugOpen) this.ui.loadDesignerValues();
+          this.ui.refresh();
+        }
+        setEntryMode(mode) {
+          this.toggleDebug(false);
+          if (this.entryMode === "developer") this.entryDeveloperConfig = deepClone({ worm: CONFIG.WORM_TYPES, unit: CONFIG.UNIT_TYPES, enemy: CONFIG.ENEMY_TYPES, balance: CONFIG.BALANCE });
+          const config = mode === "developer" ? (this.entryDeveloperConfig || this.entryDefaults) : this.entryDefaults;
+          Object.assign(CONFIG.WORM_TYPES, deepClone(config.worm));
+          Object.assign(CONFIG.UNIT_TYPES, deepClone(config.unit));
+          Object.assign(CONFIG.ENEMY_TYPES, deepClone(config.enemy));
+          Object.assign(CONFIG.BALANCE, deepClone(config.balance));
+          this.entryMode = mode;
+          this.designer = this.normalizeDesigner(deepClone(mode === "developer" ? (this.save.data.designer || CONFIG.DEFAULT_DESIGNER) : CONFIG.DEFAULT_DESIGNER));
+          this.designer.battleSpeed = this.save.data.designer?.battleSpeed || this.designer.battleSpeed;
+          this.state.battleSpeed = this.designer.battleSpeed;
           this.ui.refresh();
         }
         clearPoolDragging() {
@@ -2408,8 +2439,8 @@
         loop(now) {
           const dt = Math.min(0.05, (now - this.lastFrame) / 1000);
           this.lastFrame = now;
-          this.input.update(dt);
-          if (this.state.screen === CONFIG.SCREENS.GAMEPLAY && this.state.phase === CONFIG.PHASES.BATTLE) {
+          if (!window.GameEntry?.current?.isOpen()) this.input.update(dt);
+          if (!window.GameEntry?.current?.isOpen() && this.state.screen === CONFIG.SCREENS.GAMEPLAY && this.state.phase === CONFIG.PHASES.BATTLE) {
             this.updateBattle(dt);
           } else {
             this.updateWormVisuals(dt);
@@ -3661,8 +3692,9 @@
         }
       }
 
-      new Game();
+      window.WormholdMerge = new Game();
     })();
   </script>
+  <script src="entry-flow.js" data-entry-game="fortress"></script>
 </body>
 </html>

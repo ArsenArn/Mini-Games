@@ -13,6 +13,7 @@
           localStorage.setItem(CONFIG.SAVE_KEY, JSON.stringify(this.data));
         },
         unlock(level) {
+          if (window.GameEntry?.current?.isDeveloper()) return;
           this.data.unlockedLevel = Math.max(this.data.unlockedLevel || 1, Math.min(CONFIG.MAX_CAMPAIGN_LEVEL, level));
           this.write();
         }

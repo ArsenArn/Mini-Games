@@ -480,7 +480,7 @@
   }
 
   function persist(){
-    localStorage.setItem(C.SAVE_KEY, JSON.stringify(save));
+    if (!window.GameEntry?.current?.isDeveloper()) localStorage.setItem(C.SAVE_KEY, JSON.stringify(save));
   }
 
   function fighter(id){return FIGHTERS.find(f => f.id === id) || FIGHTERS[0];}
@@ -551,6 +551,7 @@
   }
 
   function startRun(mode){
+    if (mode === "tournament" && window.GameEntry?.current && !window.GameEntry.current.isDeveloper()) return;
     selectedMode = mode;
     screen = "arenaSelect";
     renderScreen();
@@ -663,7 +664,7 @@
   }
 
   function update(dt){
-    if (!battle.active || battle.ended || battle.paused) return;
+    if (!battle.active || battle.ended || battle.paused || window.GameEntry?.current?.isOpen()) return;
     dt = Math.min(dt, C.DT_CAP);
     if (debug.slow) dt *= .35;
     battle.time += dt;
@@ -1381,19 +1382,20 @@
   }
 
   function renderMain(){
+    const developer = window.GameEntry?.current?.isDeveloper();
     battle = emptyBattle();
     ui.title.textContent = "Arena Oddities";
     ui.subtitle.textContent = "Short mobile auto-battles with strange circular fighters.";
     ui.miniStats.innerHTML = `<span class="pill">Wins T ${save.tournamentWins}</span><span class="pill">Wins C ${save.campaignWins}</span>`;
     overlay.innerHTML = `
-      ${screenHeader("Arena Oddities","Pick a run type. Tournament is 1v1 captures; Campaign is compact waves.")}
+      ${screenHeader("Arena Oddities",developer ? "Pick a run type. Tournament is 1v1 captures; Campaign is compact waves." : "Choose your next campaign run.")}
       <div class="screenBody">
         <div class="card small">Last arena: ${save.lastArenaShape}. Best campaign level: ${save.bestCampaignLevel}. Total runs: ${save.totalRuns}.</div>
         <div class="btnGrid">
-          <button class="btn" data-action="mode" data-mode="tournament">Tournament</button>
+          ${developer ? '<button class="btn" data-action="mode" data-mode="tournament">Tournament</button>' : ""}
           <button class="btn secondary" data-action="mode" data-mode="campaign">Campaign</button>
           <button class="btn secondary" data-action="collection">Collection</button>
-          <button class="btn warn" data-action="reset">Reset Progress</button>
+          ${developer ? '<button class="btn warn" data-action="reset">Reset Test Progress</button>' : ""}
         </div>
       </div>`;
   }
@@ -1553,7 +1555,7 @@
     if (action === "confirmPick") {screen = run.mode === "tournament" ? "tournamentRoad" : "campaignLevel"; renderScreen();}
     if (action === "upgrade") chooseUpgrade(el.dataset.upgrade);
     if (action === "collection") {screen = "collection"; renderScreen();}
-    if (action === "reset") {if (confirm("Reset Arena Oddities progress?")) {save = {...SAVE_DEFAULT}; persist(); renderScreen();}}
+    if (action === "reset" && window.GameEntry?.current?.isDeveloper()) {if (confirm("Reset Arena Oddities test progress?")) {save = {...SAVE_DEFAULT}; persist(); renderScreen();}}
     if (action === "main") {screen = "main"; run = null; battle = emptyBattle(); renderScreen();}
   });
 
@@ -1881,7 +1883,20 @@
   }
 
   renderScreen();
+  window.ArenaOdditiesUI = {
+    showMain: () => { screen = "main"; run = null; battle = emptyBattle(); renderScreen(); },
+    startCampaign: () => startRun("campaign"),
+    setEntryMode: (mode) => {
+      if (mode === "normal") {
+        save = loadSave();
+        Object.assign(debug, { open:false, hitboxes:false, slow:false, damageMult:1, enemyHpMult:1, unitSpeedMult:1 });
+        debugPanel.classList.remove("open");
+        renderScreen();
+      }
+    }
+  };
   requestAnimationFrame(loop);
   </script>
+  <script src="entry-flow.js" data-entry-game="oddities"></script>
 </body>
 </html>

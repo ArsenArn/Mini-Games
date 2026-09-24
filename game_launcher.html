@@ -71,11 +71,14 @@
     .emptyState{grid-column:1/-1;min-height:220px;display:grid;place-content:center;justify-items:center;gap:8px;padding:28px;border:1px dashed #424a54;border-radius:var(--radius);text-align:center}
     .emptyState strong{font-size:18px}
     .emptyState p{margin:0;color:var(--muted);font-size:13px}
-    .footer{display:flex;justify-content:space-between;gap:16px;margin-top:34px;padding-top:17px;border-top:1px solid var(--line);color:#818990;font-size:11px}
-    .footer span:last-child{color:#a5abb0}
+    .footer{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-top:34px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;line-height:1.5}
+    .footerCredit{display:grid;gap:4px;max-width:690px}
+    .footerCredit strong{color:var(--ink);font-size:13px}
+    .footerDetail{flex:none;color:#a5abb0;text-align:right}
     @media(max-width:1000px){.page{width:min(100% - 40px,900px)}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.catalogTools{grid-template-columns:minmax(200px,300px) minmax(0,1fr)}.filters{gap:6px}.filter{padding-inline:11px}}
     @media(max-width:700px){.page{width:min(100% - 32px,560px);padding:22px 0 34px}.masthead{padding-bottom:38px}.mastheadNote{font-size:11px;text-align:right}.hero{grid-template-columns:1fr;gap:20px;padding-bottom:27px}.collectionMark{width:auto;aspect-ratio:auto;display:flex;align-items:baseline;justify-items:initial;gap:7px;transform:none;border:0;border-radius:0}.collectionMark strong{font-size:24px}.collectionMark span{font-size:10px}.eyebrow{margin-bottom:12px}.intro{margin-top:15px}.catalog{padding-top:19px}.catalogTools{grid-template-columns:1fr;gap:12px;margin-bottom:18px}.filters{justify-content:flex-start}.grid{gap:12px}.preview{min-height:120px}.desc{min-height:78px}}
-    @media(max-width:520px){.page{width:min(100% - 24px,420px);padding-top:16px}.masthead{padding-bottom:31px}.brand{font-size:11px;letter-spacing:.1em}.brandMark{width:30px;height:30px}.mastheadNote{max-width:130px;line-height:1.35}.hero{padding-bottom:22px}h1{font-size:clamp(40px,12vw,58px)}.intro{font-size:15px;line-height:1.5}.collectionMark{margin-top:-3px}.grid{grid-template-columns:1fr;gap:12px}.card{padding:10px;border-radius:18px}.preview{aspect-ratio:1.95 / 1;min-height:145px}.cardCopy{padding:14px 5px 4px}h2{font-size:18px}.desc{min-height:0;margin-bottom:15px}.actions{grid-template-columns:1fr auto}.launch{min-height:46px}.resultsLine{margin-bottom:12px}.footer{flex-direction:column;gap:6px;margin-top:25px}}
+    @media(max-width:700px){.footer{flex-direction:column;gap:12px}.footerDetail{text-align:left}}
+    @media(max-width:520px){.page{width:min(100% - 24px,420px);padding-top:16px}.masthead{padding-bottom:31px}.brand{font-size:11px;letter-spacing:.1em}.brandMark{width:30px;height:30px}.mastheadNote{max-width:130px;line-height:1.35}.hero{padding-bottom:22px}h1{font-size:clamp(40px,12vw,58px)}.intro{font-size:15px;line-height:1.5}.collectionMark{margin-top:-3px}.grid{grid-template-columns:1fr;gap:12px}.card{padding:10px;border-radius:18px}.preview{aspect-ratio:1.95 / 1;min-height:145px}.cardCopy{padding:14px 5px 4px}h2{font-size:18px}.desc{min-height:0;margin-bottom:15px}.actions{grid-template-columns:1fr auto}.launch{min-height:46px}.resultsLine{margin-bottom:12px}.footer{margin-top:25px}}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}.card:hover,.launch:hover{transform:none}}
   </style>
 </head>
@@ -104,7 +107,13 @@
       <p class="resultsLine"><span id="resultCount" aria-live="polite">Showing all games</span><strong>Choose a game to play</strong></p>
       <div id="gameGrid" class="grid" aria-label="Available games"></div>
     </section>
-    <footer class="footer"><span>Made for curious players.</span><span>12 self-contained browser prototypes · No account needed</span></footer>
+    <footer class="footer">
+      <div class="footerCredit">
+        <strong>Created by Arsen Arn</strong>
+        <span>© Arsen Arn. The games, code, artwork, and design in this collection are the intellectual property of Arsen Arn.</span>
+      </div>
+      <span class="footerDetail">12 self-contained browser prototypes · No account needed</span>
+    </footer>
   </main>
 
   <svg width="0" height="0" aria-hidden="true" style="position:absolute;overflow:hidden" xmlns="http://www.w3.org/2000/svg">
@@ -165,14 +174,14 @@
     const games = [
       {id:"plush",title:"Plush Merge Jam",file:"plush_merge_jam.html",genre:"Puzzle",genres:["Puzzle","Merge"],description:"Slide soft, characterful blocks together and build up to the rare plush crown.",art:"art-plush"},
       {id:"snake",title:"Snake Merge Defense",file:"snake_merge.html",genre:"Defense",genres:["Defense","Puzzle"],description:"Gather colored orbs, line up a living snake, and break the waves pressing against your wall.",art:"art-snake"},
-      {id:"worm",title:"Worm Link Merge",file:"worm_link_merge.html",genre:"Puzzle",genres:["Puzzle","Merge"],description:"Guide linked worms through a pipe grid, match their colors, and resolve each board's quests.",art:"art-worm-link"},
       {id:"worm_place",title:"Worm Place Puzzle",file:"worm_place_puzzle.html",genre:"Puzzle",genres:["Puzzle"],description:"Place each worm along its matching route and fill the target paths across the board.",art:"art-worm-place"},
+      {id:"bastion",title:"Ball Bastion",file:"ball_bastion.html",genre:"Defense",genres:["Defense","Arcade"],description:"Launch heavy elemental balls, break blocky invaders, and hold the line through a three-minute run.",art:"art-bastion"},
       {id:"worm_sort",title:"Worm Sort",file:"worm_sort.html",genre:"Puzzle",genres:["Puzzle"],description:"Carry loose color blocks with neutral worms and sort them into matching containers.",art:"art-worm-sort"},
       {id:"fortress",title:"Wormhold Merge",file:"worm_fortress_merge.html",genre:"Strategy",genres:["Strategy","Merge","Defense"],description:"Place living defenders, merge matching specialists, then watch your formation take on a wave.",art:"art-fortress"},
+      {id:"worm",title:"Worm Link Merge",file:"worm_link_merge.html",genre:"Puzzle",genres:["Puzzle","Merge"],description:"Guide linked worms through a pipe grid, match their colors, and resolve each board's quests.",art:"art-worm-link"},
       {id:"maze",title:"Wormhold Maze Merge",file:"wormhold_maze_merge.html",genre:"Strategy",genres:["Strategy","Merge","Defense"],description:"Shape a winding route around the core and combine tower-worms before each defense wave.",art:"art-maze"},
       {id:"weapon",title:"Weapon Arena",file:"weapon_arena_roguelite.html",genre:"Auto-battler",genres:["Auto-battler","Strategy"],description:"Choose a fighter, collect weapons and upgrades, and climb through a run of tactical duels.",art:"art-weapon"},
       {id:"oddities",title:"Arena Oddities",file:"arena_oddities.html",genre:"Auto-battler",genres:["Auto-battler","Arcade"],description:"Send a strange fighter into compact ricochet battles, then build a run through fresh matchups.",art:"art-oddities"},
-      {id:"bastion",title:"Ball Bastion",file:"ball_bastion.html",genre:"Defense",genres:["Defense","Arcade"],description:"Launch heavy elemental balls, break blocky invaders, and hold the line through a three-minute run.",art:"art-bastion"},
       {id:"mixer",title:"Loop Crew Mixer",file:"music_loop_mixer/music_loop_mixer.html",genre:"Music",genres:["Music"],description:"Assign loops to a colorful crew and layer a synchronized beat one performer at a time.",art:"art-music"},
       {id:"combo",title:"Combo Drop Lab",file:"combo_drop_lab.html",genre:"Arcade",genres:["Arcade","Physics"],description:"Build a garage full of bumpers and ramps, drop a toy car, and set off a chain reaction.",art:"art-combo"}
     ];

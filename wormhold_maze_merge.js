@@ -458,6 +458,7 @@
     }
 
     setHighestUnlocked(level) {
+      if (window.GameEntry?.current?.isDeveloper()) return;
       this.data.highestUnlocked = Math.max(this.data.highestUnlocked, level);
       this.write();
     }
@@ -468,12 +469,20 @@
     }
 
     setLastLevel(level) {
+      if (window.GameEntry?.current?.isDeveloper()) return;
       this.data.lastLevel = Math.max(1, level);
       this.write();
     }
 
     setDesigner(data) {
+      if (window.GameEntry?.current && !window.GameEntry.current.isDeveloper()) return;
       this.data.designer = deepClone(data);
+      this.write();
+    }
+
+    setBattleSpeed(speed) {
+      this.data.designer = deepClone(this.data.designer || CONFIG.DEFAULT_DESIGNER);
+      this.data.designer.battleSpeed = speed;
       this.write();
     }
   }
@@ -1469,11 +1478,13 @@
       const state = this.game.state;
       const estimate = state.lastEstimate || { ratio: 1, targetDuration: 0, expectedDuration: 0, averagePathLength: 0 };
       const tags = [];
-      tags.push(`<div class="statusTag">⏱️ Target ${Math.round(estimate.targetDuration || 0)}s</div>`);
-      tags.push(`<div class="statusTag">📈 Estimate ${Math.round(estimate.expectedDuration || 0)}s</div>`);
-      tags.push(`<div class="statusTag">🧭 Path ${estimate.averagePathLength ? estimate.averagePathLength.toFixed(1) : "0.0"} tiles</div>`);
-      const ratioClass = estimate.ratio >= 1.1 ? "good" : estimate.ratio >= 0.92 ? "warn" : "danger";
-      tags.push(`<div class="statusTag ${ratioClass}">🔥 Pressure ${estimate.ratio.toFixed(2)}x</div>`);
+      if (window.GameEntry?.current?.isDeveloper()) {
+        tags.push(`<div class="statusTag">⏱️ Target ${Math.round(estimate.targetDuration || 0)}s</div>`);
+        tags.push(`<div class="statusTag">📈 Estimate ${Math.round(estimate.expectedDuration || 0)}s</div>`);
+        tags.push(`<div class="statusTag">🧭 Path ${estimate.averagePathLength ? estimate.averagePathLength.toFixed(1) : "0.0"} tiles</div>`);
+        const ratioClass = estimate.ratio >= 1.1 ? "good" : estimate.ratio >= 0.92 ? "warn" : "danger";
+        tags.push(`<div class="statusTag ${ratioClass}">🔥 Pressure ${estimate.ratio.toFixed(2)}x</div>`);
+      }
       if (state.navigation.blocked) tags.push(`<div class="statusTag danger">🚫 Path Blocked</div>`);
       else tags.push(`<div class="statusTag">${state.phase === CONFIG.PHASES.BATTLE ? `👾 Enemies ${state.enemies.filter((enemy) => enemy.alive).length}` : `🚪 Spawns ${state.spawnPoints.length}`}</div>`);
       this.refs.statusRow.innerHTML = tags.join("");
@@ -1507,8 +1518,10 @@
       const refreshCost = this.game.getRefreshCost();
       const footerTags = [];
       footerTags.push(`<div class="statusTag">🔄 Refresh ${refreshCost}</div>`);
-      footerTags.push(`<div class="statusTag">🌱 Seed ${this.game.designer.seed}</div>`);
-      footerTags.push(`<div class="statusTag">🪨 Obstacles ${state.staticObstacles.length}</div>`);
+      if (window.GameEntry?.current?.isDeveloper()) {
+        footerTags.push(`<div class="statusTag">🌱 Seed ${this.game.designer.seed}</div>`);
+        footerTags.push(`<div class="statusTag">🪨 Obstacles ${state.staticObstacles.length}</div>`);
+      }
       footerTags.push(`<div class="statusTag">✨ Bonus ${state.bonusTiles.length}</div>`);
       this.refs.poolFooterText.innerHTML = footerTags.join("");
     }
@@ -1516,7 +1529,7 @@
     renderLevels() {
       const current = this.game.save.data.highestUnlocked || 1;
       this.refs.levelGrid.innerHTML = CONFIG.CAMPAIGN_LEVELS.map((level) => {
-        const unlocked = level.id <= current;
+        const unlocked = !!window.GameEntry?.current?.isDeveloper() || level.id <= current;
         return `
           <button class="levelCard ${unlocked ? "" : "locked"}" data-level="${level.id}" ${unlocked ? "" : "disabled"}>
             <div class="eyebrow">Campaign</div>
@@ -1592,6 +1605,9 @@
       this.refs = this.collectRefs();
       this.save = new SaveManager(CONFIG.SAVE_KEY);
       this.audio = new AudioManager(this.save.data.soundOn);
+      this.entryDefaults = deepClone({ worm: CONFIG.WORM_TYPES, enemy: CONFIG.ENEMY_TYPES, balance: CONFIG.BALANCE });
+      this.entryDeveloperConfig = null;
+      this.entryMode = null;
       this.designer = this.normalizeDesigner(deepClone(this.save.data.designer || CONFIG.DEFAULT_DESIGNER));
       this.pathCache = new Map();
       this.state = this.createInitialState();
@@ -1799,7 +1815,7 @@
     boot() {
       this.ui.setScreen(CONFIG.SCREENS.BOOT);
       this.ui.refresh();
-      setTimeout(() => this.openMenu(), 650);
+      setTimeout(() => { if (this.state.screen === CONFIG.SCREENS.BOOT) this.openMenu(); }, 650);
     }
 
     getBoardConfig() {
@@ -1976,14 +1992,30 @@
       const next = cycle[(currentIndex + 1) % cycle.length] || 1;
       this.state.battleSpeed = next;
       this.designer.battleSpeed = next;
-      this.save.setDesigner(this.designer);
+      if (window.GameEntry?.current?.isDeveloper()) this.save.setDesigner(this.designer);
+      else this.save.setBattleSpeed(next);
       this.ui.refresh();
     }
 
     toggleDebug(force) {
+      if (force !== false && window.GameEntry?.current && !window.GameEntry.current.isDeveloper()) return;
       this.state.debugOpen = typeof force === "boolean" ? force : !this.state.debugOpen;
       this.refs.debugDrawer.classList.toggle("open", this.state.debugOpen);
       if (this.state.debugOpen) this.ui.loadDesignerValues();
+      this.ui.refresh();
+    }
+
+    setEntryMode(mode) {
+      this.toggleDebug(false);
+      if (this.entryMode === "developer") this.entryDeveloperConfig = deepClone({ worm: CONFIG.WORM_TYPES, enemy: CONFIG.ENEMY_TYPES, balance: CONFIG.BALANCE });
+      const config = mode === "developer" ? (this.entryDeveloperConfig || this.entryDefaults) : this.entryDefaults;
+      Object.assign(CONFIG.WORM_TYPES, deepClone(config.worm));
+      Object.assign(CONFIG.ENEMY_TYPES, deepClone(config.enemy));
+      Object.assign(CONFIG.BALANCE, deepClone(config.balance));
+      this.entryMode = mode;
+      this.designer = this.normalizeDesigner(deepClone(mode === "developer" ? (this.save.data.designer || CONFIG.DEFAULT_DESIGNER) : CONFIG.DEFAULT_DESIGNER));
+      this.designer.battleSpeed = this.save.data.designer?.battleSpeed || this.designer.battleSpeed;
+      this.state.battleSpeed = this.designer.battleSpeed;
       this.ui.refresh();
     }
 
@@ -2016,9 +2048,9 @@
     loop(now) {
       const dt = Math.min(0.05, (now - this.lastFrame) / 1000);
       this.lastFrame = now;
-      this.input.update(dt);
-      this.updateVisualState(dt, now);
-      if (this.state.screen === CONFIG.SCREENS.GAMEPLAY && this.state.phase === CONFIG.PHASES.BATTLE) {
+      if (!window.GameEntry?.current?.isOpen()) this.input.update(dt);
+      if (!window.GameEntry?.current?.isOpen()) this.updateVisualState(dt, now);
+      if (!window.GameEntry?.current?.isOpen() && this.state.screen === CONFIG.SCREENS.GAMEPLAY && this.state.phase === CONFIG.PHASES.BATTLE) {
         this.updateBattle(dt);
       }
       this.renderer.render(now);
@@ -3503,5 +3535,5 @@
     }
   }
 
-  new Game();
+  window.WormholdMazeMerge = new Game();
 })();

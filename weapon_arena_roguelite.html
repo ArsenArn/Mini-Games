@@ -325,7 +325,7 @@
       <div></div>
       <div class="hudBottom">
         <div class="bonusTray"><div id="battleBonusTray" class="bonusList"></div></div>
-        <div class="pill">Space: pause | Esc: back/pause | `: debug</div>
+        <div class="pill" id="battleKeyHint">Space: pause | Esc: back/pause</div>
       </div>
     </div>
     <div id="pauseOverlay" class="overlayCard">
@@ -444,7 +444,7 @@ function showScreen(id){
   document.querySelectorAll(".screen").forEach(s => s.classList.toggle("active", s.id === id));
   if (id !== "battleScreen") cancelAnimationFrame(raf);
 }
-function saveProgress(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); }
+function saveProgress(){ if (!window.GameEntry?.current?.isDeveloper()) localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); }
 function loadProgress(){
   try {
     const p = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
@@ -488,6 +488,7 @@ function renderMain(){
   $("statBest").textContent = progress.bestCampaignLevel;
 }
 function setMode(mode){
+  if (mode === "tournament" && window.GameEntry?.current && !window.GameEntry.current.isDeveloper()) return;
   selectedMode = mode;
   $("modeTournament").classList.toggle("active", mode === "tournament");
   $("modeCampaign").classList.toggle("active", mode === "campaign");
@@ -546,7 +547,7 @@ function openCharacterSelect(){
 function openCollection(){
   renderFighterCards("collectionCards", FIGHTERS, "", f => {
     selectedStarter = f;
-    selectedMode = "tournament";
+    selectedMode = window.GameEntry?.current?.isDeveloper() ? "tournament" : "campaign";
     openCharacterSelect();
   });
   showScreen("collectionScreen");
@@ -808,7 +809,7 @@ function loop(now){
   const rawDt = Math.min(.033, (now - lastTime) / 1000 || .016);
   lastTime = now;
   const dt = (battle.finalSlow > 0 || debug.forceSlow) ? rawDt * .35 : rawDt;
-  if (!battle.paused && !battle.ended) updateBattle(dt, rawDt);
+  if (!battle.paused && !battle.ended && !window.GameEntry?.current?.isOpen()) updateBattle(dt, rawDt);
   renderBattle(rawDt);
   updateBattleHud();
   updateDebug();
@@ -1249,9 +1250,10 @@ $("modeCampaign").addEventListener("click", () => setMode("campaign"));
 $("startModeBtn").addEventListener("click", openCharacterSelect);
 $("collectionBtn").addEventListener("click", openCollection);
 $("resetProgressBtn").addEventListener("click", () => {
+  if (window.GameEntry?.current && !window.GameEntry.current.isDeveloper()) return;
   if (!confirm("Reset Weapon Arena progress?")) return;
-  localStorage.removeItem(STORAGE_KEY);
-  progress = loadProgress();
+  if (window.GameEntry?.current?.isDeveloper()) progress = { tournamentWins:{}, campaignWins:{}, totalCompletedRuns:0, discoveredFighters:FIGHTERS.map(f=>f.id), bestCampaignLevel:0 };
+  else { localStorage.removeItem(STORAGE_KEY); progress = loadProgress(); }
   renderMain();
 });
 document.querySelectorAll("[data-screen]").forEach(btn => btn.addEventListener("click", () => showScreen(btn.dataset.screen)));
@@ -1284,7 +1286,21 @@ document.addEventListener("keydown", e => {
 renderMain();
 setMode("tournament");
 renderFighterDetail(selectedStarter);
+window.WeaponArenaUI = {
+  showMain: () => showScreen("mainMenu"),
+  setEntryMode: (mode) => {
+    if (mode === "normal") setMode("campaign");
+    $("resetProgressBtn").textContent = mode === "developer" ? "Reset Test Progress" : "Reset Progress";
+    if (mode === "normal") {
+      progress = loadProgress();
+      debug = { open:false, damageMult:1, enemyHpMult:1, forceSlow:false };
+      $("debugPanel").classList.remove("active");
+      renderMain();
+    }
+  }
+};
 })();
 </script>
+  <script src="entry-flow.js" data-entry-game="weapon"></script>
 </body>
 </html>

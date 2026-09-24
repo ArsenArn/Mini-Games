@@ -607,7 +607,7 @@
             <button id="campaignButton" class="actionButton accent" type="button">Campaign</button>
           </div>
         </section>
-        <section class="menuPanel">
+        <section class="menuPanel" id="sandboxMenuPanel">
           <h3>Sandbox</h3>
           <p class="muted">Create and replay your own worm layouts without changing campaign progress.</p>
           <div class="menuStats">
@@ -845,6 +845,7 @@
           localStorage.setItem(CONFIG.SAVE_KEY, JSON.stringify(this.data));
         },
         unlock(level) {
+          if (window.GameEntry?.current?.isDeveloper()) return;
           this.data.unlockedLevel = Helpers.clamp(Math.max(this.data.unlockedLevel, level), 1, CONFIG.MAX_LEVEL);
           this.commit();
         },
@@ -1823,7 +1824,8 @@
           requestAnimationFrame((next) => this.tick(next));
         }
         startCampaign(level, options = {}) {
-          const safeLevel = Helpers.clamp(Number(level) || 1, 1, CONFIG.MAX_LEVEL);
+          const limit = window.GameEntry?.current && !window.GameEntry.current.isDeveloper() ? Save.data.unlockedLevel : CONFIG.MAX_LEVEL;
+          const safeLevel = Helpers.clamp(Number(level) || 1, 1, limit);
           const removeCompletedWorms = typeof options.removeCompletedWorms === "boolean"
             ? !!options.removeCompletedWorms
             : !!this.state.campaignRemoveCompletedWorms;
@@ -1856,11 +1858,13 @@
           return this.normalizeCampaignLevelInput();
         }
         normalizeCampaignLevelInput() {
-          const level = Helpers.clamp(Number(this.refs.campaignLevelInput.value) || 1, 1, CONFIG.MAX_LEVEL);
+          const maxLevel = window.GameEntry?.current && !window.GameEntry.current.isDeveloper() ? Save.data.unlockedLevel : CONFIG.MAX_LEVEL;
+          const level = Helpers.clamp(Number(this.refs.campaignLevelInput.value) || 1, 1, maxLevel);
           this.refs.campaignLevelInput.value = String(level);
           return level;
         }
         startSandbox(openDesigner) {
+          if (window.GameEntry?.current && !window.GameEntry.current.isDeveloper()) return;
           this.state.mode = "sandbox";
           this.state.level = 0;
           this.board = this.prepareBoard(LevelGenerator.build(0, "sandbox", this.sandboxSettings), "sandbox");
@@ -2049,6 +2053,7 @@
           this.state.manualSelectionRequired = false;
         }
         generateSandbox() {
+          if (window.GameEntry?.current && !window.GameEntry.current.isDeveloper()) return;
           this.readDesignerInputs();
           Save.saveSandbox(this.sandboxSettings);
           this.startSandbox(true);
@@ -2083,11 +2088,13 @@
         }
         toggleDesigner(force) {
           const open = typeof force === "boolean" ? force : !this.state.designerOpen;
+          if (open && window.GameEntry?.current && !window.GameEntry.current.isDeveloper()) return;
           this.state.designerOpen = open;
           this.refs.designerDrawer.classList.toggle("open", open);
           this.refs.designerDrawer.setAttribute("aria-hidden", open ? "false" : "true");
         }
         exportJSON() {
+          if (window.GameEntry?.current && !window.GameEntry.current.isDeveloper()) return;
           if (!this.board) return;
           const payload = {
             type: "worm_place_puzzle_board",
@@ -2099,6 +2106,7 @@
           this.toast("Board exported.", "success");
         }
         importJSON() {
+          if (window.GameEntry?.current && !window.GameEntry.current.isDeveloper()) return;
           try {
             const parsed = JSON.parse(this.refs.jsonBox.value);
             const board = parsed.board || parsed;
@@ -2641,5 +2649,6 @@
       window.WormPlacePuzzle = new Game();
     })();
   </script>
+  <script src="entry-flow.js" data-entry-game="worm_place"></script>
 </body>
 </html>

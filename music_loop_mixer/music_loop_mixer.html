@@ -130,6 +130,8 @@
       font-size:13px;
     }
     .error.show{display:block}
+    .devDiagnostics{margin-top:12px;padding:12px 15px;border:1px solid rgba(137,227,237,.4);border-radius:12px;background:rgba(8,23,35,.65);color:#d9f6f7;font:12px/1.5 Consolas,monospace}
+    .devDiagnostics[hidden]{display:none}
     .stage{
       border-radius:26px;
       padding:14px;
@@ -330,6 +332,7 @@
       .padGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
     }
   </style>
+  <link rel="stylesheet" href="../menu-system.css">
 </head>
 <body>
   <main class="app">
@@ -349,6 +352,7 @@
         </div>
       </div>
       <div class="error" id="errorBox"></div>
+      <div class="devDiagnostics" id="mixerDiagnostics" hidden aria-live="polite"></div>
     </section>
 
     <section class="stage">
@@ -1008,6 +1012,9 @@
       renderSoundLibrary();
       renderStatusText();
       renderPackMeta();
+      const ready = [...loadedPlayers.values()].filter((item) => item.loaded).length;
+      const fallback = [...loadedPlayers.values()].filter((item) => item.failed).length;
+      byId("mixerDiagnostics").textContent = `Pack ${PACK_CONFIG.id} · ${PACK_CONFIG.bpm} BPM · ${PACK_CONFIG.loopCycleSeconds.toFixed(3)}s cycle · MP3 ready ${ready}/${SOUNDS.length} · fallback ${fallback} · queued ${queuedStarts.size + queuedStops.size} · cycle ${currentCycle}`;
     }
 
     // 5. Event handlers
@@ -1099,6 +1106,7 @@
       errorBox.classList.remove("show");
     }
 
+    window.LoopCrewMixerUI = { setEntryMode(mode) { byId("mixerDiagnostics").hidden = mode !== "developer"; renderAll(); } };
     renderTransportControls();
     renderAll();
     animationFrameId = requestAnimationFrame(updateCycleProgress);
@@ -1107,5 +1115,6 @@
       if (window.Tone && AudioEngine.initialized) AudioEngine.stopTransport();
     });
   </script>
+  <script src="../entry-flow.js" data-entry-game="mixer"></script>
 </body>
 </html>
