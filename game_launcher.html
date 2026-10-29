@@ -94,7 +94,7 @@
         <h1 id="pageTitle">Small games.<br>Distinct worlds.</h1>
         <p class="intro">A shelf of playful experiments in merging, puzzling, defending, and making music. Pick a world and jump right in.</p>
       </div>
-      <div class="collectionMark" aria-label="12 browser games"><strong id="gameCount">12</strong><span>playable prototypes</span></div>
+      <div class="collectionMark" aria-label="13 browser games"><strong id="gameCount">13</strong><span>playable prototypes</span></div>
     </section>
     <section class="catalog" aria-label="Game catalog">
       <div class="catalogTools">
@@ -112,11 +112,24 @@
         <strong>Created by Arsen Arn</strong>
         <span>© Arsen Arn. The games, code, artwork, and design in this collection are the intellectual property of Arsen Arn.</span>
       </div>
-      <span class="footerDetail">12 self-contained browser prototypes · No account needed</span>
+      <span class="footerDetail">13 self-contained browser prototypes · No account needed</span>
     </footer>
   </main>
 
   <svg width="0" height="0" aria-hidden="true" style="position:absolute;overflow:hidden" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="art-loop-sort" viewBox="0 0 640 320">
+      <defs><linearGradient id="lsbg" x2="0" y2="1"><stop stop-color="#221b37"/><stop offset="1" stop-color="#171428"/></linearGradient></defs>
+      <path fill="url(#lsbg)" d="M0 0h640v320H0z"/>
+      <g fill="none" stroke-linecap="round"><ellipse cx="246" cy="172" rx="117" ry="99" stroke="#102b37" stroke-width="34"/><ellipse cx="246" cy="172" rx="117" ry="99" stroke="#559c94" stroke-width="24"/><ellipse cx="394" cy="172" rx="117" ry="99" stroke="#17192d" stroke-width="34"/><ellipse cx="394" cy="172" rx="117" ry="99" stroke="#77708e" stroke-width="24"/></g>
+      <g fill="none" stroke="#b9b2d4" stroke-opacity=".45" stroke-width="3"><path d="m161 116 10-5m5-32 10-4m-33 152 10 5m339-112-10-5m-14 128-10 5m-22 17-10 6"/></g>
+      <path d="M320 75c35 0 62 17 80 43" fill="none" stroke="#70d2ad" stroke-width="7" stroke-linecap="round" opacity=".75"/>
+      <path d="m393 105 12 16-20-3" fill="#70d2ad"/>
+      <g><rect x="172" y="6" width="68" height="83" rx="12" fill="#7867a2"/><rect x="178" y="12" width="56" height="71" rx="8" fill="#302844"/><rect x="183" y="17" width="46" height="29" rx="5" fill="#56aafa"/><rect x="183" y="49" width="46" height="29" rx="5" fill="#f06d79"/><path d="m206 24 9 8-9 8-9-8z" fill="#d9edff"/><circle cx="206" cy="63" r="4" fill="#ffd8df"/><path d="M204 88v11" stroke="#b9a5dc" stroke-width="6" stroke-linecap="round"/></g>
+      <g><rect x="402" y="232" width="68" height="83" rx="12" fill="#7867a2"/><rect x="408" y="238" width="56" height="71" rx="8" fill="#302844"/><rect x="413" y="243" width="46" height="29" rx="5" fill="#f06d79"/><rect x="413" y="275" width="46" height="29" rx="5" fill="#56aafa"/><circle cx="436" cy="258" r="4" fill="#ffd8df"/><path d="m436 281 9 8-9 8-9-8z" fill="#d9edff"/><path d="M436 222v10" stroke="#b9a5dc" stroke-width="6" stroke-linecap="round"/></g>
+      <g><rect x="312" y="69" width="26" height="22" rx="5" fill="#56aafa" stroke="#d9edff" stroke-width="2"/><rect x="302" y="249" width="26" height="22" rx="5" fill="#f06d79" stroke="#ffd8df" stroke-width="2"/></g>
+      <g fill="#ff8289" stroke="#421d32" stroke-width="2"><path d="m337 93-16 4 8-16z"/><path d="m301 227-17 5 8-16z"/></g>
+      <g fill="#a9e1c5" font-size="17" font-weight="800" font-family="Segoe UI, sans-serif"><text x="107" y="174">A</text><text x="519" y="174" fill="#c4b9e4">B</text></g>
+    </symbol>
     <symbol id="art-plush" viewBox="0 0 640 320">
       <defs><linearGradient id="pbg" x2="0" y2="1"><stop stop-color="#f8d9a1"/><stop offset="1" stop-color="#dc9566"/></linearGradient><linearGradient id="plushGold" x2="0" y2="1"><stop stop-color="#fff092"/><stop offset="1" stop-color="#ffc64d"/></linearGradient><filter id="pshadow" x="-.2" y="-.2" width="1.4" height="1.5"><feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#693b28" flood-opacity=".2"/></filter></defs>
       <path fill="url(#pbg)" d="M0 0h640v320H0z"/><path fill="#8f573b" opacity=".17" d="M0 228h640v92H0z"/><g stroke="#fff1d4" stroke-opacity=".2"><path d="M0 258h640M0 289h640"/><path d="M92 228v92m92-92v92m92-92v92m92-92v92m92-92v92m92-92v92"/></g>
@@ -172,6 +185,7 @@
 
   <script>
     const games = [
+      {id:"loop_sort",title:"Loop Sort: Switch Junctions",file:"loop_sort_switch_junctions.html",genre:"Puzzle",genres:["Puzzle"],description:"Release colored blocks onto two linked loops; each move flips the junctions as you sort them into matching stacks.",art:"art-loop-sort"},
       {id:"plush",title:"Plush Merge Jam",file:"plush_merge_jam.html",genre:"Puzzle",genres:["Puzzle","Merge"],description:"Slide soft, characterful blocks together and build up to the rare plush crown.",art:"art-plush"},
       {id:"snake",title:"Snake Merge Defense",file:"snake_merge.html",genre:"Defense",genres:["Defense","Puzzle"],description:"Gather colored orbs, line up a living snake, and break the waves pressing against your wall.",art:"art-snake"},
       {id:"worm_place",title:"Worm Place Puzzle",file:"worm_place_puzzle.html",genre:"Puzzle",genres:["Puzzle"],description:"Place each worm along its matching route and fill the target paths across the board.",art:"art-worm-place"},

@@ -1,0 +1,20 @@
+{
+  "name": "loop-sort-switch-junctions",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc && vite build",
+    "test": "tsx --test tests/*.test.ts",
+    "solve": "tsx tests/search.ts",
+    "analyze": "tsx scripts/analyze-levels.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "prettier": "^3.9.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vite": "^6.1.0"
+  }
+}

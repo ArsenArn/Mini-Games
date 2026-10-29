@@ -1,0 +1,1311 @@
+{
+  "seed": 20261029,
+  "method": "Bounded phase-abstracted state search (BFS, weighted best-first for six containers) plus exact replays; seeded random legal releases, 20/40/80-second waits, capped action budget. Sample counts are not total solution counts or human difficulty.",
+  "levels": [
+    {
+      "id": 1,
+      "name": "Tutorial",
+      "difficulty": "Easy",
+      "containers": 2,
+      "colors": 2,
+      "containerDepth": 2,
+      "searchMethod": "bounded BFS",
+      "blocks": 4,
+      "beltCapacity": 3,
+      "boundedSearchMoves": 3,
+      "boundedSearchVisited": 9,
+      "proofPeakOnBelt": 2,
+      "proofMaxRedirectsPerBlock": 3,
+      "sampleRuns": 400,
+      "sampleWins": 330,
+      "sampleFailures": 70,
+      "sampleDeadlocks": 70,
+      "sampledUniqueWinningOrders": 10,
+      "sampleReachedCapacity": 200,
+      "meanLegalChoices": 1.61,
+      "verifiedDistinctProofOrders": 1,
+      "verifiedProofs": [
+        {
+          "levelId": 1,
+          "waits": [
+            20
+          ],
+          "actions": [
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "levelId": 1,
+          "waits": [
+            40
+          ],
+          "actions": [
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "levelId": 1,
+          "waits": [
+            80
+          ],
+          "actions": [
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "levelId": 1,
+          "waits": [
+            20,
+            80,
+            31,
+            55,
+            20,
+            40,
+            67,
+            24,
+            39
+          ],
+          "actions": [
+            0,
+            1,
+            1
+          ]
+        }
+      ],
+      "verifiedWaits": [
+        [
+          20
+        ],
+        [
+          40
+        ],
+        [
+          80
+        ],
+        [
+          20,
+          80,
+          31,
+          55,
+          20,
+          40,
+          67,
+          24,
+          39
+        ]
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Route Shift",
+      "difficulty": "Medium",
+      "containers": 3,
+      "colors": 3,
+      "containerDepth": 2,
+      "searchMethod": "bounded BFS",
+      "blocks": 6,
+      "beltCapacity": 4,
+      "boundedSearchMoves": 3,
+      "boundedSearchVisited": 16,
+      "proofPeakOnBelt": 2,
+      "proofMaxRedirectsPerBlock": 2,
+      "sampleRuns": 400,
+      "sampleWins": 378,
+      "sampleFailures": 22,
+      "sampleDeadlocks": 22,
+      "sampledUniqueWinningOrders": 143,
+      "sampleReachedCapacity": 11,
+      "meanLegalChoices": 2.38,
+      "verifiedDistinctProofOrders": 2,
+      "verifiedProofs": [
+        {
+          "levelId": 2,
+          "waits": [
+            20
+          ],
+          "actions": [
+            0,
+            1,
+            2
+          ]
+        },
+        {
+          "levelId": 2,
+          "waits": [
+            40
+          ],
+          "actions": [
+            0,
+            1,
+            2
+          ]
+        },
+        {
+          "levelId": 2,
+          "waits": [
+            80
+          ],
+          "actions": [
+            0,
+            1,
+            2,
+            2
+          ]
+        },
+        {
+          "levelId": 2,
+          "waits": [
+            20,
+            80,
+            31,
+            55,
+            20,
+            40,
+            67,
+            24,
+            39
+          ],
+          "actions": [
+            0,
+            1,
+            2,
+            2
+          ]
+        }
+      ],
+      "verifiedWaits": [
+        [
+          20
+        ],
+        [
+          40
+        ],
+        [
+          80
+        ],
+        [
+          20,
+          80,
+          31,
+          55,
+          20,
+          40,
+          67,
+          24,
+          39
+        ]
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Figure Eight",
+      "difficulty": "Medium",
+      "containers": 3,
+      "colors": 3,
+      "containerDepth": 3,
+      "searchMethod": "bounded BFS",
+      "blocks": 9,
+      "beltCapacity": 4,
+      "boundedSearchMoves": 6,
+      "boundedSearchVisited": 136,
+      "proofPeakOnBelt": 4,
+      "proofMaxRedirectsPerBlock": 5,
+      "sampleRuns": 400,
+      "sampleWins": 265,
+      "sampleFailures": 135,
+      "sampleDeadlocks": 80,
+      "sampledUniqueWinningOrders": 261,
+      "sampleReachedCapacity": 376,
+      "meanLegalChoices": 2.52,
+      "verifiedDistinctProofOrders": 1,
+      "verifiedProofs": [
+        {
+          "levelId": 3,
+          "waits": [
+            20
+          ],
+          "actions": [
+            1,
+            1,
+            2,
+            2,
+            0,
+            0
+          ]
+        },
+        {
+          "levelId": 3,
+          "waits": [
+            40
+          ],
+          "actions": [
+            1,
+            1,
+            2,
+            2,
+            0,
+            0
+          ]
+        },
+        {
+          "levelId": 3,
+          "waits": [
+            80
+          ],
+          "actions": [
+            1,
+            1,
+            2,
+            2,
+            0,
+            0
+          ]
+        },
+        {
+          "levelId": 3,
+          "waits": [
+            20,
+            80,
+            31,
+            55,
+            20,
+            40,
+            67,
+            24,
+            39
+          ],
+          "actions": [
+            1,
+            1,
+            2,
+            2,
+            0,
+            0
+          ]
+        }
+      ],
+      "verifiedWaits": [
+        [
+          20
+        ],
+        [
+          40
+        ],
+        [
+          80
+        ],
+        [
+          20,
+          80,
+          31,
+          55,
+          20,
+          40,
+          67,
+          24,
+          39
+        ]
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Big & Small",
+      "difficulty": "Medium",
+      "containers": 4,
+      "colors": 4,
+      "containerDepth": 3,
+      "searchMethod": "bounded BFS",
+      "blocks": 12,
+      "beltCapacity": 4,
+      "boundedSearchMoves": 8,
+      "boundedSearchVisited": 744,
+      "proofPeakOnBelt": 4,
+      "proofMaxRedirectsPerBlock": 5,
+      "sampleRuns": 400,
+      "sampleWins": 92,
+      "sampleFailures": 308,
+      "sampleDeadlocks": 273,
+      "sampledUniqueWinningOrders": 92,
+      "sampleReachedCapacity": 398,
+      "meanLegalChoices": 3.33,
+      "verifiedDistinctProofOrders": 2,
+      "verifiedProofs": [
+        {
+          "levelId": 4,
+          "waits": [
+            20
+          ],
+          "actions": [
+            0,
+            0,
+            1,
+            1,
+            3,
+            3,
+            2,
+            2
+          ]
+        },
+        {
+          "levelId": 4,
+          "waits": [
+            40
+          ],
+          "actions": [
+            0,
+            1,
+            1,
+            0,
+            3,
+            3,
+            2,
+            2
+          ]
+        },
+        {
+          "levelId": 4,
+          "waits": [
+            80
+          ],
+          "actions": [
+            0,
+            0,
+            1,
+            1,
+            3,
+            3,
+            2,
+            2
+          ]
+        },
+        {
+          "levelId": 4,
+          "waits": [
+            20,
+            80,
+            31,
+            55,
+            20,
+            40,
+            67,
+            24,
+            39
+          ],
+          "actions": [
+            0,
+            1,
+            1,
+            0,
+            3,
+            3,
+            2,
+            2
+          ]
+        }
+      ],
+      "verifiedWaits": [
+        [
+          20
+        ],
+        [
+          40
+        ],
+        [
+          80
+        ],
+        [
+          20,
+          80,
+          31,
+          55,
+          20,
+          40,
+          67,
+          24,
+          39
+        ]
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Vertical Shift",
+      "difficulty": "Hard",
+      "containers": 5,
+      "colors": 5,
+      "containerDepth": 3,
+      "searchMethod": "bounded BFS",
+      "blocks": 15,
+      "beltCapacity": 4,
+      "boundedSearchMoves": 10,
+      "boundedSearchVisited": 4886,
+      "proofPeakOnBelt": 4,
+      "proofMaxRedirectsPerBlock": 8,
+      "sampleRuns": 400,
+      "sampleWins": 43,
+      "sampleFailures": 357,
+      "sampleDeadlocks": 347,
+      "sampledUniqueWinningOrders": 43,
+      "sampleReachedCapacity": 400,
+      "meanLegalChoices": 4.23,
+      "verifiedDistinctProofOrders": 3,
+      "verifiedProofs": [
+        {
+          "levelId": 5,
+          "waits": [
+            20
+          ],
+          "actions": [
+            0,
+            0,
+            4,
+            4,
+            2,
+            1,
+            1,
+            2,
+            3,
+            3
+          ]
+        },
+        {
+          "levelId": 5,
+          "waits": [
+            40
+          ],
+          "actions": [
+            4,
+            4,
+            0,
+            0,
+            2,
+            1,
+            1,
+            2,
+            3,
+            3
+          ]
+        },
+        {
+          "levelId": 5,
+          "waits": [
+            80
+          ],
+          "actions": [
+            0,
+            0,
+            2,
+            3,
+            3,
+            4,
+            4,
+            1,
+            2,
+            2,
+            1
+          ]
+        },
+        {
+          "levelId": 5,
+          "waits": [
+            20,
+            80,
+            31,
+            55,
+            20,
+            40,
+            67,
+            24,
+            39
+          ],
+          "actions": [
+            0,
+            0,
+            4,
+            4,
+            2,
+            1,
+            1,
+            2,
+            3,
+            3
+          ]
+        }
+      ],
+      "verifiedWaits": [
+        [
+          20
+        ],
+        [
+          40
+        ],
+        [
+          80
+        ],
+        [
+          20,
+          80,
+          31,
+          55,
+          20,
+          40,
+          67,
+          24,
+          39
+        ]
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Offset Paths",
+      "difficulty": "Hard",
+      "containers": 4,
+      "colors": 4,
+      "containerDepth": 3,
+      "searchMethod": "bounded BFS",
+      "blocks": 12,
+      "beltCapacity": 3,
+      "boundedSearchMoves": 9,
+      "boundedSearchVisited": 411,
+      "proofPeakOnBelt": 3,
+      "proofMaxRedirectsPerBlock": 3,
+      "sampleRuns": 400,
+      "sampleWins": 5,
+      "sampleFailures": 395,
+      "sampleDeadlocks": 392,
+      "sampledUniqueWinningOrders": 5,
+      "sampleReachedCapacity": 400,
+      "meanLegalChoices": 3.35,
+      "verifiedDistinctProofOrders": 2,
+      "verifiedProofs": [
+        {
+          "levelId": 6,
+          "waits": [
+            20
+          ],
+          "actions": [
+            1,
+            2,
+            2,
+            0,
+            0,
+            1,
+            1,
+            3,
+            3
+          ]
+        },
+        {
+          "levelId": 6,
+          "waits": [
+            40
+          ],
+          "actions": [
+            1,
+            2,
+            2,
+            0,
+            0,
+            1,
+            1,
+            3,
+            3
+          ]
+        },
+        {
+          "levelId": 6,
+          "waits": [
+            80
+          ],
+          "actions": [
+            1,
+            2,
+            2,
+            0,
+            0,
+            1,
+            1,
+            3,
+            3,
+            3
+          ]
+        },
+        {
+          "levelId": 6,
+          "waits": [
+            20,
+            80,
+            31,
+            55,
+            20,
+            40,
+            67,
+            24,
+            39
+          ],
+          "actions": [
+            1,
+            2,
+            2,
+            0,
+            0,
+            1,
+            1,
+            3,
+            3,
+            3
+          ]
+        }
+      ],
+      "verifiedWaits": [
+        [
+          20
+        ],
+        [
+          40
+        ],
+        [
+          80
+        ],
+        [
+          20,
+          80,
+          31,
+          55,
+          20,
+          40,
+          67,
+          24,
+          39
+        ]
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Stacked Loops",
+      "difficulty": "Hard",
+      "containers": 3,
+      "colors": 3,
+      "containerDepth": 4,
+      "searchMethod": "bounded BFS",
+      "blocks": 12,
+      "beltCapacity": 4,
+      "boundedSearchMoves": 13,
+      "boundedSearchVisited": 374,
+      "proofPeakOnBelt": 4,
+      "proofMaxRedirectsPerBlock": 9,
+      "sampleRuns": 400,
+      "sampleWins": 9,
+      "sampleFailures": 391,
+      "sampleDeadlocks": 209,
+      "sampledUniqueWinningOrders": 9,
+      "sampleReachedCapacity": 368,
+      "meanLegalChoices": 2.88,
+      "verifiedDistinctProofOrders": 2,
+      "verifiedProofs": [
+        {
+          "levelId": 7,
+          "waits": [
+            20
+          ],
+          "actions": [
+            0,
+            1,
+            0,
+            0,
+            2,
+            2,
+            2,
+            0,
+            1,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "levelId": 7,
+          "waits": [
+            40
+          ],
+          "actions": [
+            0,
+            2,
+            0,
+            2,
+            2,
+            1,
+            1,
+            1,
+            2,
+            0,
+            2,
+            0,
+            0
+          ]
+        },
+        {
+          "levelId": 7,
+          "waits": [
+            80
+          ],
+          "actions": [
+            0,
+            1,
+            0,
+            0,
+            2,
+            2,
+            2,
+            0,
+            1,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "levelId": 7,
+          "waits": [
+            20,
+            80,
+            31,
+            55,
+            20,
+            40,
+            67,
+            24,
+            39
+          ],
+          "actions": [
+            0,
+            1,
+            0,
+            0,
+            2,
+            2,
+            2,
+            0,
+            1,
+            0,
+            1,
+            1
+          ]
+        }
+      ],
+      "verifiedWaits": [
+        [
+          20
+        ],
+        [
+          40
+        ],
+        [
+          80
+        ],
+        [
+          20,
+          80,
+          31,
+          55,
+          20,
+          40,
+          67,
+          24,
+          39
+        ]
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Cross Routing",
+      "difficulty": "Hard",
+      "containers": 4,
+      "colors": 4,
+      "containerDepth": 4,
+      "searchMethod": "bounded BFS",
+      "blocks": 16,
+      "beltCapacity": 5,
+      "boundedSearchMoves": 14,
+      "boundedSearchVisited": 3237,
+      "proofPeakOnBelt": 5,
+      "proofMaxRedirectsPerBlock": 13,
+      "sampleRuns": 400,
+      "sampleWins": 11,
+      "sampleFailures": 389,
+      "sampleDeadlocks": 133,
+      "sampledUniqueWinningOrders": 11,
+      "sampleReachedCapacity": 322,
+      "meanLegalChoices": 3.86,
+      "verifiedDistinctProofOrders": 3,
+      "verifiedProofs": [
+        {
+          "levelId": 8,
+          "waits": [
+            20
+          ],
+          "actions": [
+            0,
+            0,
+            0,
+            3,
+            3,
+            3,
+            3,
+            2,
+            2,
+            2,
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "levelId": 8,
+          "waits": [
+            40
+          ],
+          "actions": [
+            0,
+            0,
+            0,
+            3,
+            3,
+            3,
+            3,
+            2,
+            2,
+            2,
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "levelId": 8,
+          "waits": [
+            80
+          ],
+          "actions": [
+            0,
+            3,
+            0,
+            0,
+            3,
+            3,
+            3,
+            2,
+            2,
+            2,
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "levelId": 8,
+          "waits": [
+            20,
+            80,
+            31,
+            55,
+            20,
+            40,
+            67,
+            24,
+            39
+          ],
+          "actions": [
+            1,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            3,
+            3,
+            3,
+            2,
+            2,
+            2
+          ]
+        }
+      ],
+      "verifiedWaits": [
+        [
+          20
+        ],
+        [
+          40
+        ],
+        [
+          80
+        ],
+        [
+          20,
+          80,
+          31,
+          55,
+          20,
+          40,
+          67,
+          24,
+          39
+        ]
+      ]
+    },
+    {
+      "id": 9,
+      "name": "Advanced Sorting",
+      "difficulty": "Hard",
+      "containers": 5,
+      "colors": 5,
+      "containerDepth": 4,
+      "searchMethod": "bounded BFS",
+      "blocks": 20,
+      "beltCapacity": 5,
+      "boundedSearchMoves": 18,
+      "boundedSearchVisited": 13828,
+      "proofPeakOnBelt": 5,
+      "proofMaxRedirectsPerBlock": 11,
+      "sampleRuns": 400,
+      "sampleWins": 1,
+      "sampleFailures": 399,
+      "sampleDeadlocks": 248,
+      "sampledUniqueWinningOrders": 1,
+      "sampleReachedCapacity": 387,
+      "meanLegalChoices": 4.53,
+      "verifiedDistinctProofOrders": 2,
+      "verifiedProofs": [
+        {
+          "levelId": 9,
+          "waits": [
+            20
+          ],
+          "actions": [
+            0,
+            1,
+            1,
+            1,
+            1,
+            2,
+            2,
+            2,
+            3,
+            3,
+            3,
+            4,
+            4,
+            4,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "levelId": 9,
+          "waits": [
+            40
+          ],
+          "actions": [
+            2,
+            2,
+            3,
+            2,
+            2,
+            3,
+            3,
+            4,
+            4,
+            0,
+            4,
+            0,
+            0,
+            0,
+            1,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "levelId": 9,
+          "waits": [
+            80
+          ],
+          "actions": [
+            0,
+            1,
+            1,
+            1,
+            1,
+            2,
+            2,
+            2,
+            3,
+            3,
+            3,
+            4,
+            4,
+            4,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "levelId": 9,
+          "waits": [
+            20,
+            80,
+            31,
+            55,
+            20,
+            40,
+            67,
+            24,
+            39
+          ],
+          "actions": [
+            0,
+            1,
+            1,
+            1,
+            1,
+            2,
+            2,
+            2,
+            3,
+            3,
+            3,
+            4,
+            4,
+            4,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "verifiedWaits": [
+        [
+          20
+        ],
+        [
+          40
+        ],
+        [
+          80
+        ],
+        [
+          20,
+          80,
+          31,
+          55,
+          20,
+          40,
+          67,
+          24,
+          39
+        ]
+      ]
+    },
+    {
+      "id": 10,
+      "name": "Master Junctions",
+      "difficulty": "Hard",
+      "containers": 6,
+      "colors": 6,
+      "containerDepth": 4,
+      "searchMethod": "weighted best-first",
+      "blocks": 24,
+      "beltCapacity": 5,
+      "boundedSearchMoves": 24,
+      "boundedSearchVisited": 329,
+      "proofPeakOnBelt": 5,
+      "proofMaxRedirectsPerBlock": 23,
+      "sampleRuns": 400,
+      "sampleWins": 0,
+      "sampleFailures": 400,
+      "sampleDeadlocks": 308,
+      "sampledUniqueWinningOrders": 0,
+      "sampleReachedCapacity": 391,
+      "meanLegalChoices": 5.71,
+      "verifiedDistinctProofOrders": 4,
+      "verifiedProofs": [
+        {
+          "levelId": 10,
+          "waits": [
+            20
+          ],
+          "actions": [
+            0,
+            0,
+            0,
+            1,
+            0,
+            1,
+            1,
+            1,
+            2,
+            2,
+            2,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            4,
+            4,
+            4,
+            5,
+            5,
+            5,
+            4
+          ]
+        },
+        {
+          "levelId": 10,
+          "waits": [
+            40
+          ],
+          "actions": [
+            0,
+            0,
+            0,
+            1,
+            0,
+            1,
+            1,
+            1,
+            2,
+            2,
+            2,
+            3,
+            3,
+            3,
+            3,
+            3,
+            5,
+            5,
+            4,
+            4,
+            4,
+            5,
+            5,
+            5
+          ]
+        },
+        {
+          "levelId": 10,
+          "waits": [
+            80
+          ],
+          "actions": [
+            0,
+            0,
+            0,
+            1,
+            0,
+            1,
+            1,
+            1,
+            2,
+            2,
+            2,
+            3,
+            3,
+            3,
+            3,
+            2,
+            3,
+            5,
+            5,
+            5,
+            5,
+            5,
+            4,
+            4,
+            4,
+            4
+          ]
+        },
+        {
+          "levelId": 10,
+          "waits": [
+            20,
+            80,
+            31,
+            55,
+            20,
+            40,
+            67,
+            24,
+            39
+          ],
+          "actions": [
+            3,
+            3,
+            3,
+            2,
+            2,
+            2,
+            2,
+            2,
+            4,
+            4,
+            4,
+            5,
+            5,
+            5,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "verifiedWaits": [
+        [
+          20
+        ],
+        [
+          40
+        ],
+        [
+          80
+        ],
+        [
+          20,
+          80,
+          31,
+          55,
+          20,
+          40,
+          67,
+          24,
+          39
+        ]
+      ]
+    }
+  ]
+}
