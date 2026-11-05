@@ -94,7 +94,7 @@
         <h1 id="pageTitle">Small games.<br>Distinct worlds.</h1>
         <p class="intro">A shelf of playful experiments in merging, puzzling, defending, and making music. Pick a world and jump right in.</p>
       </div>
-      <div class="collectionMark" aria-label="13 browser games"><strong id="gameCount">13</strong><span>playable prototypes</span></div>
+      <div class="collectionMark" aria-label="14 browser games"><strong id="gameCount">14</strong><span>playable prototypes</span></div>
     </section>
     <section class="catalog" aria-label="Game catalog">
       <div class="catalogTools">
@@ -112,11 +112,22 @@
         <strong>Created by Arsen Arn</strong>
         <span>© Arsen Arn. The games, code, artwork, and design in this collection are the intellectual property of Arsen Arn.</span>
       </div>
-      <span class="footerDetail">13 self-contained browser prototypes · No account needed</span>
+      <span class="footerDetail">14 self-contained browser prototypes · No account needed</span>
     </footer>
   </main>
 
   <svg width="0" height="0" aria-hidden="true" style="position:absolute;overflow:hidden" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="art-sand-worms" viewBox="0 0 640 320">
+      <path fill="#e8eddd" d="M0 0h640v320H0z"/>
+      <rect x="66" y="16" width="508" height="289" rx="22" fill="#f5f3e8" stroke="#cbd5bc" stroke-width="4"/>
+      <rect x="84" y="31" width="472" height="113" rx="10" fill="#65bfc5" stroke="#d4decb" stroke-width="5"/>
+      <path d="M84 119h472v15q0 10-10 10H94q-10 0-10-10z" fill="#67bb83"/>
+      <path d="M260 48h34v-9h30v9h30v-9h30v9h25v34h-15v15h-20v14h-24v13h-24v-13h-24V97h-20V82h-22z" fill="#e86c7e"/>
+      <g fill="#cbd4bf" stroke="#e0e6d5" stroke-width="3"><rect x="225" y="169" width="36" height="37" rx="7"/><rect x="225" y="210" width="36" height="37" rx="7"/><rect x="382" y="215" width="36" height="37" rx="7"/><rect x="423" y="215" width="36" height="37" rx="7"/></g>
+      <g fill="none" stroke-linejoin="round" stroke-linecap="round"><path d="M142 175v84h57" stroke="#a83d53" stroke-width="33"/><path d="M142 175v84h57" stroke="#e86c7e" stroke-width="27"/><path d="M322 266v-85h49" stroke="#357e91" stroke-width="33"/><path d="M322 266v-85h49" stroke="#65bfc5" stroke-width="27"/><path d="M502 184v91h-52" stroke="#36774e" stroke-width="33"/><path d="M502 184v91h-52" stroke="#67bb83" stroke-width="27"/></g>
+      <g fill="#fffdf1"><circle cx="136" cy="172" r="4"/><circle cx="148" cy="172" r="4"/><circle cx="374" cy="176" r="4"/><circle cx="374" cy="186" r="4"/><circle cx="496" cy="181" r="4"/><circle cx="508" cy="181" r="4"/></g>
+      <g fill="#34443a"><circle cx="136" cy="171" r="2"/><circle cx="148" cy="171" r="2"/><circle cx="375" cy="176" r="2"/><circle cx="375" cy="186" r="2"/><circle cx="496" cy="180" r="2"/><circle cx="508" cy="180" r="2"/></g>
+    </symbol>
     <symbol id="art-loop-sort" viewBox="0 0 640 320">
       <defs><linearGradient id="lsbg" x2="0" y2="1"><stop stop-color="#221b37"/><stop offset="1" stop-color="#171428"/></linearGradient></defs>
       <path fill="url(#lsbg)" d="M0 0h640v320H0z"/>
@@ -185,6 +196,7 @@
 
   <script>
     const games = [
+      {id:"sand_worms",title:"Sand Worms",file:"Sand Worms/index.html",genre:"Puzzle",genres:["Puzzle","Physics"],description:"Guide flexible worms through tight mazes, collect matching sand through reservoir walls, and unravel colorful particle pictures across 20 levels.",art:"art-sand-worms"},
       {id:"loop_sort",title:"Loop Sort: Switch Junctions",file:"loop_sort_switch_junctions.html",genre:"Puzzle",genres:["Puzzle"],description:"Release colored blocks onto two linked loops; each move flips the junctions as you sort them into matching stacks.",art:"art-loop-sort"},
       {id:"plush",title:"Plush Merge Jam",file:"plush_merge_jam.html",genre:"Puzzle",genres:["Puzzle","Merge"],description:"Slide soft, characterful blocks together and build up to the rare plush crown.",art:"art-plush"},
       {id:"snake",title:"Snake Merge Defense",file:"snake_merge.html",genre:"Defense",genres:["Defense","Puzzle"],description:"Gather colored orbs, line up a living snake, and break the waves pressing against your wall.",art:"art-snake"},

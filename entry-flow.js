@@ -3,6 +3,7 @@
   "use strict";
 
   const illustrations = {
+    sand: '<rect x="38" y="28" width="284" height="185" rx="17" fill="#e8eddd"/><rect x="51" y="40" width="258" height="73" rx="8" fill="#65bfc5"/><path d="M51 98h258v15H51z" fill="#67bb83"/><path d="M147 52h19v-6h17v6h17v-6h17v6h15v20h-9v9h-12v9h-14v8h-14v-8h-14v-9h-12V72h-10z" fill="#e86c7e"/><g fill="#cbd4bf"><rect x="147" y="132" width="24" height="25" rx="5"/><rect x="147" y="161" width="24" height="25" rx="5"/><rect x="245" y="158" width="24" height="25" rx="5"/></g><path d="M94 135v52h34" fill="none" stroke="#e86c7e" stroke-width="21" stroke-linecap="round" stroke-linejoin="round"/><path d="M206 192v-55h29" fill="none" stroke="#65bfc5" stroke-width="21" stroke-linecap="round" stroke-linejoin="round"/><g fill="#fffdf1"><circle cx="90" cy="132" r="3"/><circle cx="99" cy="132" r="3"/><circle cx="237" cy="133" r="3"/><circle cx="237" cy="141" r="3"/></g>',
     plush: '<rect x="40" y="38" width="280" height="164" rx="18" fill="#302947"/><rect x="67" y="74" width="61" height="61" rx="15" fill="#f8a8bc"/><rect x="141" y="74" width="61" height="61" rx="15" fill="#f8a8bc"/><path d="M126 104h18m-8-8 8 8-8 8" stroke="white" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><rect x="220" y="74" width="70" height="70" rx="17" fill="#ffd47c"/><circle cx="245" cy="102" r="4" fill="#49334b"/><circle cx="267" cy="102" r="4" fill="#49334b"/><path d="M244 118q13 10 25 0" stroke="#49334b" stroke-width="3" fill="none"/>',
     snake: '<rect x="38" y="33" width="284" height="174" rx="17" fill="#183b4d"/><g fill="#fa6f79"><rect x="60" y="44" width="47" height="26" rx="6"/><rect x="114" y="44" width="47" height="26" rx="6"/><rect x="168" y="44" width="47" height="26" rx="6"/></g><path d="M76 175h48v-33h48v-31h48" fill="none" stroke="#c8ea68" stroke-width="23" stroke-linecap="round" stroke-linejoin="round"/><circle cx="256" cy="111" r="14" fill="#ffcc65"/><circle cx="222" cy="169" r="12" fill="#77d5ff"/><path d="M68 84h236" stroke="#e8f4f1" stroke-width="5" stroke-dasharray="9 9" opacity=".7"/>',
     worm: '<rect x="38" y="34" width="284" height="172" rx="17" fill="#243743"/><path d="M72 163h58v-44h45v-39h58" fill="none" stroke="#81d8bd" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/><circle cx="249" cy="80" r="20" fill="#f5d169"/><circle cx="94" cy="163" r="6" fill="#20323d"/><path d="M248 125v39h48" fill="none" stroke="#f5d169" stroke-width="8" stroke-dasharray="7 8"/><circle cx="296" cy="164" r="15" fill="none" stroke="#f5d169" stroke-width="7"/>',
@@ -161,6 +162,18 @@
 
   const click = (selector) => document.querySelector(selector)?.click();
   const profiles = {
+    sand_worms: {
+      title: "Sand Worms", art: "sand", accent: "#9fcd83", launcher: "../game_launcher.html", dockTarget: ".entry-controls",
+      normalLabel: "Прохождение уровней", normalDescription: "20 пространственных головоломок с червями и живым цветным песком.",
+      developerDescription: "Переключение уровней, радиус и скорость сбора, физика песка, сетка и счётчики частиц.",
+      pcInput: "Удерживайте голову с глазами или хвост с двумя точками и ведите мышью по свободным клеткам.",
+      mobileInput: "Коснитесь головы или хвоста и ведите пальцем по свободным клеткам. Отпустите, чтобы выбрать другой конец.",
+      action: "Подведите любой сегмент к стенке резервуара: червь автоматически собирает песок своего цвета.",
+      goal: "Соберите весь песок и заполните всех червей, чтобы перейти дальше.",
+      rule: "Стены и другие тела блокируют путь. Полный червь исчезает; освободившийся песок осыпается. Заполнение не зависит от длины.",
+      developerSelectors: ["#debug", "#previous", "#next"],
+      onModeChange: (mode) => window.sandWorms?.setEntryMode(mode)
+    },
     plush: {
       title: "Plush Merge Jam", art: "plush", accent: "#ffbd83", normalLabel: "Кампания", normalDescription: "12 уровней с сохранением звёзд и рекордов.", developerDescription: "Случайные уровни разных сложностей и бесконечная игра.",
       pcInput: "Перетаскивайте блоки мышью. Z — отмена, R — повтор, H — подсказка, Esc — пауза.", mobileInput: "Перетаскивайте блоки пальцем; используйте кнопки отмены, подсказки и паузы.", action: "Сдвигайте одинаковые плюшевые блоки, чтобы объединять их.", goal: "Оставьте одну фигуру нужного уровня на поле.", rule: "Сливаются только одинаковые блоки.",

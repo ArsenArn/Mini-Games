@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f5efe4">
+  <title>Sand Worms — Core Prototype</title>
+  <link rel="stylesheet" href="../menu-system.css">
+  <link rel="stylesheet" href="style.css">
+  <script src="levels.js" defer></script>
+  <script src="game.js" defer></script>
+  <script src="../entry-flow.js" data-entry-game="sand_worms" defer></script>
+</head>
+<body>
+  <main class="game">
+    <header>
+      <div class="brand"><span class="brand-mark" aria-hidden="true">〰</span><div><h1>SAND WORMS</h1><p>Сдвигай. Собирай. Освобождай.</p></div><span class="prototype">CORE<br>PROTOTYPE</span></div>
+      <div class="entry-controls"></div>
+      <nav aria-label="Управление уровнем">
+        <button id="previous" class="entry-developer-only" aria-label="Предыдущий уровень" hidden>←</button>
+        <div class="level"><span id="levelNumber">УРОВЕНЬ 01 / 20</span><strong id="levelTitle"></strong></div>
+        <button id="next" class="entry-developer-only" aria-label="Следующий уровень" hidden>→</button>
+        <button id="restart" title="Начать заново" aria-label="Restart">↻</button>
+      </nav>
+    </header>
+    <section class="board-wrap" aria-label="Игровое поле">
+      <canvas id="game" width="192" height="312" aria-label="Перетаскивайте голову или хвост червя к стенке песочного резервуара"></canvas>
+      <div id="victory" class="victory" hidden><span class="win-icon">✦</span><p>ЧИСТАЯ РАБОТА</p><h2>Всё собрано!</h2><p id="winText">Каждая песчинка нашла своего червя.</p><button id="continue">Следующий уровень →</button></div>
+    </section>
+    <footer><div class="progress"><span id="progressFill"></span></div><div class="status"><span id="hint"></span><strong id="progressText">0%</strong></div></footer>
+    <details id="debug" class="entry-developer-only" hidden>
+      <summary><span>⚙ Debug Menu</span><span class="debug-caption">настройки core</span></summary>
+      <div class="debug-body">
+        <label>Collection Radius <output id="radiusValue"></output><input id="radius" type="range" min="0.75" max="4" step="0.05" value="1.2"></label>
+        <label>Collection Speed <output id="speedValue"></output><input id="speed" type="range" min="30" max="1000" step="10" value="300"></label>
+        <label>Sand Simulation Speed <output id="simulationValue"></output><input id="simulation" type="range" min="0" max="3" step="0.1" value="1"></label>
+        <label class="check"><input id="areas" type="checkbox"> Show Collection Areas</label>
+        <label class="check"><input id="grid" type="checkbox"> Show Grid</label>
+        <div class="counts-title">Particle Counts <small>песок / свободная вместимость</small></div>
+        <div id="counts"></div><p class="debug-note">Радиус — в клетках; скорость — частиц/с на червя. Значения применяются сразу. Нулевая скорость симуляции останавливает гравитацию, но не сбор.</p>
+      </div>
+    </details>
+  </main>
+</body>
+</html>
