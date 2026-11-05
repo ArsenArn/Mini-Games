@@ -94,7 +94,7 @@
         <h1 id="pageTitle">Small games.<br>Distinct worlds.</h1>
         <p class="intro">A shelf of playful experiments in merging, puzzling, defending, and making music. Pick a world and jump right in.</p>
       </div>
-      <div class="collectionMark" aria-label="14 browser games"><strong id="gameCount">14</strong><span>playable prototypes</span></div>
+      <div class="collectionMark" aria-label="15 browser games"><strong id="gameCount">15</strong><span>playable prototypes</span></div>
     </section>
     <section class="catalog" aria-label="Game catalog">
       <div class="catalogTools">
@@ -112,11 +112,27 @@
         <strong>Created by Arsen Arn</strong>
         <span>© Arsen Arn. The games, code, artwork, and design in this collection are the intellectual property of Arsen Arn.</span>
       </div>
-      <span class="footerDetail">14 self-contained browser prototypes · No account needed</span>
+      <span class="footerDetail">15 self-contained browser prototypes · No account needed</span>
     </footer>
   </main>
 
   <svg width="0" height="0" aria-hidden="true" style="position:absolute;overflow:hidden" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="art-sand-gates" viewBox="0 0 640 320">
+      <path fill="#eeeae0" d="M0 0h640v320H0z"/>
+      <rect x="114" y="18" width="412" height="284" rx="24" fill="#dce6dd" stroke="#c5d5cc" stroke-width="5"/>
+      <rect x="130" y="34" width="380" height="252" rx="13" fill="#e8eee3"/>
+      <path d="M172 35v250m42-250v250m42-250v250m42-250v250m42-250v250m42-250v250m42-250v250m42-250v250M131 76h378m-378 42h378m-378 42h378m-378 42h378m-378 42h378" stroke="#d8e2d8" stroke-width="3"/>
+      <rect x="139" y="43" width="75" height="193" rx="9" fill="#fff8df" stroke="#d4cdb2" stroke-width="3"/>
+      <path d="M146 86h12v142h-12zM158 98h12v130h-12zM170 113h12v115h-12zM182 128h12v100h-12zM194 145h12v83h-12z" fill="#e88170"/>
+      <rect x="429" y="43" width="72" height="109" rx="9" fill="#fff8df" stroke="#d4cdb2" stroke-width="3"/>
+      <path d="M436 72h12v72h-12zM448 63h12v81h-12zM460 79h12v65h-12zM472 66h12v78h-12zM484 85h10v59h-10z" fill="#60abc2"/>
+      <path d="M258 88h38v88h44v38h-82z" fill="#59a3bb" stroke="#458aa1" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M264 96h26v42h-26z" fill="#8fc8d5" opacity=".65"/>
+      <rect x="347" y="173" width="112" height="37" rx="6" fill="#78ad82" stroke="#5b9466" stroke-width="3"/>
+      <rect x="301" y="231" width="70" height="48" rx="7" fill="#dc7b6d" stroke="#bd6359" stroke-width="3"/>
+      <path d="m232 127 17 0m-6-6 6 6-6 6" fill="none" stroke="#b38e4c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <g fill="#fffdf1" font-family="sans-serif" font-size="13" font-weight="700"><text x="267" y="111">38%</text><text x="356" y="198">0%</text><text x="310" y="252">0%</text></g>
+    </symbol>
     <symbol id="art-sand-worms" viewBox="0 0 640 320">
       <path fill="#e8eddd" d="M0 0h640v320H0z"/>
       <rect x="66" y="16" width="508" height="289" rx="22" fill="#f5f3e8" stroke="#cbd5bc" stroke-width="4"/>
@@ -196,6 +212,7 @@
 
   <script>
     const games = [
+      {id:"sand_gates",title:"Sand Gates",file:"Sand Gates/index.html",genre:"Puzzle",genres:["Puzzle","Physics"],description:"Slide colored shapes to collect matching sand, empty reservoirs to reveal hidden blocks, and find a way through 20 handcrafted puzzles.",art:"art-sand-gates"},
       {id:"sand_worms",title:"Sand Worms",file:"Sand Worms/index.html",genre:"Puzzle",genres:["Puzzle","Physics"],description:"Guide flexible worms through tight mazes, collect matching sand through reservoir walls, and unravel colorful particle pictures across 20 levels.",art:"art-sand-worms"},
       {id:"loop_sort",title:"Loop Sort: Switch Junctions",file:"loop_sort_switch_junctions.html",genre:"Puzzle",genres:["Puzzle"],description:"Release colored blocks onto two linked loops; each move flips the junctions as you sort them into matching stacks.",art:"art-loop-sort"},
       {id:"plush",title:"Plush Merge Jam",file:"plush_merge_jam.html",genre:"Puzzle",genres:["Puzzle","Merge"],description:"Slide soft, characterful blocks together and build up to the rare plush crown.",art:"art-plush"},
