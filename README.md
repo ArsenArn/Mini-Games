@@ -2,9 +2,13 @@
 
 ![Mini-Games preview](mini-games-preview.png)
 
+<<<<<<< HEAD
 A collection of **14 playable mini-game prototypes** across multiple genres. I designed and built these experiments with AI assistance to explore gameplay concepts, core loops, interactions, and rapid iteration.
+=======
+A collection of **13 playable mini-game prototypes** across multiple genres. I designed and built these experiments with AI assistance to explore gameplay concepts, core loops, interactions, and rapid iteration.
+>>>>>>> 1332ba45bc46cb60b9eca8c3b64906306ef0a607
 
-**[Play the mini-games collection](https://arnmini-game.netlify.app/game_launcher.html)**
+**[Play the 13-game collection](https://arnmini-game.netlify.app/game_launcher.html)**
 
 ## Why I made it
 
@@ -20,7 +24,7 @@ This collection is a hands-on game design playground. I use short prototypes to 
 ## Play and learn more
 
 - **Play:** https://arnmini-game.netlify.app/game_launcher.html
-- **Portfolio:** See my broader game design and production work via my GitHub profile and LinkedIn
+- **Other playable projects:** [My GitHub profile](https://github.com/ArsenArn) includes standalone prototypes such as Rollkeep, Quiet Cove and Jumping Souls
 - **LinkedIn:** https://www.linkedin.com/in/arsen-arn/
 
 > These are experimental mini-game prototypes, not commercial releases. Their purpose is to demonstrate design exploration and fast AI-assisted prototyping.
